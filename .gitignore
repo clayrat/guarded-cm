@@ -1,0 +1,6 @@
+Everything.agda
+*.agda~
+*.agda#
+_build
+tags
+/html

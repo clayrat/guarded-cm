@@ -1,0 +1,108 @@
+{-# OPTIONS --cubical --guarded #-}
+module Guarded.StreamGF where
+
+open import Prelude
+open import Foundations.Transport
+open import Data.Nat
+open import Data.List
+open import LaterG
+
+private variable
+  A B C : 𝒰
+
+-- guarded streams via fixpoint in the universe
+
+Stream-body : 𝒰 → ▹ 𝒰 → 𝒰
+Stream-body A S▹ = A × ▸ S▹
+
+Stream : 𝒰 → 𝒰
+Stream A = fix (Stream-body A)
+
+consˢ : A → ▹ Stream A → Stream A
+consˢ {A} x xs▹ = (x , subst (λ q → ▸ q) (sym (pfix (Stream-body A))) xs▹)
+
+headˢ : Stream A → A
+headˢ (x , xs▹) = x
+
+tail▹ˢ : Stream A → ▹ Stream A
+tail▹ˢ {A} (x , xs▹) = subst (λ q → ▸ q) (pfix (Stream-body A)) xs▹
+
+head-cons : (a : A) → (as▹ : ▹ Stream A) → headˢ (consˢ a as▹) ＝ a
+head-cons a as▹ = refl
+
+tail-cons : (a : A) → (as▹ : ▹ Stream A) → tail▹ˢ (consˢ a as▹) ＝ as▹
+tail-cons {A} a as▹ = ▹-ext λ α → transport⁻-transport (λ i → pfix (Stream-body A) (~ i) α) (as▹ α)
+
+repeatˢ : A → Stream A
+repeatˢ a = fix (consˢ a)
+
+repeatˢ-eq : (a : A) → repeatˢ a ＝ consˢ a (λ α → repeatˢ a)
+repeatˢ-eq a = ap (consˢ a) (pfix (consˢ a))
+
+mapˢ-body : (A → B) → ▹ (Stream A → Stream B) → Stream A → Stream B
+mapˢ-body f map▹ as = consˢ (f (headˢ as)) λ α → map▹ α (tail▹ˢ as α)
+
+mapˢ : (A → B) → Stream A → Stream B
+mapˢ f = fix (mapˢ-body f)
+
+mapˢ-eq : (f : A → B) → (a : A) → (as▹ : ▹ Stream A)
+        → mapˢ f (consˢ a as▹) ＝ consˢ (f a) (λ α → mapˢ f (as▹ α))
+mapˢ-eq {A} f a as▹ =
+  ap (consˢ (f a)) (▹-ext λ α →
+    ap (dfix (mapˢ-body f) α) (▹-ap (tail-cons a as▹) α)
+    ∙ happly (pfix-ext (mapˢ-body f) α) (as▹ α))
+
+mapˢ-head : (f : A → B) → (s : Stream A)
+          → headˢ (mapˢ f s) ＝ f (headˢ s)
+mapˢ-head f s = refl
+
+mapˢ-repeat : (a : A) → (f : A → B) → mapˢ f (repeatˢ a) ＝ repeatˢ (f a)
+mapˢ-repeat a f = fix λ prf▹ →
+  mapˢ f (repeatˢ a)
+    ＝⟨ ap (mapˢ f) (repeatˢ-eq a)  ⟩
+  mapˢ f (consˢ a (λ α → repeatˢ a))
+    ＝⟨ mapˢ-eq f a (λ x → consˢ a (dfix (consˢ a))) ⟩
+  consˢ (f a) (λ α → mapˢ f (repeatˢ a))
+    ＝⟨ ap (consˢ (f a)) (▹-ext prf▹) ⟩
+  consˢ (f a) (λ α → repeatˢ (f a))
+    ＝⟨ ap (consˢ (f a)) (▹-ext λ α → sym (pfix-ext (consˢ (f a)) α)) ⟩
+  consˢ (f a) (λ α → dfix (consˢ (f a)) α)
+    ＝⟨⟩
+  repeatˢ (f a)
+    ∎
+
+natsˢ-body : ▹ Stream ℕ → Stream ℕ
+natsˢ-body nats▹ = consˢ 0 (λ α → mapˢ suc (nats▹ α))
+
+natsˢ : Stream ℕ
+natsˢ = fix natsˢ-body
+
+natsˢ-tail : tail▹ˢ natsˢ ＝ next (mapˢ suc natsˢ)
+natsˢ-tail =
+  ap tail▹ˢ (fix-path natsˢ-body)
+  ∙ tail-cons 0 (λ α → mapˢ suc (next (fix natsˢ-body) α))
+
+zipWithˢ-body : (f : A → B → C) → ▹ (Stream A → Stream B → Stream C) → Stream A → Stream B → Stream C
+zipWithˢ-body f zw▹ sa sb = consˢ (f (headˢ sa) (headˢ sb)) (zw▹ ⊛ tail▹ˢ sa ⊛ tail▹ˢ sb)
+
+zipWithˢ : (f : A → B → C) → Stream A → Stream B → Stream C
+zipWithˢ f = fix (zipWithˢ-body f)
+
+fibˢ-body : ▹ Stream ℕ → Stream ℕ
+fibˢ-body fib▹ = consˢ 0 (▹map (λ s → consˢ 1 (▹map (zipWithˢ _+_ s) (tail▹ˢ s))) fib▹)
+
+fibˢ : Stream ℕ
+fibˢ = fix fibˢ-body
+
+scanl1ˢ-body : {A : 𝒰} → (A → A → A) → ▹ (Stream A → Stream A) → Stream A → Stream A
+scanl1ˢ-body f sc▹ s = consˢ (headˢ s) (▹map (mapˢ (f (headˢ s))) (sc▹ ⊛ tail▹ˢ s))
+
+scanl1ˢ : {A : 𝒰} → (A → A → A) → Stream A → Stream A
+scanl1ˢ f = fix (scanl1ˢ-body f)
+
+primesˢ-body : ▹ Stream ℕ → Stream ℕ
+primesˢ-body pr▹ = consˢ 2 (▹map (mapˢ suc) (▹map (scanl1ˢ _·_) pr▹))
+
+primesˢ : Stream ℕ
+primesˢ = fix primesˢ-body
+
