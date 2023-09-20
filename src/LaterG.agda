@@ -23,11 +23,11 @@ postulate
 ▸_ : ∀ {l} → ▹ 𝒰 l → 𝒰 l
 ▸ A = (@tick x : Tick) → A x
 
-▸-eq : {A : 𝒰 l} → ▸ (λ _ → A) ＝ ▹ A
-▸-eq = refl
-
 next : A → ▹ A
 next x _ = x
+
+▸-next : ▸ (next A) ＝ ▹ A
+▸-next = refl
 
 _⊛_ : ▹ (A → B) → ▹ A → ▹ B
 _⊛_ f x a = f a (x a)

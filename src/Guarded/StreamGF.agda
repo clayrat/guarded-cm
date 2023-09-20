@@ -19,19 +19,23 @@ Stream : 𝒰 → 𝒰
 Stream A = fix (Stream-body A)
 
 consˢ : A → ▹ Stream A → Stream A
-consˢ {A} x xs▹ = (x , subst (λ q → ▸ q) (sym (pfix (Stream-body A))) xs▹)
+consˢ {A} x xs▹ = (x , subst ▸_ (sym (pfix (Stream-body A))) xs▹)
 
 headˢ : Stream A → A
 headˢ (x , xs▹) = x
 
 tail▹ˢ : Stream A → ▹ Stream A
-tail▹ˢ {A} (x , xs▹) = subst (λ q → ▸ q) (pfix (Stream-body A)) xs▹
+tail▹ˢ {A} (x , xs▹) = subst ▸_ (pfix (Stream-body A)) xs▹
+
+uncons-eq : (s : Stream A) → s ＝ consˢ (headˢ s) (tail▹ˢ s)
+uncons-eq {A} (a , as▹) =
+  ap (λ q → (a , q)) $ sym $ transport⁻-transport (λ i → ▸ pfix (Stream-body A) i) as▹
 
 head-cons : (a : A) → (as▹ : ▹ Stream A) → headˢ (consˢ a as▹) ＝ a
 head-cons a as▹ = refl
 
 tail-cons : (a : A) → (as▹ : ▹ Stream A) → tail▹ˢ (consˢ a as▹) ＝ as▹
-tail-cons {A} a as▹ = ▹-ext λ α → transport⁻-transport (λ i → pfix (Stream-body A) (~ i) α) (as▹ α)
+tail-cons {A} a as▹ = transport⁻-transport (λ i → ▸ pfix (Stream-body A) (~ i)) as▹
 
 repeatˢ : A → Stream A
 repeatˢ a = fix (consˢ a)
@@ -55,6 +59,13 @@ mapˢ-eq {A} f a as▹ =
 mapˢ-head : (f : A → B) → (s : Stream A)
           → headˢ (mapˢ f s) ＝ f (headˢ s)
 mapˢ-head f s = refl
+
+mapˢ-tail : (f : A → B) → (s : Stream A)
+          → tail▹ˢ (mapˢ f s) ＝ ▹map (mapˢ f) (tail▹ˢ s)
+mapˢ-tail f s =
+  ap (λ q → tail▹ˢ (mapˢ f q)) (uncons-eq s)
+  ∙ ap tail▹ˢ (mapˢ-eq f (headˢ s) (tail▹ˢ s))
+  ∙ tail-cons (f (headˢ s)) (▹map (mapˢ f) (tail▹ˢ s))
 
 mapˢ-repeat : (a : A) → (f : A → B) → mapˢ f (repeatˢ a) ＝ repeatˢ (f a)
 mapˢ-repeat a f = fix λ prf▹ →
@@ -106,3 +117,14 @@ primesˢ-body pr▹ = consˢ 2 (▹map (mapˢ suc) (▹map (scanl1ˢ _·_) pr▹
 primesˢ : Stream ℕ
 primesˢ = fix primesˢ-body
 
+iterateˢ : ▹ (A → A) → A → Stream A
+iterateˢ f = fix λ i▹ a → consˢ a (i▹ ⊛ (f ⊛ next a))
+
+interleaveˢ : Stream A → ▹ Stream A → Stream A
+interleaveˢ = fix λ i▹ s t▹ → consˢ (headˢ s) (i▹ ⊛ t▹ ⊛ next (tail▹ˢ s))
+
+toggleˢ : Stream ℕ
+toggleˢ = fix λ t▹ → consˢ 1 (next (consˢ 0 t▹))
+
+paperfoldsˢ : Stream ℕ
+paperfoldsˢ = fix (interleaveˢ toggleˢ)
