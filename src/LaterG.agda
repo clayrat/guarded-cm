@@ -2,14 +2,9 @@
 module LaterG where
 
 open import Agda.Primitive.Cubical using ( primHComp ; primComp )
-
 open import Prelude
 open import Foundations.Cubes
-
-module Prims where
-  primitive
-    primLockUniv : 𝒰₁
-open Prims renaming (primLockUniv to LockU) public
+open import Prim
 
 private
   variable

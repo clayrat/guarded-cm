@@ -1,18 +1,11 @@
 {-# OPTIONS --guarded  #-}
 
--- Most of definitions are from LaterPrims.agda
-
 module Later where
 
 open import Agda.Primitive.Cubical using ( primHComp ; primComp )
-
 open import Prelude
 open import Foundations.Cubes
-
-module Prims where
-  primitive
-    primLockUniv : 𝒰₁
-open Prims renaming (primLockUniv to LockU) public
+open import Prim
 
 infixl 4 _⊛_
 infixr -2 ▹-syntax

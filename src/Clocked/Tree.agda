@@ -25,4 +25,4 @@ replaceMinBody (Br l r) n▹ =
 
 replaceMin : Tree ℕ → Tree ℕ
 replaceMin t =
-  force (λ k → feedback {B = λ k′ → ▹ k′ (Tree ℕ)} (replaceMinBody t)) k0
+  force (λ k → feedback {B = λ k′ → ▹ k′ (Tree ℕ)} {k} (replaceMinBody t)) k0
