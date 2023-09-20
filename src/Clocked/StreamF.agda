@@ -20,13 +20,17 @@ gStream : Cl → 𝒰 → 𝒰
 gStream k A = fix (gStream-body k A)
 
 consᵏ : A → ▹ k (gStream k A) → gStream k A
-consᵏ {A} {k} x xs▹ = (x , subst (λ q → ▸ k q) (sym (pfix (gStream-body k A))) xs▹)
+consᵏ {A} {k} x xs▹ = (x , subst (▸ k) (sym (pfix (gStream-body k A))) xs▹)
 
 headᵏ : gStream k A → A
 headᵏ (x , xs▹) = x
 
 tail▹ᵏ : gStream k A → ▹ k (gStream k A)
-tail▹ᵏ {k} {A} (x , xs▹) = subst (λ q → ▸ k q) (pfix (gStream-body k A)) xs▹
+tail▹ᵏ {k} {A} (x , xs▹) = subst (▸ k) (pfix (gStream-body k A)) xs▹
+
+uncons-eqᵏ : (s : gStream k A) → s ＝ consᵏ (headᵏ s) (tail▹ᵏ s)
+uncons-eqᵏ {k} {A} (a , as▹) =
+  ap (λ q → (a , q)) $ sym $ transport⁻-transport (λ i → ▸ k (pfix (gStream-body k A) i)) as▹
 
 head-consᵏ : (a : A) → (as▹ : ▹ k (gStream k A))
            → headᵏ (consᵏ a as▹) ＝ a
@@ -34,7 +38,7 @@ head-consᵏ a as▹ = refl
 
 tail-consᵏ : (a : A) → (as▹ : ▹ k (gStream k A))
            → tail▹ᵏ (consᵏ a as▹) ＝ as▹
-tail-consᵏ {A} {k} a as▹ = ▹-ext λ α → transport⁻-transport (λ i → pfix (gStream-body k A) (~ i) α) (as▹ α)
+tail-consᵏ {A} {k} a as▹ = transport⁻-transport (λ i → ▸ k (pfix (gStream-body k A) (~ i))) as▹
 
 Stream : 𝒰 → 𝒰
 Stream A = ∀ k → gStream k A
