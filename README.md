@@ -4,6 +4,7 @@ Based on the [cubical-mini](https://github.com/cmcmA20/cubical-mini/) library.
 
 References:
 
+* [Matthes, [1998] "Extensions of System F by Iteration and Primitive Recursion on Monotone Inductive Types"](https://www.irit.fr/~Ralph.Matthes/dissertation/matthesdiss.pdf)
 * [Atkey, McBride, [2013] "Productive Coprogramming with Guarded Recursion"](https://bentnib.org/productive.pdf)
 * [Clouston, Bizjak, Grathwohl, Birkedal, [2016] "The guarded lambda-calculus: Programming and reasoning with guarded recursion for coinductive types"](https://arxiv.org/abs/1606.09455)
 * [Favier, [2020] "A study and implementation of the guarded λ-calculus"](https://monade.li/glam.pdf)
