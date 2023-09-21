@@ -1,5 +1,5 @@
 {-# OPTIONS --cubical --guarded #-}
-module Clocked.Tree where
+module Clocked.ReplaceMin where
 
 open import Prelude
 open import Data.Nat

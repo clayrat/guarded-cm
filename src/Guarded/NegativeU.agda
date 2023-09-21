@@ -16,9 +16,8 @@ NegU-body N▹ = ▸ N▹ → ⊤
 NegU : 𝒰
 NegU = fix NegU-body
 
--- we can move forward in time ...
 pt : NegU
-pt ev = tt
+pt _ = tt
 
 NegU-inh : NegU ≃ ⊤
 NegU-inh =

@@ -62,6 +62,8 @@ tail-consˢ a as =
   fun-ext (λ k → ap (λ q → force q k) (fun-ext (λ k₁ → tail-consᵏ a (next (as k₁))))
                  ∙ delay-force as k)
 
+-- repeat
+
 repeatᵏ : A → gStream k A
 repeatᵏ a = fix (consᵏ a)
 
@@ -73,6 +75,8 @@ repeatˢ a k = repeatᵏ a
 
 repeatˢ-eq : (a : A) → repeatˢ a ＝ consˢ a (repeatˢ a)
 repeatˢ-eq a = fun-ext λ k → repeatᵏ-eq a
+
+-- map
 
 mapᵏ-body : (A → B) → ▹ k (gStream k A → gStream k B) → gStream k A → gStream k B
 mapᵏ-body f map▹ as = consᵏ (f (headᵏ as)) λ α → map▹ α (tail▹ᵏ as α)
@@ -117,6 +121,70 @@ mapˢ-eq f a as = fun-ext λ k → mapᵏ-eq f a (next (as k))
 mapˢ-repeat : (a : A) → (f : A → B) → mapˢ f (repeatˢ a) ＝ repeatˢ (f a)
 mapˢ-repeat a f = fun-ext (λ k → mapᵏ-repeat a f)
 
+-- iterate
+
+iterateᵏ : ▹ k (A → A) → A → gStream k A
+iterateᵏ f = fix λ i▹ a → consᵏ a (i▹ ⊛ (f ⊛ next a))
+
+iterateˢ : (A → A) → A → Stream A
+iterateˢ f a k = iterateᵏ (next f) a
+
+-- interleave
+
+interleaveᵏ : gStream k A → ▹ k (gStream k A) → gStream k A
+interleaveᵏ = fix λ i▹ s t▹ → consᵏ (headᵏ s) (i▹ ⊛ t▹ ⊛ next (tail▹ᵏ s))
+
+interleaveˢ : Stream A → Stream A → Stream A
+interleaveˢ s t k = interleaveᵏ (s k) (next (t k))
+
+-- zipping
+
+zipWithᵏ : (f : A → B → C) → gStream k A → gStream k B → gStream k C
+zipWithᵏ f = fix (λ zw▹ sa sb → consᵏ (f (headᵏ sa) (headᵏ sb)) (zw▹ ⊛ tail▹ᵏ sa ⊛ tail▹ᵏ sb))
+
+zipWithˢ : (f : A → B → C) → Stream A → Stream B → Stream C
+zipWithˢ f sa sb k = zipWithᵏ f (sa k) (sb k)
+
+-- folding
+
+scanl1ᵏ : (f : A → A → A) → gStream k A → gStream k A
+scanl1ᵏ f = fix λ sc▹ s → consᵏ (headᵏ s) (▹map (mapᵏ (f (headᵏ s))) (sc▹ ⊛ tail▹ᵏ s))
+
+-- indexing
+
+nthˢ : ℕ → Stream A → A
+nthˢ  zero   s = headˢ s
+nthˢ (suc n) s = nthˢ n (tailˢ s)
+
+takeˢ : ℕ → Stream A → List A
+takeˢ  zero   s = []
+takeˢ (suc n) s = headˢ s ∷ takeˢ n (tailˢ s)
+
+dropˢ : ℕ → Stream A → Stream A
+dropˢ zero    s = s
+dropˢ (suc n) s = dropˢ n (tailˢ s)
+
+-- "every other" function
+
+eoᵏ : Stream A → gStream k A
+eoᵏ = fix (λ eo▹ s → consᵏ (headˢ s) λ α → eo▹ α (tailˢ (tailˢ s)))
+
+eo : Stream A → Stream A
+eo s k = eoᵏ s
+
+-- diagonal function
+
+diagauxᵏ : (Stream A → Stream A) → gStream k (Stream A) → gStream k A
+diagauxᵏ = fix (λ d▹ f s → consᵏ ((headˢ ∘ f) (headᵏ s)) (d▹ ⊛ next (f ∘ tailˢ) ⊛ tail▹ᵏ s))
+
+diagᵏ : gStream k (Stream A) → gStream k A
+diagᵏ = diagauxᵏ id
+
+diag : Stream (Stream A) → Stream A
+diag x k = diagᵏ (x k)
+
+-- natural numbers
+
 natsᵏ-body : ▹ k (gStream k ℕ) → gStream k ℕ
 natsᵏ-body nats▹ = consᵏ 0 (λ α → mapᵏ suc (nats▹ α))
 
@@ -145,11 +213,7 @@ nats-tailˢ = fun-ext λ k →
 nats-1 : headˢ (tailˢ natsˢ) ＝ 1
 nats-1 = ap headˢ nats-tailˢ
 
-zipWithᵏ : (f : A → B → C) → gStream k A → gStream k B → gStream k C
-zipWithᵏ f = fix (λ zw▹ sa sb → consᵏ (f (headᵏ sa) (headᵏ sb)) (zw▹ ⊛ tail▹ᵏ sa ⊛ tail▹ᵏ sb))
-
-zipWithˢ : (f : A → B → C) → Stream A → Stream B → Stream C
-zipWithˢ f sa sb k = zipWithᵏ f (sa k) (sb k)
+-- Fibonacci numbers
 
 fibᵏ : gStream k ℕ
 fibᵏ = fix λ fib▹ → consᵏ 0 (▹map (λ s → consᵏ 1 (▹map (zipWithᵏ _+_ s) (tail▹ᵏ s))) fib▹)
@@ -157,8 +221,7 @@ fibᵏ = fix λ fib▹ → consᵏ 0 (▹map (λ s → consᵏ 1 (▹map (zipWit
 fibˢ : Stream ℕ
 fibˢ k = fibᵏ
 
-scanl1ᵏ : (f : A → A → A) → gStream k A → gStream k A
-scanl1ᵏ f = fix λ sc▹ s → consᵏ (headᵏ s) (▹map (mapᵏ (f (headᵏ s))) (sc▹ ⊛ tail▹ᵏ s))
+-- prime numbers
 
 primesᵏ : gStream k ℕ
 primesᵏ = fix λ pr▹ → consᵏ 2 (▹map (mapᵏ suc) (▹map (scanl1ᵏ _·_) pr▹))
@@ -166,31 +229,7 @@ primesᵏ = fix λ pr▹ → consᵏ 2 (▹map (mapᵏ suc) (▹map (scanl1ᵏ _
 primesˢ : Stream ℕ
 primesˢ k = primesᵏ
 
-nthˢ : ℕ → Stream A → A
-nthˢ  zero   s = headˢ s
-nthˢ (suc n) s = nthˢ n (tailˢ s)
-
-takeˢ : ℕ → Stream A → List A
-takeˢ  zero   s = []
-takeˢ (suc n) s = headˢ s ∷ takeˢ n (tailˢ s)
-
-eoᵏ : Stream A → gStream k A
-eoᵏ = fix (λ eo▹ s → consᵏ (headˢ s) λ α → eo▹ α (tailˢ (tailˢ s)))
-
-eo : Stream A → Stream A
-eo s k = eoᵏ s
-
-iterateᵏ : ▹ k (A → A) → A → gStream k A
-iterateᵏ f = fix λ i▹ a → consᵏ a (i▹ ⊛ (f ⊛ next a))
-
-iterateˢ : (A → A) → A → Stream A
-iterateˢ f a k = iterateᵏ (next f) a
-
-interleaveᵏ : gStream k A → ▹ k (gStream k A) → gStream k A
-interleaveᵏ = fix λ i▹ s t▹ → consᵏ (headᵏ s) (i▹ ⊛ t▹ ⊛ next (tail▹ᵏ s))
-
-interleaveˢ : Stream A → Stream A → Stream A
-interleaveˢ s t k = interleaveᵏ (s k) (next (t k))
+-- paperfolding / dragon curve sequence
 
 toggleᵏ : gStream k ℕ
 toggleᵏ = fix λ t▹ → consᵏ 1 (next (consᵏ 0 t▹))
