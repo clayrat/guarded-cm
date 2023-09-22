@@ -12,6 +12,8 @@ private variable
   A B : 𝒰
   k : Cl
 
+-- f t f t t f t t t f t t t t f ...
+
 fbᵏ : gConat k → gConat k → gStream k Bool
 fbᵏ = fix λ fb▹ → λ where
   coze     m → cons false (fb▹ ⊛ next m ⊛ next (cosu (next m)))
