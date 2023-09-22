@@ -111,6 +111,17 @@ mapˢ-head f s = refl
 mapˢ-repeat : (a : A) → (f : A → B) → mapˢ f (repeatˢ a) ＝ repeatˢ (f a)
 mapˢ-repeat a f = fun-ext (λ k → mapᵏ-repeat a f)
 
+-- folding
+
+foldrᵏ-body : (A → ▹ k B → B) → ▹ k (gStream k A → B) → gStream k A → B
+foldrᵏ-body f f▹ s = f (headᵏ s) (f▹ ⊛ tail▹ᵏ s)
+
+foldrᵏ : (A → ▹ k B → B) → gStream k A → B
+foldrᵏ f = fix (foldrᵏ-body f)
+
+scanl1ᵏ : (A → A → A) → gStream k A → gStream k A
+scanl1ᵏ f = fix λ sc▹ s → cons (headᵏ s) (▹map (mapᵏ (f (headᵏ s))) (sc▹ ⊛ tail▹ᵏ s))
+
 -- iterate
 
 iterateᵏ : ▹ k (A → A) → A → gStream k A
@@ -134,11 +145,6 @@ zipWithᵏ f = fix (λ zw▹ sa sb → cons (f (headᵏ sa) (headᵏ sb)) (zw▹
 
 zipWithˢ : (A → B → C) → Stream A → Stream B → Stream C
 zipWithˢ f sa sb k = zipWithᵏ f (sa k) (sb k)
-
--- folding
-
-scanl1ᵏ : (A → A → A) → gStream k A → gStream k A
-scanl1ᵏ f = fix λ sc▹ s → cons (headᵏ s) (▹map (mapᵏ (f (headᵏ s))) (sc▹ ⊛ tail▹ᵏ s))
 
 -- indexing
 

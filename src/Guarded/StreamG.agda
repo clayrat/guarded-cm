@@ -23,11 +23,15 @@ tail▹ˢ (cons x xs) = xs
 uncons-eq : (s : Stream A) → s ＝ cons (headˢ s) (tail▹ˢ s)
 uncons-eq (cons x xs) = refl
 
+-- repeat
+
 repeatˢ : A → Stream A
 repeatˢ a = fix (cons a)
 
 repeatˢ-eq : (a : A) → repeatˢ a ＝ cons a (λ α → repeatˢ a)
 repeatˢ-eq a = ap (cons a) (pfix (cons a))
+
+-- map
 
 mapˢ-body : (A → B) → ▹ (Stream A → Stream B) → Stream A → Stream B
 mapˢ-body f map▹ as = cons (f (headˢ as)) λ α → map▹ α (tail▹ˢ as α)
@@ -65,29 +69,51 @@ mapˢ-repeat a f = fix λ prf▹ →
   repeatˢ (f a)
     ∎
 
+-- folding
+
+foldrˢ-body : (A → ▹ B → B) → ▹ (Stream A → B) → Stream A → B
+foldrˢ-body f f▹ s = f (headˢ s) (f▹ ⊛ tail▹ˢ s)
+
+foldrˢ : (A → ▹ B → B) → Stream A → B
+foldrˢ f = fix (foldrˢ-body f)
+
+scanl1ˢ : (f : A → A → A) → Stream A → Stream A
+scanl1ˢ f = fix λ sc▹ s → cons (headˢ s) (▹map (mapˢ (f (headˢ s))) (sc▹ ⊛ tail▹ˢ s))
+
+-- iterate
+
+iterateˢ : ▹ (A → A) → A → Stream A
+iterateˢ f = fix λ i▹ a → cons a (i▹ ⊛ (f ⊛ next a))
+
+-- interleave
+
+interleaveˢ : Stream A → ▹ Stream A → Stream A
+interleaveˢ = fix λ i▹ s t▹ → cons (headˢ s) (i▹ ⊛ t▹ ⊛ next (tail▹ˢ s))
+
+-- zipping
+
+zipWithˢ : (f : A → B → C) → Stream A → Stream B → Stream C
+zipWithˢ f = fix (λ zw▹ sa sb → cons (f (headˢ sa) (headˢ sb)) (zw▹ ⊛ tail▹ˢ sa ⊛ tail▹ˢ sb))
+
+-- natural numbers
+
 natsˢ : Stream ℕ
 natsˢ = fix (λ nats▹ → cons 0 (λ α → mapˢ suc (nats▹ α)))
 
 natsˢ-tail : tail▹ˢ natsˢ ＝ next (mapˢ suc natsˢ)
 natsˢ-tail = ap tail▹ˢ (fix-path (λ nats▹ → cons 0 (λ α → mapˢ suc (nats▹ α))))
 
-zipWithˢ : (f : A → B → C) → Stream A → Stream B → Stream C
-zipWithˢ f = fix (λ zw▹ sa sb → cons (f (headˢ sa) (headˢ sb)) (zw▹ ⊛ tail▹ˢ sa ⊛ tail▹ˢ sb))
+-- Fibonacci numbers
 
 fibˢ : Stream ℕ
 fibˢ = fix λ fib▹ → cons 0 (▹map (λ s → cons 1 (▹map (zipWithˢ _+_ s) (tail▹ˢ s))) fib▹)
 
-scanl1ˢ : (f : A → A → A) → Stream A → Stream A
-scanl1ˢ f = fix λ sc▹ s → cons (headˢ s) (▹map (mapˢ (f (headˢ s))) (sc▹ ⊛ tail▹ˢ s))
+-- prime numbers
 
 primesˢ : Stream ℕ
 primesˢ = fix λ pr▹ → cons 2 (▹map (mapˢ suc) (▹map (scanl1ˢ _·_) pr▹))
 
-iterateˢ : ▹ (A → A) → A → Stream A
-iterateˢ f = fix λ i▹ a → cons a (i▹ ⊛ (f ⊛ next a))
-
-interleaveˢ : Stream A → ▹ Stream A → Stream A
-interleaveˢ = fix λ i▹ s t▹ → cons (headˢ s) (i▹ ⊛ t▹ ⊛ next (tail▹ˢ s))
+-- paperfolding / dragon curve sequence
 
 toggleˢ : Stream ℕ
 toggleˢ = fix λ t▹ → cons 1 (next (cons 0 t▹))
