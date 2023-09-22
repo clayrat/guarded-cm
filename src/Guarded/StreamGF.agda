@@ -3,6 +3,7 @@ module Guarded.StreamGF where
 
 open import Prelude
 open import Foundations.Transport
+open import Data.Bool
 open import Data.Nat
 open import Data.List
 open import LaterG
@@ -48,7 +49,7 @@ repeatˢ-eq a = ap (consˢ a) (pfix (consˢ a))
 -- map
 
 mapˢ-body : (A → B) → ▹ (Stream A → Stream B) → Stream A → Stream B
-mapˢ-body f map▹ as = consˢ (f (headˢ as)) λ α → map▹ α (tail▹ˢ as α)
+mapˢ-body f m▹ as = consˢ (f (headˢ as)) λ α → m▹ α (tail▹ˢ as α)
 
 mapˢ : (A → B) → Stream A → Stream B
 mapˢ f = fix (mapˢ-body f)
@@ -94,10 +95,10 @@ foldrˢ-body f f▹ s = f (headˢ s) (f▹ ⊛ tail▹ˢ s)
 foldrˢ : (A → ▹ B → B) → Stream A → B
 foldrˢ f = fix (foldrˢ-body f)
 
-scanl1ˢ-body : {A : 𝒰} → (A → A → A) → ▹ (Stream A → Stream A) → Stream A → Stream A
+scanl1ˢ-body : (A → A → A) → ▹ (Stream A → Stream A) → Stream A → Stream A
 scanl1ˢ-body f sc▹ s = consˢ (headˢ s) (▹map (mapˢ (f (headˢ s))) (sc▹ ⊛ tail▹ˢ s))
 
-scanl1ˢ : {A : 𝒰} → (A → A → A) → Stream A → Stream A
+scanl1ˢ : (A → A → A) → Stream A → Stream A
 scanl1ˢ f = fix (scanl1ˢ-body f)
 
 -- iterate
@@ -112,16 +113,16 @@ interleaveˢ = fix λ i▹ s t▹ → consˢ (headˢ s) (i▹ ⊛ t▹ ⊛ next 
 
 -- zipping
 
-zipWithˢ-body : (f : A → B → C) → ▹ (Stream A → Stream B → Stream C) → Stream A → Stream B → Stream C
+zipWithˢ-body : (A → B → C) → ▹ (Stream A → Stream B → Stream C) → Stream A → Stream B → Stream C
 zipWithˢ-body f zw▹ sa sb = consˢ (f (headˢ sa) (headˢ sb)) (zw▹ ⊛ tail▹ˢ sa ⊛ tail▹ˢ sb)
 
-zipWithˢ : (f : A → B → C) → Stream A → Stream B → Stream C
+zipWithˢ : (A → B → C) → Stream A → Stream B → Stream C
 zipWithˢ f = fix (zipWithˢ-body f)
 
 -- natural numbers
 
 natsˢ-body : ▹ Stream ℕ → Stream ℕ
-natsˢ-body nats▹ = consˢ 0 (λ α → mapˢ suc (nats▹ α))
+natsˢ-body nats▹ = consˢ 0 (▹map (mapˢ suc) nats▹)
 
 natsˢ : Stream ℕ
 natsˢ = fix natsˢ-body
@@ -149,8 +150,29 @@ primesˢ = fix primesˢ-body
 
 -- paperfolding / dragon curve sequence
 
-toggleˢ : Stream ℕ
-toggleˢ = fix λ t▹ → consˢ 1 (next (consˢ 0 t▹))
+toggleˢ : Stream Bool
+toggleˢ = fix λ t▹ → consˢ true (next (consˢ false t▹))
 
-paperfoldsˢ : Stream ℕ
+paperfoldsˢ : Stream Bool
 paperfoldsˢ = fix (interleaveˢ toggleˢ)
+
+-- Thue-Morse sequence
+
+hˢ-body : ▹ (Stream Bool → Stream Bool) → Stream Bool → Stream Bool
+hˢ-body h▹ s with (headˢ s)
+... | false = consˢ false (next (consˢ true  (h▹ ⊛ tail▹ˢ s)))
+... | true  = consˢ true  (next (consˢ false (h▹ ⊛ tail▹ˢ s)))
+
+hˢ : Stream Bool → Stream Bool
+hˢ = fix hˢ-body
+
+thuemorseˢ : Stream Bool
+thuemorseˢ = fix λ t▹ → consˢ false (▹map (λ tm → consˢ true (▹map hˢ (tail▹ˢ (hˢ tm)))) t▹)
+
+-- Pascal coefficients
+
+pascal-nextˢ : Stream ℕ → Stream ℕ
+pascal-nextˢ xs = fix λ p▹ → consˢ 1 (next (zipWithˢ _+_) ⊛ tail▹ˢ xs ⊛ p▹)
+
+pascalˢ : Stream (Stream ℕ)
+pascalˢ = fix λ p▹ → consˢ (repeatˢ 1) (▹map (mapˢ pascal-nextˢ) p▹)

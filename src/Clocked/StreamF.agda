@@ -3,6 +3,7 @@ module Clocked.StreamF where
 
 open import Prelude
 open import Foundations.Transport
+open import Data.Bool
 open import Data.Nat
 open import Data.List
 open import Later
@@ -79,7 +80,7 @@ repeatˢ-eq a = fun-ext λ k → repeatᵏ-eq a
 -- map
 
 mapᵏ-body : (A → B) → ▹ k (gStream k A → gStream k B) → gStream k A → gStream k B
-mapᵏ-body f map▹ as = consᵏ (f (headᵏ as)) λ α → map▹ α (tail▹ᵏ as α)
+mapᵏ-body f m▹ as = consᵏ (f (headᵏ as)) λ α → m▹ α (tail▹ᵏ as α)
 
 mapᵏ : (A → B) → gStream k A → gStream k B
 mapᵏ f = fix (mapᵏ-body f)
@@ -192,7 +193,7 @@ diag x k = diagᵏ (x k)
 -- natural numbers
 
 natsᵏ-body : ▹ k (gStream k ℕ) → gStream k ℕ
-natsᵏ-body nats▹ = consᵏ 0 (λ α → mapᵏ suc (nats▹ α))
+natsᵏ-body nats▹ = consᵏ 0 (▹map (mapᵏ suc) nats▹)
 
 natsᵏ : gStream k ℕ
 natsᵏ = fix natsᵏ-body
@@ -237,14 +238,44 @@ primesˢ k = primesᵏ
 
 -- paperfolding / dragon curve sequence
 
-toggleᵏ : gStream k ℕ
-toggleᵏ = fix λ t▹ → consᵏ 1 (next (consᵏ 0 t▹))
+toggleᵏ : gStream k Bool
+toggleᵏ = fix λ t▹ → consᵏ true (next (consᵏ false t▹))
 
-toggleˢ : Stream ℕ
+toggleˢ : Stream Bool
 toggleˢ k = toggleᵏ
 
-paperfoldsᵏ : gStream k ℕ
+paperfoldsᵏ : gStream k Bool
 paperfoldsᵏ = fix (interleaveᵏ toggleᵏ)
 
-paperfoldsˢ : Stream ℕ
+paperfoldsˢ : Stream Bool
 paperfoldsˢ k = paperfoldsᵏ
+
+-- Thue-Morse sequence
+
+hᵏ-body : ▹ k (gStream k Bool → gStream k Bool) → gStream k Bool → gStream k Bool
+hᵏ-body h▹ s with (headᵏ s)
+... | false = consᵏ false (next (consᵏ true  (h▹ ⊛ tail▹ᵏ s)))
+... | true  = consᵏ true  (next (consᵏ false (h▹ ⊛ tail▹ᵏ s)))
+
+hᵏ : gStream k Bool → gStream k Bool
+hᵏ = fix hᵏ-body
+
+thuemorseᵏ : gStream k Bool
+thuemorseᵏ = fix λ t▹ → consᵏ false (▹map (λ tm → consᵏ true (▹map hᵏ (tail▹ᵏ (hᵏ tm)))) t▹)
+
+thuemorseˢ : Stream Bool
+thuemorseˢ k = thuemorseᵏ
+
+-- Pascal coefficients
+
+pascal-nextᵏ : gStream k ℕ → gStream k ℕ
+pascal-nextᵏ xs = fix λ p▹ → consᵏ 1 (next (zipWithᵏ _+_) ⊛ tail▹ᵏ xs ⊛ p▹)
+
+pascal-nextˢ : Stream ℕ → Stream ℕ
+pascal-nextˢ s k = pascal-nextᵏ (s k)
+
+pascalᵏ : gStream k (Stream ℕ)
+pascalᵏ = fix λ p▹ → consᵏ (repeatˢ 1) (▹map (mapᵏ pascal-nextˢ) p▹)
+
+pascalˢ : Stream (Stream ℕ)
+pascalˢ k = pascalᵏ

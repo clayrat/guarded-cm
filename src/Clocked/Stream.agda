@@ -2,6 +2,7 @@
 module Clocked.Stream where
 
 open import Prelude
+open import Data.Bool
 open import Data.Nat
 open import Data.List
 open import Later
@@ -61,7 +62,7 @@ repeatˢ-eq a = fun-ext λ k → repeatᵏ-eq a
 -- map
 
 mapᵏ-body : (A → B) → ▹ k (gStream k A → gStream k B) → gStream k A → gStream k B
-mapᵏ-body f map▹ as = cons (f (headᵏ as)) λ α → map▹ α (tail▹ᵏ as α)
+mapᵏ-body f m▹ as = cons (f (headᵏ as)) λ α → m▹ α (tail▹ᵏ as α)
 
 mapᵏ : (A → B) → gStream k A → gStream k B
 mapᵏ f = fix (mapᵏ-body f)
@@ -70,8 +71,7 @@ mapᵏ-eq : (f : A → B) → (a : A) → (as▹ : ▹ k (gStream k A))
         → mapᵏ {k = k} f (cons a as▹) ＝ cons (f a) (λ α → mapᵏ f (as▹ α))
 mapᵏ-eq f a as▹ =
   ap (cons (f a))
-     (▹-ext (λ α → happly (pfix-ext (mapᵏ-body f) α)
-                          (as▹ α)))
+     (▹-ext (λ α → happly (pfix-ext (mapᵏ-body f) α) (as▹ α)))
 
 mapᵏ-head : (f : A → B) → (s : gStream k A)
           → headᵏ (mapᵏ {k = k} f s) ＝ f (headᵏ s)
@@ -163,7 +163,7 @@ dropˢ (suc n) s = dropˢ n (tailˢ s)
 -- "every other" function
 
 eoᵏ : Stream A → gStream k A
-eoᵏ = fix (λ eo▹ s → cons (headˢ s) λ α → eo▹ α (tailˢ (tailˢ s)))
+eoᵏ = fix λ eo▹ s → cons (headˢ s) λ α → eo▹ α (tailˢ (tailˢ s))
 
 eo : Stream A → Stream A
 eo s k = eoᵏ s
@@ -182,7 +182,7 @@ diag x k = diagᵏ (x k)
 -- natural numbers
 
 natsᵏ-body : ▹ k (gStream k ℕ) → gStream k ℕ
-natsᵏ-body nats▹ = cons 0 (λ α → mapᵏ suc (nats▹ α))
+natsᵏ-body nats▹ = cons 0 (▹map (mapᵏ suc) nats▹)
 
 natsᵏ : gStream k ℕ
 natsᵏ = fix natsᵏ-body
@@ -227,15 +227,44 @@ primesˢ k = primesᵏ
 
 -- paperfolding / dragon curve sequence
 
-toggleᵏ : gStream k ℕ
-toggleᵏ = fix λ t▹ → cons 1 (next (cons 0 t▹))
+toggleᵏ : gStream k Bool
+toggleᵏ = fix λ t▹ → cons true (next (cons false t▹))
 
-toggleˢ : Stream ℕ
+toggleˢ : Stream Bool
 toggleˢ k = toggleᵏ
 
-paperfoldsᵏ : gStream k ℕ
+paperfoldsᵏ : gStream k Bool
 paperfoldsᵏ = fix (interleaveᵏ toggleᵏ)
 
-paperfoldsˢ : Stream ℕ
+paperfoldsˢ : Stream Bool
 paperfoldsˢ k = paperfoldsᵏ
 
+-- Thue-Morse sequence
+
+hᵏ-body : ▹ k (gStream k Bool → gStream k Bool) → gStream k Bool → gStream k Bool
+hᵏ-body h▹ s with (headᵏ s)
+... | false = cons false (next (cons true  (h▹ ⊛ tail▹ᵏ s)))
+... | true  = cons true  (next (cons false (h▹ ⊛ tail▹ᵏ s)))
+
+hᵏ : gStream k Bool → gStream k Bool
+hᵏ = fix hᵏ-body
+
+thuemorseᵏ : gStream k Bool
+thuemorseᵏ = fix λ t▹ → cons false (▹map (λ tm → cons true (▹map hᵏ (tail▹ᵏ (hᵏ tm)))) t▹)
+
+thuemorseˢ : Stream Bool
+thuemorseˢ k = thuemorseᵏ
+
+-- Pascal coefficients
+
+pascal-nextᵏ : gStream k ℕ → gStream k ℕ
+pascal-nextᵏ xs = fix λ p▹ → cons 1 (next (zipWithᵏ _+_) ⊛ tail▹ᵏ xs ⊛ p▹)
+
+pascal-nextˢ : Stream ℕ → Stream ℕ
+pascal-nextˢ s k = pascal-nextᵏ (s k)
+
+pascalᵏ : gStream k (Stream ℕ)
+pascalᵏ = fix λ p▹ → cons (repeatˢ 1) (▹map (mapᵏ pascal-nextˢ) p▹)
+
+pascalˢ : Stream (Stream ℕ)
+pascalˢ k = pascalᵏ

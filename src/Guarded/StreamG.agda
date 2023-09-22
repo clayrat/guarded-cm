@@ -2,6 +2,7 @@
 module Guarded.StreamG where
 
 open import Prelude
+open import Data.Bool
 open import Data.Nat
 open import Data.List
 open import LaterG
@@ -34,7 +35,7 @@ repeatˢ-eq a = ap (cons a) (pfix (cons a))
 -- map
 
 mapˢ-body : (A → B) → ▹ (Stream A → Stream B) → Stream A → Stream B
-mapˢ-body f map▹ as = cons (f (headˢ as)) λ α → map▹ α (tail▹ˢ as α)
+mapˢ-body f m▹ as = cons (f (headˢ as)) λ α → m▹ α (tail▹ˢ as α)
 
 mapˢ : (A → B) → Stream A → Stream B
 mapˢ f = fix (mapˢ-body f)
@@ -43,8 +44,7 @@ mapˢ-eq : (f : A → B)
         → ∀ a as → mapˢ f (cons a as) ＝ cons (f a) (λ α → mapˢ f (as α))
 mapˢ-eq f a as =
   ap (cons (f a))
-     (▹-ext (λ α → happly (pfix-ext (mapˢ-body f) α)
-                          (as α)))
+     (▹-ext (λ α → happly (pfix-ext (mapˢ-body f) α) (as α)))
 
 mapˢ-head : (f : A → B) → (s : Stream A)
           → headˢ (mapˢ f s) ＝ f (headˢ s)
@@ -98,7 +98,7 @@ zipWithˢ f = fix (λ zw▹ sa sb → cons (f (headˢ sa) (headˢ sb)) (zw▹ �
 -- natural numbers
 
 natsˢ : Stream ℕ
-natsˢ = fix (λ nats▹ → cons 0 (λ α → mapˢ suc (nats▹ α)))
+natsˢ = fix (λ nats▹ → cons 0 (▹map (mapˢ suc) nats▹))
 
 natsˢ-tail : tail▹ˢ natsˢ ＝ next (mapˢ suc natsˢ)
 natsˢ-tail = ap tail▹ˢ (fix-path (λ nats▹ → cons 0 (λ α → mapˢ suc (nats▹ α))))
@@ -115,8 +115,29 @@ primesˢ = fix λ pr▹ → cons 2 (▹map (mapˢ suc) (▹map (scanl1ˢ _·_) p
 
 -- paperfolding / dragon curve sequence
 
-toggleˢ : Stream ℕ
-toggleˢ = fix λ t▹ → cons 1 (next (cons 0 t▹))
+toggleˢ : Stream Bool
+toggleˢ = fix λ t▹ → cons true (next (cons false t▹))
 
-paperfoldsˢ : Stream ℕ
+paperfoldsˢ : Stream Bool
 paperfoldsˢ = fix (interleaveˢ toggleˢ)
+
+-- Thue-Morse sequence
+
+hˢ-body : ▹ (Stream Bool → Stream Bool) → Stream Bool → Stream Bool
+hˢ-body h▹ s with (headˢ s)
+... | false = cons false (next (cons true  (h▹ ⊛ tail▹ˢ s)))
+... | true  = cons true  (next (cons false (h▹ ⊛ tail▹ˢ s)))
+
+hˢ : Stream Bool → Stream Bool
+hˢ = fix hˢ-body
+
+thuemorseˢ : Stream Bool
+thuemorseˢ = fix λ t▹ → cons false (▹map (λ tm → cons true (▹map hˢ (tail▹ˢ (hˢ tm)))) t▹)
+
+-- Pascal coefficients
+
+pascal-nextˢ : Stream ℕ → Stream ℕ
+pascal-nextˢ xs = fix λ p▹ → cons 1 (next (zipWithˢ _+_) ⊛ tail▹ˢ xs ⊛ p▹)
+
+pascalˢ : Stream (Stream ℕ)
+pascalˢ = fix λ p▹ → cons (repeatˢ 1) (▹map (mapˢ pascal-nextˢ) p▹)
