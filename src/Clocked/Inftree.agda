@@ -43,7 +43,7 @@ bftauxᵏ-body : ▹ k (gColist k (gTree∞ k A) → gColist k A) → gColist k 
 bftauxᵏ-body b▹  cnil        = cnil
 bftauxᵏ-body b▹ (ccons x xs) =
   ccons (labelᵏ x)
-        (b▹ ⊛ (next (appendᵏ) ⊛ xs ⊛ (next ccons ⊛ sonl▹ᵏ x ⊛ next (next ccons ⊛ sonl▹ᵏ x ⊛ next (next cnil)))))
+        (b▹ ⊛ (next (appendᵏ) ⊛ xs ⊛ (next ccons ⊛ sonl▹ᵏ x ⊛ next (next ccons ⊛ sonr▹ᵏ x ⊛ next (next cnil)))))
 
 bftauxᵏ : gColist k (gTree∞ k A) → gColist k A
 bftauxᵏ = fix bftauxᵏ-body
