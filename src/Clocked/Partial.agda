@@ -6,7 +6,7 @@ open import Data.Bool
 open import Data.Maybe
 open import Data.Sum
 open import Later
-open import Clocked.Stream using (gStream ; cons ; Stream; mapˢ)
+open import Clocked.Stream using (gStream ; cons ; repeatᵏ ; Stream ; mapˢ ; nthˢ)
 
 private variable
   A B : 𝒰
@@ -40,42 +40,6 @@ apᵏ (later pf) (now a)    = later (λ α → apᵏ (pf α) (now a))
 apᵏ (later pf) (later pa) = later (λ α → later (λ α₁ → apᵏ (pf α) (pa α₁)))
 -- apᵏ pf pa = pf >>=ᵏ λ f → pa >>=ᵏ (now ∘ f)
 
-unfoldᵏ-body : (B → A ⊎ B) → ▹ k (B → gPart k A) → B → gPart k A
-unfoldᵏ-body f u▹ b with (f b)
-... | inl a  = now a
-... | inr b′ = later (u▹ ⊛ next b′)
-
-unfoldᵏ : (B → A ⊎ B) → B → gPart k A
-unfoldᵏ f = fix (unfoldᵏ-body f)
-
-try-moreᵏ : (ℕ → Maybe A) → gPart k A
-try-moreᵏ {A} f = unfoldᵏ try 0
-  where
-  try : ℕ → A ⊎ ℕ
-  try n with f n
-  ... | just a = inl a
-  ... | nothing = inr (suc n)
-
-minimizeᵏ : (ℕ → Bool) → gPart k ℕ
-minimizeᵏ test = try-moreᵏ (λ n → if test n then just n else nothing)
-
-raceᵏ-body : ▹ k (gPart k A → gPart k A → gPart k A) → gPart k A → gPart k A → gPart k A
-raceᵏ-body r▹ (now a)     _         = now a
-raceᵏ-body r▹ (later _)  (now a)    = now a
-raceᵏ-body r▹ (later p1) (later p2) = later (r▹ ⊛ p1 ⊛ p2)
-
-raceᵏ : gPart k A → gPart k A → gPart k A
-raceᵏ = fix raceᵏ-body
-
-raceωᵏ-body : ▹ k (gStream k (gPart k A) → gPart k A) → gStream k (gPart k A) → gPart k A
-raceωᵏ-body r▹ (cons p ps) = raceᵏ p (later (r▹ ⊛ ps))
-
-raceωᵏ : gStream k (gPart k A) → gPart k A
-raceωᵏ = fix raceωᵏ-body
-
-bothᵏ : gPart k A → gPart k B → gPart k (A × B)
-bothᵏ pa pb = apᵏ (mapᵏ (_,_) pa) pb
-
 Part : 𝒰 → 𝒰
 Part A = ∀ k → gPart k A
 
@@ -97,11 +61,60 @@ mapᵖ f p k = mapᵏ f (p k)
 apᵖ : Part (A → B) → Part A → Part B
 apᵖ pf p k = apᵏ (pf k) (p k)
 
+unfoldᵏ-body : (B → A ⊎ B) → ▹ k (B → gPart k A) → B → gPart k A
+unfoldᵏ-body f u▹ b with (f b)
+... | inl a  = now a
+... | inr b′ = later (u▹ ⊛ next b′)
+
+unfoldᵏ : (B → A ⊎ B) → B → gPart k A
+unfoldᵏ f = fix (unfoldᵏ-body f)
+
 unfoldᵖ : (B → A ⊎ B) → B → Part A
 unfoldᵖ f b k = unfoldᵏ f b
 
+to-streamᵏ-body : ▹ k (gPart k A → gStream k (Maybe A)) → gPart k A → gStream k (Maybe A)
+to-streamᵏ-body ts▹ (now a)    = repeatᵏ (just a)
+to-streamᵏ-body ts▹ (later p▹) = cons nothing (ts▹ ⊛ p▹)
+
+to-streamᵏ : gPart k A → gStream k (Maybe A)
+to-streamᵏ = fix to-streamᵏ-body
+
+to-streamᵖ : Part A → Stream (Maybe A)
+to-streamᵖ c k = to-streamᵏ (c k)
+
+timeout : Part A → ℕ → Maybe A
+timeout p n = nthˢ n (to-streamᵖ p)
+
+try-moreᵏ : (ℕ → Maybe A) → gPart k A
+try-moreᵏ {A} f = unfoldᵏ try 0
+  where
+  try : ℕ → A ⊎ ℕ
+  try n with f n
+  ... | just a = inl a
+  ... | nothing = inr (suc n)
+
+minimizeᵏ : (ℕ → Bool) → gPart k ℕ
+minimizeᵏ test = try-moreᵏ (λ n → if test n then just n else nothing)
+
 minimizeᵖ : (ℕ → Bool) → Part ℕ
 minimizeᵖ test k = minimizeᵏ test
+
+raceᵏ-body : ▹ k (gPart k A → gPart k A → gPart k A) → gPart k A → gPart k A → gPart k A
+raceᵏ-body r▹ (now a)     _         = now a
+raceᵏ-body r▹ (later _)  (now a)    = now a
+raceᵏ-body r▹ (later p1) (later p2) = later (r▹ ⊛ p1 ⊛ p2)
+
+raceᵏ : gPart k A → gPart k A → gPart k A
+raceᵏ = fix raceᵏ-body
+
+raceωᵏ-body : ▹ k (gStream k (gPart k A) → gPart k A) → gStream k (gPart k A) → gPart k A
+raceωᵏ-body r▹ (cons p ps) = raceᵏ p (later (r▹ ⊛ ps))
+
+raceωᵏ : gStream k (gPart k A) → gPart k A
+raceωᵏ = fix raceωᵏ-body
+
+bothᵏ : gPart k A → gPart k B → gPart k (A × B)
+bothᵏ pa pb = apᵏ (mapᵏ (_,_) pa) pb
 
 raceᵖ : Part A → Part A → Part A
 raceᵖ p1 p2 k = raceᵏ (p1 k) (p2 k)
