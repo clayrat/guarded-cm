@@ -106,7 +106,7 @@ natsˢ-tail = ap tail▹ˢ (fix-path (λ nats▹ → cons 0 (λ α → mapˢ suc
 -- Fibonacci numbers
 
 fibˢ : Stream ℕ
-fibˢ = fix λ fib▹ → cons 0 (▹map (λ s → cons 1 (▹map (zipWithˢ _+_ s) (tail▹ˢ s))) fib▹)
+fibˢ = fix $ cons 0 ∘ ▹map (λ s → cons 1 $ ▹map (zipWithˢ _+_ s) (tail▹ˢ s))
 
 -- prime numbers
 

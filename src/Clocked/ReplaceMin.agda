@@ -12,7 +12,8 @@ data Tree (A : 𝒰 ℓ) : 𝒰 ℓ where
   Leaf : A → Tree A
   Br   : Tree A → Tree A → Tree A
 
-feedback : {A : 𝒰 ℓ} {B : Cl → 𝒰 ℓ′} {k : Cl} → (▹ k A → B k × A) → B k
+feedback : {A : 𝒰 ℓ} {B : Cl → 𝒰 ℓ′} {k : Cl}
+         → (▹ k A → B k × A) → B k
 feedback f = fst (fix (f ∘ ▹map snd))
 
 replaceMinBody : Tree ℕ → {k : Cl} → ▹ k ℕ → ▹ k (Tree ℕ) × ℕ

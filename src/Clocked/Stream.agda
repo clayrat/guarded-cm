@@ -50,7 +50,7 @@ tail-consˢ a as = fun-ext (delay-force as)
 repeatᵏ : A → gStream k A
 repeatᵏ a = fix (cons a)
 
-repeatᵏ-eq : (a : A) → repeatᵏ {k = k} a ＝ cons a (λ α → repeatᵏ a)
+repeatᵏ-eq : (a : A) → repeatᵏ {k = k} a ＝ cons a (next $ repeatᵏ a)
 repeatᵏ-eq a = ap (cons a) (pfix (cons a))
 
 repeatˢ : A → Stream A
