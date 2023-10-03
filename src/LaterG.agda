@@ -8,8 +8,9 @@ open import Prim
 
 private
   variable
-    l : Level
-    A B : 𝒰 l
+    ℓ ℓ′ ℓ″ : Level
+    A : 𝒰 ℓ
+    B : A → 𝒰 ℓ′
 
 infixl 4 _⊛_
 
@@ -17,11 +18,16 @@ infixl 4 _⊛_
 postulate
   Tick : LockU
 
-▹_ : ∀ {l} → 𝒰 l → 𝒰 l
-▹_ A = (@tick x : Tick) -> A
+▹_ : 𝒰 ℓ → 𝒰 ℓ
+▹_ A = (@tick α : Tick) -> A
 
-▸_ : ∀ {l} → ▹ 𝒰 l → 𝒰 l
-▸ A = (@tick x : Tick) → A x
+▸_ : ▹ 𝒰 ℓ → 𝒰 ℓ
+▸ A▹ = (@tick α : Tick) → A▹ α
+
+▹-syntax : ▹ 𝒰 ℓ → 𝒰 ℓ
+▹-syntax A▹ = (@tick α : Tick) → A▹ α
+
+syntax ▹-syntax (λ α → e) = ▹[ α ] e
 
 next : A → ▹ A
 next x _ = x
@@ -29,11 +35,17 @@ next x _ = x
 ▸-next : ▸ (next A) ＝ ▹ A
 ▸-next = refl
 
-_⊛_ : ▹ (A → B) → ▹ A → ▹ B
-_⊛_ f x a = f a (x a)
+_⊛_ : ▹ ((a : A) → B a)
+     → (a : ▹ A) → ▹[ α ] B (a α)
+(f ⊛ x) α = f α (x α)
 
-▹map : (f : A → B) → ▹ A → ▹ B
+▹map : ((a : A) → B a)
+     → (a : ▹ A) → ▹[ α ] B (a α)
 ▹map f x α = f (x α)
+
+-- TODO simplified
+▹map² : {B C : 𝒰 ℓ} → (f : A → B → C) → ▹ A → ▹ B → ▹ C
+▹map² f x y α = f (x α) (y α)
 
 ▹-ext : ∀ {A : 𝒰} → {f g : ▹ A} → (▸ λ α → f α ＝ g α) → f ＝ g
 ▹-ext eq i α = eq α i
@@ -43,13 +55,13 @@ _⊛_ f x a = f a (x a)
 
 -- These will compute only on diamond ticks.
 postulate
-  dfix : ∀ {l} {A : 𝒰 l} → (▹ A → A) → ▹ A
-  pfix : ∀ {l} {A : 𝒰 l} (f : ▹ A → A) → dfix f ＝ λ _ → f (dfix f)
+  dfix : (▹ A → A) → ▹ A
+  pfix : (f : ▹ A → A) → dfix f ＝ λ _ → f (dfix f)
 
-pfix-ext : ∀ {l} {A : 𝒰 l} (f : ▹ A → A) → ▸ λ α → dfix f α ＝ f (dfix f)
+pfix-ext : (f : ▹ A → A) → ▸ λ α → dfix f α ＝ f (dfix f)
 pfix-ext f α i = pfix f i α
 
-fix : ∀ {l} {A : 𝒰 l} → (▹ A → A) → A
+fix : (▹ A → A) → A
 fix f = f (dfix f)
 
 fix-path : (f : ▹ A → A) → fix f ＝ f (next (fix f))
