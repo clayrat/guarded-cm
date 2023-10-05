@@ -62,7 +62,7 @@ repeatˢ-eq a = fun-ext λ k → repeatᵏ-eq a
 -- map
 
 mapᵏ-body : (A → B) → ▹ k (gStream k A → gStream k B) → gStream k A → gStream k B
-mapᵏ-body f m▹ as = cons (f (headᵏ as)) λ α → m▹ α (tail▹ᵏ as α)
+mapᵏ-body f m▹ as = cons (f (headᵏ as)) (m▹ ⊛ (tail▹ᵏ as))
 
 mapᵏ : (A → B) → gStream k A → gStream k B
 mapᵏ f = fix (mapᵏ-body f)
@@ -220,7 +220,7 @@ fibˢ k = fibᵏ
 -- prime numbers
 
 primesᵏ : gStream k ℕ
-primesᵏ = fix λ pr▹ → cons 2 (▹map (mapᵏ suc) (▹map (scanl1ᵏ _·_) pr▹))
+primesᵏ = fix λ pr▹ → cons 2 (▹map (mapᵏ suc ∘ scanl1ᵏ _·_) pr▹)
 
 primesˢ : Stream ℕ
 primesˢ k = primesᵏ

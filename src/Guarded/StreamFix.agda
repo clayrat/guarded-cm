@@ -49,7 +49,7 @@ repeatˢ-eq a = ap (consˢ a) (pfix (consˢ a))
 -- map
 
 mapˢ-body : (A → B) → ▹ (Stream A → Stream B) → Stream A → Stream B
-mapˢ-body f m▹ as = consˢ (f (headˢ as)) λ α → m▹ α (tail▹ˢ as α)
+mapˢ-body f m▹ as = consˢ (f (headˢ as)) (m▹ ⊛ (tail▹ˢ as))
 
 mapˢ : (A → B) → Stream A → Stream B
 mapˢ f = fix (mapˢ-body f)
@@ -143,7 +143,7 @@ fibˢ = fix fibˢ-body
 -- prime numbers
 
 primesˢ-body : ▹ Stream ℕ → Stream ℕ
-primesˢ-body pr▹ = consˢ 2 (▹map (mapˢ suc) (▹map (scanl1ˢ _·_) pr▹))
+primesˢ-body pr▹ = consˢ 2 (▹map (mapˢ suc ∘ scanl1ˢ _·_) pr▹)
 
 primesˢ : Stream ℕ
 primesˢ = fix primesˢ-body

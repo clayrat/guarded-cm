@@ -35,7 +35,7 @@ repeatˢ-eq a = ap (cons a) (pfix (cons a))
 -- map
 
 mapˢ-body : (A → B) → ▹ (Stream A → Stream B) → Stream A → Stream B
-mapˢ-body f m▹ as = cons (f (headˢ as)) λ α → m▹ α (tail▹ˢ as α)
+mapˢ-body f m▹ as = cons (f (headˢ as)) (m▹ ⊛ (tail▹ˢ as))
 
 mapˢ : (A → B) → Stream A → Stream B
 mapˢ f = fix (mapˢ-body f)
@@ -77,7 +77,7 @@ foldrˢ-body f f▹ s = f (headˢ s) (f▹ ⊛ tail▹ˢ s)
 foldrˢ : (A → ▹ B → B) → Stream A → B
 foldrˢ f = fix (foldrˢ-body f)
 
-scanl1ˢ : (f : A → A → A) → Stream A → Stream A
+scanl1ˢ : (A → A → A) → Stream A → Stream A
 scanl1ˢ f = fix λ sc▹ s → cons (headˢ s) (▹map (mapˢ (f (headˢ s))) (sc▹ ⊛ tail▹ˢ s))
 
 -- iterate
@@ -92,7 +92,7 @@ interleaveˢ = fix λ i▹ s t▹ → cons (headˢ s) (i▹ ⊛ t▹ ⊛ next (t
 
 -- zipping
 
-zipWithˢ : (f : A → B → C) → Stream A → Stream B → Stream C
+zipWithˢ : (A → B → C) → Stream A → Stream B → Stream C
 zipWithˢ f = fix (λ zw▹ sa sb → cons (f (headˢ sa) (headˢ sb)) (zw▹ ⊛ tail▹ˢ sa ⊛ tail▹ˢ sb))
 
 -- natural numbers
@@ -110,8 +110,9 @@ fibˢ = fix $ cons 0 ∘ ▹map (λ s → cons 1 $ ▹map (zipWithˢ _+_ s) (tai
 
 -- prime numbers
 
+-- TODO fuse
 primesˢ : Stream ℕ
-primesˢ = fix λ pr▹ → cons 2 (▹map (mapˢ suc) (▹map (scanl1ˢ _·_) pr▹))
+primesˢ = fix λ pr▹ → cons 2 (▹map (mapˢ suc ∘ scanl1ˢ _·_) pr▹)
 
 -- paperfolding / dragon curve sequence
 
