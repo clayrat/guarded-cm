@@ -13,7 +13,7 @@ private variable
 
 data Colist (A : 𝒰) : 𝒰 where
   cnil  : Colist A
-  ccons : (x : A) (xs : ▹ (Colist A)) → Colist A
+  ccons : A → ▹ (Colist A) → Colist A
 
 -- append
 
@@ -28,7 +28,7 @@ appendˡ = fix appendˡ-body
 
 mapˡ-body : (A → B) → ▹ (Colist A → Colist B) → Colist A → Colist B
 mapˡ-body f map▹  cnil         = cnil
-mapˡ-body f map▹ (ccons x xs▹) = ccons (f x) (λ α → map▹ α (xs▹ α))
+mapˡ-body f map▹ (ccons x xs▹) = ccons (f x) (map▹ ⊛ xs▹)
 
 mapˡ : (A → B) → Colist A → Colist B
 mapˡ f = fix (mapˡ-body f)

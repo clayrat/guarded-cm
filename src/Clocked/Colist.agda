@@ -14,7 +14,7 @@ private variable
 
 data gColist (k : Cl) (A : 𝒰) : 𝒰 where
   cnil  : gColist k A
-  ccons : (x : A) (xs : ▹ k (gColist k A)) → gColist k A
+  ccons : A → ▹ k (gColist k A) → gColist k A
 
 Colist : 𝒰 → 𝒰
 Colist A = ∀ k → gColist k A
@@ -35,7 +35,7 @@ appendˡ s t k = appendᵏ (s k) (t k)
 
 mapᵏ-body : (A → B) → ▹ k (gColist k A → gColist k B) → gColist k A → gColist k B
 mapᵏ-body f map▹  cnil         = cnil
-mapᵏ-body f map▹ (ccons x xs▹) = ccons (f x) (λ α → map▹ α (xs▹ α))
+mapᵏ-body f map▹ (ccons x xs▹) = ccons (f x) (map▹ ⊛ xs▹)
 
 mapᵏ : (A → B) → gColist k A → gColist k B
 mapᵏ f = fix (mapᵏ-body f)
