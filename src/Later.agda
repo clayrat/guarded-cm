@@ -1,4 +1,4 @@
-{-# OPTIONS --guarded  #-}
+{-# OPTIONS --guarded #-}
 
 module Later where
 
@@ -60,6 +60,9 @@ next x α = x
 
 ▸-next : ▸ k (next A) ＝ ▹ k A
 ▸-next = refl
+
+--next-inj : {x y : A} → next {k = k} x ＝ next y → ▹ k (x ＝ y)
+--next-inj eq α i = eq i α
 
 _⊛_ : ▹ k ((a : A) → B a)
   → (a : ▹ k A) → ▹[ α ∶ k ] B (a α)

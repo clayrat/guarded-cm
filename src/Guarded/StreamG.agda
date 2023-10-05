@@ -1,4 +1,4 @@
-{-# OPTIONS --cubical --guarded #-}
+{-# OPTIONS --guarded #-}
 module Guarded.StreamG where
 
 open import Prelude

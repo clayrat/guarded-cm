@@ -1,4 +1,4 @@
-{-# OPTIONS --cubical --guarded #-}
+{-# OPTIONS --guarded #-}
 module Clocked.ReplaceMin where
 
 open import Prelude

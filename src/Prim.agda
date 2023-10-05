@@ -1,4 +1,4 @@
-{-# OPTIONS --cubical --guarded #-}
+{-# OPTIONS --guarded #-}
 module Prim where
 
 open import Prelude

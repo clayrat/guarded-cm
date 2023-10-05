@@ -1,4 +1,4 @@
-{-# OPTIONS --cubical --guarded #-}
+{-# OPTIONS --guarded #-}
 module Clocked.Partial where
 
 open import Prelude

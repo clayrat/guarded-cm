@@ -1,4 +1,4 @@
-{-# OPTIONS --cubical --guarded #-}
+{-# OPTIONS --guarded #-}
 module Guarded.Bizzare where
 
 open import Prelude
@@ -10,7 +10,7 @@ private variable
   A : 𝒰
 
 -- non-trivial negative recursive type
-   
+
 {-
 data Bizzare : 𝒰 → 𝒰 where
   pt     : Bizzare A

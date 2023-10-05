@@ -1,4 +1,4 @@
-{-# OPTIONS --cubical --guarded #-}
+{-# OPTIONS --guarded #-}
 module LaterG where
 
 open import Agda.Primitive.Cubical using ( primHComp ; primComp )
