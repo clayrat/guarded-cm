@@ -1,5 +1,5 @@
 {-# OPTIONS --guarded #-}
-module Guarded.PartialG where
+module Guarded.Partial where
 
 open import Prelude
 open import Data.Bool

@@ -1,5 +1,5 @@
 {-# OPTIONS --guarded #-}
-module Guarded.StreamG where
+module Guarded.Stream where
 
 open import Prelude
 open import Data.Bool

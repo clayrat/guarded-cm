@@ -1,14 +1,13 @@
 {-# OPTIONS --guarded #-}
-module Clocked.Hofmann where
+module Guarded.Hofmann where
 
 open import Prelude
 open import Data.Sum
-open import Later
-open import Clocked.Colist
+open import LaterG
+open import Guarded.Colist
 
 private variable
   A : 𝒰
-  k : Cl
 
 -- can be extended to Tree∞
 
@@ -24,38 +23,38 @@ data Rou (A : 𝒰) : 𝒰 where
   nextR : ((▹ Rou A → ▹ Colist A) → Colist A) → Rou A
 -}
 
-Rou-next : 𝒰 → ▹ k 𝒰 → 𝒰
-Rou-next {k} A rou▹ = (▸ k rou▹ → ▹ k (gColist k A)) → gColist k A
+Rou-next : 𝒰 → ▹ 𝒰 → 𝒰
+Rou-next A rou▹ = (▸ rou▹ → ▹ (Colist A)) → Colist A
 
-Rou-body : 𝒰 → ▹ k 𝒰 → 𝒰
+Rou-body : 𝒰 → ▹ 𝒰 → 𝒰
 Rou-body A rou▹ = ⊤ ⊎ (Rou-next A rou▹)
 
-Rou : Cl → 𝒰 → 𝒰
-Rou k A = fix {k = k} (Rou-body A)
+Rou : 𝒰 → 𝒰
+Rou A = fix (Rou-body A)
 
-overR : Rou k A
+overR : Rou A
 overR = inl tt
 
-nextR : ((▹ k (Rou k A) → ▹ k (gColist k A)) → gColist k A) → Rou k A
-nextR {k} {A} f = inr (subst (Rou-next A) (sym $ pfix (Rou-body A)) f)
+nextR : ((▹ (Rou A) → ▹ (Colist A)) → Colist A) → Rou A
+nextR {A} f = inr (subst (Rou-next A) (sym $ pfix (Rou-body A)) f)
 
-nextR-roll : Rou-next A (dfix (Rou-body A)) → ((▹ k (Rou k A) → ▹ k (gColist k A)) → gColist k A)
+nextR-roll : Rou-next A (dfix (Rou-body A)) → ((▹ Rou A → ▹ Colist A) → Colist A)
 nextR-roll {A} = subst (Rou-next A) (pfix (Rou-body A))
 
 -- the algorithm
 
-unfold : Rou k A → (▹ k (Rou k A) → ▹ k (gColist k A)) → ▹ k (gColist k A)
+unfold : Rou A → (▹ (Rou A) → ▹ (Colist A)) → ▹ (Colist A)
 unfold     (inl tt) kf = kf (next overR)
 unfold {A} (inr f)  kf = next (nextR-roll f kf)
 
-br : Tree A → Rou k A → Rou k A
+br : Tree A → Rou A → Rou A
 br (Leaf a)   c = nextR (λ kf → ccons a (unfold c  kf))
 br (Br l a r) c = nextR (λ kf → ccons a (unfold c (kf ∘ ▹map (br l ∘ br r))))
 
-ex : Rou k A → gColist k A
-ex {k} {A} = fix {k = k} λ ex▹ → λ where
+ex : Rou A → Colist A
+ex {A} = fix λ ex▹ → λ where
   (inl tt) → cnil
   (inr f)  → nextR-roll f (ex▹ ⊛_)
 
 breadthfirst : Tree A → Colist A
-breadthfirst t k = ex {k = k} (br t overR)
+breadthfirst t = ex $ br t overR

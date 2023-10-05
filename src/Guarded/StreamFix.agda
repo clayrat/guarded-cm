@@ -1,5 +1,5 @@
 {-# OPTIONS --guarded #-}
-module Guarded.StreamGF where
+module Guarded.StreamFix where
 
 open import Prelude
 open import Foundations.Transport

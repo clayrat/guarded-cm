@@ -1,5 +1,5 @@
 {-# OPTIONS --guarded #-}
-module Clocked.StreamF where
+module Clocked.StreamFix where
 
 open import Prelude
 open import Foundations.Transport

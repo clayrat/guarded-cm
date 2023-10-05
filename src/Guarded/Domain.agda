@@ -1,5 +1,5 @@
 {-# OPTIONS --guarded #-}
-module Guarded.DomainG where
+module Guarded.Domain where
 
 open import Prelude
 open import LaterG
