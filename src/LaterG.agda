@@ -43,6 +43,14 @@ _⊛_ : ▹ ((a : A) → B a)
      → (a : ▹ A) → ▹[ α ] B (a α)
 ▹map f x α = f (x α)
 
+▹map-id : {x : ▹ A}
+        → ▹map id x ＝ x
+▹map-id = refl
+
+▹map-comp : {B C : 𝒰 ℓ} {f : A → B} {g : B -> C} {x : ▹ A}
+          → ▹map g (▹map f x) ＝ ▹map (g ∘ f) x
+▹map-comp = refl
+
 -- TODO simplified
 ▹map² : {B C : 𝒰 ℓ} → (f : A → B → C) → ▹ A → ▹ B → ▹ C
 ▹map² f x y α = f (x α) (y α)

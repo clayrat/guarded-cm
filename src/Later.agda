@@ -72,6 +72,14 @@ _⊛_ : ▹ k ((a : A) → B a)
   → (a : ▹ k A) → ▹[ α ∶ k ] B (a α)
 ▹map f x k = f (x k)
 
+▹map-id : {x : ▹ k A}
+        → ▹map id x ＝ x
+▹map-id = refl
+
+▹map-comp : {B C : 𝒰 ℓ} {f : A → B} {g : B -> C} {x : ▹ k A}
+          → ▹map g (▹map f x) ＝ ▹map (g ∘ f) x
+▹map-comp = refl
+
 Σ▹
   : Σ[ x ꞉ ▹ k A ] (▹[ α ∶ k ] B (x α))
   → ▹ k (Σ[ a ꞉ A ] B a)
