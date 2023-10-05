@@ -1,0 +1,21 @@
+resolver: lts-20.1
+packages:
+  - .
+
+extra-deps:
+  - hashable-1.3.5.0
+  - rest-rewrite-0.4.0
+  - git: https://github.com/ucsd-progsys/liquidhaskell.git
+    commit: 2ead75f10a7dc664186828a6299e99f26042e754
+    subdirs:
+      - .
+      - liquid-base
+      - liquid-containers
+      - liquid-ghc-prim
+      - liquid-prelude
+  - git: https://github.com/ucsd-progsys/liquid-fixpoint.git
+    commit: 11a773a08e66cea13d8ddbf203ca32bd5cea97b2
+#- unordered-containers-0.2.19.1@sha256:db11042bb0356c0adea277d0794743829125b4c99455af6af2bd5f7bd5e88a39,3797
+allow-newer: true
+nix:
+  packages: ["z3"]
