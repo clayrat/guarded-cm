@@ -172,7 +172,7 @@ thuemorseˢ = fix λ t▹ → consˢ false (▹map (λ tm → consˢ true (▹ma
 -- Pascal coefficients
 
 pascal-nextˢ : Stream ℕ → Stream ℕ
-pascal-nextˢ xs = fix λ p▹ → consˢ 1 (next (zipWithˢ _+_) ⊛ tail▹ˢ xs ⊛ p▹)
+pascal-nextˢ xs = fix λ p▹ → consˢ 1 (▹map (zipWithˢ _+_) (tail▹ˢ xs) ⊛ p▹)
 
 pascalˢ : Stream (Stream ℕ)
 pascalˢ = fix λ p▹ → consˢ (repeatˢ 1) (▹map (mapˢ pascal-nextˢ) p▹)

@@ -269,7 +269,7 @@ thuemorseˢ k = thuemorseᵏ
 -- Pascal coefficients
 
 pascal-nextᵏ : gStream k ℕ → gStream k ℕ
-pascal-nextᵏ xs = fix λ p▹ → consᵏ 1 (next (zipWithᵏ _+_) ⊛ tail▹ᵏ xs ⊛ p▹)
+pascal-nextᵏ xs = fix λ p▹ → consᵏ 1 (▹map (zipWithᵏ _+_) (tail▹ᵏ xs) ⊛ p▹)
 
 pascal-nextˢ : Stream ℕ → Stream ℕ
 pascal-nextˢ s k = pascal-nextᵏ (s k)
