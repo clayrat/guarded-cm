@@ -14,7 +14,7 @@ private variable
 
 data Part (A : 𝒰) : 𝒰 where
   now   : A → Part A
-  later : ▹ (Part A) → Part A
+  later : ▹ Part A → Part A
 
 never : Part A
 never = fix later
@@ -28,14 +28,14 @@ later x >>=ᵖ f = later λ α → x α >>=ᵖ f
 
 mapᵖ : (A → B) → Part A → Part B
 mapᵖ f (now a)   = now (f a)
-mapᵖ f (later p) = later (λ α → mapᵖ f (p α))
+mapᵖ f (later p) = later λ α → mapᵖ f (p α)
 -- mapᵖ f p = p >>=ᵖ (now ∘ f)
 
 apᵖ : Part (A → B) → Part A → Part B
 apᵖ (now f)    (now a)    = now (f a)
-apᵖ (now f)    (later pa) = later (λ α → apᵖ (now f) (pa α))
-apᵖ (later pf) (now a)    = later (λ α → apᵖ (pf α) (now a))
-apᵖ (later pf) (later pa) = later (λ α → later (λ α₁ → apᵖ (pf α) (pa α₁)))
+apᵖ (now f)    (later pa) = later λ α → apᵖ (now f) (pa α)
+apᵖ (later pf) (now a)    = later λ α → apᵖ (pf α) (now a)
+apᵖ (later pf) (later pa) = later λ α → later (λ α₁ → apᵖ (pf α) (pa α₁))
 -- apᵖ pf pa = pf >>=ᵖ λ f → pa >>=ᵖ (now ∘ f)
 
 map²ᵖ : (A → B → C) → Part A → Part B → Part C
@@ -58,7 +58,7 @@ try-moreᵖ {A} f = unfoldᵖ try 0
   ... | nothing = inr (suc n)
 
 minimizeᵖ : (ℕ → Bool) → Part ℕ
-minimizeᵖ test = try-moreᵖ (λ n → if test n then just n else nothing)
+minimizeᵖ test = try-moreᵖ λ n → if test n then just n else nothing
 
 raceᵖ-body : ▹ (Part A → Part A → Part A) → Part A → Part A → Part A
 raceᵖ-body r▹ (now a)     _         = now a
@@ -69,15 +69,15 @@ raceᵖ : Part A → Part A → Part A
 raceᵖ = fix raceᵖ-body
 
 bothᵖ : Part A → Part B → Part (A × B)
-bothᵖ pa pb = apᵖ (mapᵖ (_,_) pa) pb
+bothᵖ = map²ᵖ (_,_)
 
-Part▹-body : (A → ▹ B) → ▹ (Part A  → ▹ (Part B)) → Part A → ▹ (Part B)
+Part▹-body : (A → ▹ B) → ▹ (Part A  → ▹ Part B) → Part A → ▹ Part B
 Part▹-body f P▹ (now a)    = ▹map now (f a)
 Part▹-body f P▹ (later p▹) = ▹map later (P▹ ⊛ p▹)
 
-Part▹ : (A → ▹ B) → Part A → ▹ (Part B)
+Part▹ : (A → ▹ B) → Part A → ▹ Part B
 Part▹ f = fix (Part▹-body f)
 
 -- adds an extra step
-▹Part : ▹ (Part A) → Part (▹ A)
-▹Part x = later (▹map (mapᵖ next) x)
+▹Part+ : ▹ Part A → Part (▹ A)
+▹Part+ = later ∘ ▹map (mapᵖ next)
