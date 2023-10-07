@@ -21,13 +21,16 @@ gStream : Cl → 𝒰 → 𝒰
 gStream k A = fix (gStream-body k A)
 
 consᵏ : A → ▹ k (gStream k A) → gStream k A
-consᵏ {A} {k} x xs▹ = (x , subst (▸ k) (sym (pfix (gStream-body k A))) xs▹)
+consᵏ {A} {k} x xs▹ = (x , subst (▸ k) (sym $ pfix (gStream-body k A)) xs▹)
+
+unconsᵏ : gStream k A → A × ▹ k (gStream k A)
+unconsᵏ {k} {A} (x , xs▹) = x , subst (▸ k) (pfix (gStream-body k A)) xs▹
 
 headᵏ : gStream k A → A
-headᵏ (x , xs▹) = x
+headᵏ = fst ∘ unconsᵏ
 
 tail▹ᵏ : gStream k A → ▹ k (gStream k A)
-tail▹ᵏ {k} {A} (x , xs▹) = subst (▸ k) (pfix (gStream-body k A)) xs▹
+tail▹ᵏ = snd ∘ unconsᵏ
 
 uncons-eqᵏ : (s : gStream k A) → s ＝ consᵏ (headᵏ s) (tail▹ᵏ s)
 uncons-eqᵏ {k} {A} (a , as▹) =
@@ -96,6 +99,25 @@ mapᵏ-head : (f : A → B) → (s : gStream k A)
           → headᵏ (mapᵏ {k = k} f s) ＝ f (headᵏ s)
 mapᵏ-head f s = refl
 
+mapᵏ-fusion : (f : A → B) → (g : B → C) → (s : gStream k A)
+            → mapᵏ g (mapᵏ f s) ＝ mapᵏ (g ∘ f) s
+mapᵏ-fusion f g =
+  fix λ prf▹ s → let (a , as▹) = unconsᵏ s in
+    mapᵏ g (mapᵏ f s)
+      ＝⟨ ap (mapᵏ g ∘ mapᵏ f) (uncons-eqᵏ s) ⟩
+    mapᵏ g (mapᵏ f (consᵏ a as▹))
+      ＝⟨ ap (mapᵏ g) (mapᵏ-eq f a as▹) ⟩
+    mapᵏ g (consᵏ (f a) (▹map (mapᵏ f) as▹))
+      ＝⟨ mapᵏ-eq g (f a) (▹map (mapᵏ f) as▹) ⟩
+    consᵏ (g (f a)) (▹map (mapᵏ g) (▹map (mapᵏ f) as▹))
+      ＝⟨ ap (consᵏ (g (f a))) (▹-ext (prf▹ ⊛ as▹)) ⟩
+    consᵏ (g (f a)) (▹map (mapᵏ (g ∘ f)) as▹)
+      ＝⟨ sym (mapᵏ-eq (g ∘ f) a as▹) ⟩
+    mapᵏ (g ∘ f) (consᵏ a as▹)
+      ＝⟨ ap (mapᵏ (g ∘ f)) (sym $ uncons-eqᵏ s) ⟩
+    mapᵏ (g ∘ f) s
+      ∎
+
 mapᵏ-repeat : (a : A) → (f : A → B) → mapᵏ {k = k} f (repeatᵏ a) ＝ repeatᵏ (f a)
 mapᵏ-repeat a f = fix λ prf▹ →
   mapᵏ f (repeatᵏ a)
@@ -118,6 +140,10 @@ mapˢ-eq : (f : A → B)
         → (a : A) → (as : Stream A)
         → mapˢ f (consˢ a as) ＝ consˢ (f a) (mapˢ f as)
 mapˢ-eq f a as = fun-ext λ k → mapᵏ-eq f a (next (as k))
+
+mapˢ-fusion : (f : A → B) → (g : B → C) → (s : Stream A)
+            → mapˢ g (mapˢ f s) ＝ mapˢ (g ∘ f) s
+mapˢ-fusion f g s = fun-ext (mapᵏ-fusion f g ∘ s)
 
 mapˢ-repeat : (a : A) → (f : A → B) → mapˢ f (repeatˢ a) ＝ repeatˢ (f a)
 mapˢ-repeat a f = fun-ext (λ k → mapᵏ-repeat a f)

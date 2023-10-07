@@ -22,11 +22,14 @@ Stream A = fix (Stream-body A)
 consˢ : A → ▹ Stream A → Stream A
 consˢ {A} x xs▹ = (x , subst ▸_ (sym (pfix (Stream-body A))) xs▹)
 
+unconsˢ : Stream A → A × ▹ Stream A
+unconsˢ {A} (x , xs▹) = x , subst ▸_ (pfix (Stream-body A)) xs▹
+
 headˢ : Stream A → A
-headˢ (x , xs▹) = x
+headˢ = fst ∘ unconsˢ
 
 tail▹ˢ : Stream A → ▹ Stream A
-tail▹ˢ {A} (x , xs▹) = subst ▸_ (pfix (Stream-body A)) xs▹
+tail▹ˢ = snd ∘ unconsˢ
 
 uncons-eq : (s : Stream A) → s ＝ consˢ (headˢ s) (tail▹ˢ s)
 uncons-eq {A} (a , as▹) =
@@ -71,6 +74,25 @@ mapˢ-tail f s =
   ap (λ q → tail▹ˢ (mapˢ f q)) (uncons-eq s)
   ∙ ap tail▹ˢ (mapˢ-eq f (headˢ s) (tail▹ˢ s))
   ∙ tail-cons (f (headˢ s)) (▹map (mapˢ f) (tail▹ˢ s))
+
+mapˢ-fusion : (f : A → B) → (g : B → C) → (s : Stream A)
+            → mapˢ g (mapˢ f s) ＝ mapˢ (g ∘ f) s
+mapˢ-fusion f g =
+  fix λ prf▹ s → let (a , as▹) = unconsˢ s in
+    mapˢ g (mapˢ f s)
+      ＝⟨ ap (mapˢ g ∘ mapˢ f) (uncons-eq s) ⟩
+    mapˢ g (mapˢ f (consˢ a as▹))
+      ＝⟨ ap (mapˢ g) (mapˢ-eq f a as▹) ⟩
+    mapˢ g (consˢ (f a) (▹map (mapˢ f) as▹))
+      ＝⟨ mapˢ-eq g (f a) (▹map (mapˢ f) as▹) ⟩
+    consˢ (g (f a)) (▹map (mapˢ g) (▹map (mapˢ f) as▹))
+      ＝⟨ ap (consˢ (g (f a))) (▹-ext (prf▹ ⊛ as▹)) ⟩
+    consˢ (g (f a)) (▹map (mapˢ (g ∘ f)) as▹)
+      ＝⟨ sym (mapˢ-eq (g ∘ f) a as▹) ⟩
+    mapˢ (g ∘ f) (consˢ a as▹)
+      ＝⟨ ap (mapˢ (g ∘ f)) (sym $ uncons-eq s) ⟩
+    mapˢ (g ∘ f) s
+      ∎
 
 mapˢ-repeat : (a : A) → (f : A → B) → mapˢ f (repeatˢ a) ＝ repeatˢ (f a)
 mapˢ-repeat a f = fix λ prf▹ →

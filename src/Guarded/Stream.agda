@@ -41,10 +41,11 @@ mapˢ : (A → B) → Stream A → Stream B
 mapˢ f = fix (mapˢ-body f)
 
 mapˢ-eq : (f : A → B)
-        → ∀ a as → mapˢ f (cons a as) ＝ cons (f a) (λ α → mapˢ f (as α))
+        → ∀ a as▹
+        → mapˢ f (cons a as▹) ＝ cons (f a) (▹map (mapˢ f) as▹)
 mapˢ-eq f a as =
   ap (cons (f a))
-     (▹-ext (λ α → happly (pfix-ext (mapˢ-body f) α) (as α)))
+     (▹-ext λ α → happly (pfix-ext (mapˢ-body f) α) (as α))
 
 mapˢ-head : (f : A → B) → (s : Stream A)
           → headˢ (mapˢ f s) ＝ f (headˢ s)
@@ -53,6 +54,22 @@ mapˢ-head f s = refl
 mapˢ-tail : (f : A → B) → (s : Stream A)
           → tail▹ˢ (mapˢ f s) ＝ ▹map (mapˢ f) (tail▹ˢ s)
 mapˢ-tail f (cons a as▹) = ap tail▹ˢ (mapˢ-eq f a as▹)
+
+mapˢ-fusion : (f : A → B) → (g : B → C) → (s : Stream A)
+            → mapˢ g (mapˢ f s) ＝ mapˢ (g ∘ f) s
+mapˢ-fusion f g =
+  fix λ prf▹ → λ where
+    (cons a as▹) →
+      mapˢ g (mapˢ f (cons a as▹))
+        ＝⟨ ap (mapˢ g) (mapˢ-eq f a as▹) ⟩
+      mapˢ g (cons (f a) (▹map (mapˢ f) as▹))
+        ＝⟨ mapˢ-eq g (f a) (▹map (mapˢ f) as▹) ⟩
+      cons (g (f a)) (▹map (mapˢ g) (▹map (mapˢ f) as▹))
+        ＝⟨ ap (cons (g (f a))) (▹-ext (prf▹ ⊛ as▹)) ⟩
+      cons (g (f a)) (▹map (mapˢ (g ∘ f)) as▹)
+        ＝⟨ sym (mapˢ-eq (g ∘ f) a as▹) ⟩
+      mapˢ (g ∘ f) (cons a as▹)
+        ∎
 
 mapˢ-repeat : (a : A) → (f : A → B) → mapˢ f (repeatˢ a) ＝ repeatˢ (f a)
 mapˢ-repeat a f = fix λ prf▹ →
@@ -63,7 +80,7 @@ mapˢ-repeat a f = fix λ prf▹ →
   cons (f a) (λ α → mapˢ f (repeatˢ a))
     ＝⟨ ap (cons (f a)) (▹-ext prf▹) ⟩
   cons (f a) (λ α → repeatˢ (f a))
-    ＝⟨ ap (cons (f a)) (▹-ext λ α → sym (pfix-ext (cons (f a)) α)) ⟩
+    ＝⟨ ap (cons (f a)) (▹-ext λ α → sym $ pfix-ext (cons (f a)) α) ⟩
   cons (f a) (λ α → dfix (cons (f a)) α)
     ＝⟨⟩
   repeatˢ (f a)

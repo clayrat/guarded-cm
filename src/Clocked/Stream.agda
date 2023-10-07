@@ -81,6 +81,22 @@ mapᵏ-tail : (f : A → B) → (s : gStream k A)
           → tail▹ᵏ (mapᵏ {k = k} f s) ＝ ▹map (mapᵏ f) (tail▹ᵏ s)
 mapᵏ-tail f (cons a as▹) = ap tail▹ᵏ (mapᵏ-eq f a as▹)
 
+mapᵏ-fusion : (f : A → B) → (g : B → C) → (s : gStream k A)
+            → mapᵏ g (mapᵏ f s) ＝ mapᵏ (g ∘ f) s
+mapᵏ-fusion f g =
+  fix λ prf▹ → λ where
+    (cons a as▹) →
+      mapᵏ g (mapᵏ f (cons a as▹))
+        ＝⟨ ap (mapᵏ g) (mapᵏ-eq f a as▹) ⟩
+      mapᵏ g (cons (f a) (▹map (mapᵏ f) as▹))
+        ＝⟨ mapᵏ-eq g (f a) (▹map (mapᵏ f) as▹) ⟩
+      cons (g (f a)) (▹map (mapᵏ g) (▹map (mapᵏ f) as▹))
+        ＝⟨ ap (cons (g (f a))) (▹-ext (prf▹ ⊛ as▹)) ⟩
+      cons (g (f a)) (▹map (mapᵏ (g ∘ f)) as▹)
+        ＝⟨ sym (mapᵏ-eq (g ∘ f) a as▹) ⟩
+      mapᵏ (g ∘ f) (cons a as▹)
+        ∎
+
 mapᵏ-repeat : (a : A) → (f : A → B) → mapᵏ {k = k} f (repeatᵏ a) ＝ repeatᵏ (f a)
 mapᵏ-repeat a f = fix λ prf▹ →
   mapᵏ f (repeatᵏ a)
@@ -108,8 +124,12 @@ mapˢ-head : (f : A → B) → (s : Stream A)
           → headˢ (mapˢ f s) ＝ f (headˢ s)
 mapˢ-head f s = refl
 
+mapˢ-fusion : (f : A → B) → (g : B → C) → (s : Stream A)
+            → mapˢ g (mapˢ f s) ＝ mapˢ (g ∘ f) s
+mapˢ-fusion f g s = fun-ext (mapᵏ-fusion f g ∘ s)
+
 mapˢ-repeat : (a : A) → (f : A → B) → mapˢ f (repeatˢ a) ＝ repeatˢ (f a)
-mapˢ-repeat a f = fun-ext (λ k → mapᵏ-repeat a f)
+mapˢ-repeat a f = fun-ext λ k → mapᵏ-repeat a f
 
 -- folding
 
