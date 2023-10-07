@@ -10,7 +10,7 @@ open import LaterG
 private variable
   A B C : 𝒰
 
--- guarded partiality monad aka Lift aka Event
+-- guarded partiality monad aka Delay/Lift/Event
 
 data Part (A : 𝒰) : 𝒰 where
   now   : A → Part A
@@ -21,6 +21,10 @@ never = fix later
 
 stall : Part A → Part A
 stall = later ∘ next
+
+delay-by : ℕ → A → Part A
+delay-by  zero   a = now a
+delay-by (suc n) a = stall (delay-by n a)
 
 _>>=ᵖ_ : Part A → (A → Part B) → Part B
 now x   >>=ᵖ f = f x
@@ -49,6 +53,7 @@ unfoldᵖ-body f u▹ b with (f b)
 unfoldᵖ : (B → A ⊎ B) → B → Part A
 unfoldᵖ f = fix (unfoldᵖ-body f)
 
+-- try successive natural numbers until a `just` is obtained
 try-moreᵖ : (ℕ → Maybe A) → Part A
 try-moreᵖ {A} f = unfoldᵖ try 0
   where
