@@ -20,7 +20,7 @@ Stream : 𝒰 → 𝒰
 Stream A = fix (Stream-body A)
 
 consˢ : A → ▹ Stream A → Stream A
-consˢ {A} x xs▹ = (x , subst ▸_ (sym (pfix (Stream-body A))) xs▹)
+consˢ {A} x xs▹ = (x , subst ▸_ (sym $ pfix (Stream-body A)) xs▹)
 
 unconsˢ : Stream A → A × ▹ Stream A
 unconsˢ {A} (x , xs▹) = x , subst ▸_ (pfix (Stream-body A)) xs▹
@@ -108,6 +108,38 @@ mapˢ-repeat a f = fix λ prf▹ →
     ＝⟨⟩
   repeatˢ (f a)
     ∎
+
+-- lift a predicate to a stream
+
+PStr-body : (A → 𝒰) → ▹ (Stream A → 𝒰) → Stream A → 𝒰
+PStr-body P P▹ s = P (headˢ s) × ▸ (P▹ ⊛ (tail▹ˢ s))
+
+PStr : (A → 𝒰) → Stream A → 𝒰
+PStr P = fix (PStr-body P)
+
+Pcons : ∀ {a as▹} {P : A → 𝒰} → P a → ▹[ α ] (PStr P (as▹ α)) → PStr P (consˢ a as▹)
+Pcons {a} {as▹} {P} pa ps▹ =
+    pa
+  , (subst (λ q → ▸ (dfix (PStr-body P) ⊛ q)) (sym $ tail-cons a as▹) $
+     subst (λ q → ▸ (q ⊛ as▹)) (sym $ pfix (PStr-body P)) $
+     ps▹)
+
+P-match : ∀ {a as▹} {P : A → 𝒰} → PStr P (consˢ a as▹) → P a × ▹[ α ] (PStr P (as▹ α))
+P-match {a} {as▹} {P} (pa , ps▸) =
+    pa
+  , (subst (λ q → ▸ (q ⊛ as▹)) (pfix (PStr-body P)) $
+     subst (λ q → ▸ (dfix (PStr-body P) ⊛ q)) (tail-cons a as▹) $
+     ps▸)
+
+PStr-map : {P Q : A → 𝒰} {f : A → A}
+         → ({x : A} → P x → Q (f x))
+         → (s : Stream A) → PStr P s → PStr Q (mapˢ f s)
+PStr-map {P} {Q} {f} pq =
+  fix λ prf▹ s ps →
+    let pa , pas▹ = P-match (subst (PStr P) (uncons-eq s) ps) in
+    subst (PStr Q ∘ mapˢ f) (sym $ uncons-eq s) $
+    subst (PStr Q) (sym $ mapˢ-eq f (headˢ s) (tail▹ˢ s)) $
+    Pcons (pq pa) ((λ α → prf▹ α (tail▹ˢ s α) (pas▹ α)))
 
 -- folding
 

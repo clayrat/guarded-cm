@@ -14,7 +14,7 @@ private variable
 -- clocked streams
 
 data gStream (k : Cl) (A : 𝒰) : 𝒰 where
-  cons : (x : A) (xs : ▹ k (gStream k A)) → gStream k A
+  cons : A → ▹ k (gStream k A) → gStream k A
 
 headᵏ : gStream k A → A
 headᵏ (cons x xs) = x
@@ -68,7 +68,7 @@ mapᵏ : (A → B) → gStream k A → gStream k B
 mapᵏ f = fix (mapᵏ-body f)
 
 mapᵏ-eq : (f : A → B) → (a : A) → (as▹ : ▹ k (gStream k A))
-        → mapᵏ {k = k} f (cons a as▹) ＝ cons (f a) (λ α → mapᵏ f (as▹ α))
+        → mapᵏ {k = k} f (cons a as▹) ＝ cons (f a) (▹map (mapᵏ f) as▹)
 mapᵏ-eq f a as▹ =
   ap (cons (f a))
      (▹-ext (λ α → happly (pfix-ext (mapᵏ-body f) α) (as▹ α)))
@@ -131,6 +131,28 @@ mapˢ-fusion f g s = fun-ext (mapᵏ-fusion f g ∘ s)
 mapˢ-repeat : (a : A) → (f : A → B) → mapˢ f (repeatˢ a) ＝ repeatˢ (f a)
 mapˢ-repeat a f = fun-ext λ k → mapᵏ-repeat a f
 
+-- lift a predicate to a stream
+
+data gPStr (k : Cl) (P : A → 𝒰) : gStream k A → 𝒰 where
+  Pcons : ∀ {a as▹} → P a → ▹[ α ∶ k ] (gPStr k P (as▹ α)) → gPStr k P (cons a as▹)
+
+gPStr-map : {P Q : A → 𝒰} {f : A → A}
+          → ({x : A} → P x → Q (f x))
+          → (s : gStream k A) → gPStr k P s → gPStr k Q (mapᵏ f s)
+gPStr-map {k} {Q} {f} pq =
+  fix {k = k} λ prf▹ → λ where
+    .(cons a as▹) (Pcons {a} {as▹} pa pas▹) →
+       subst (gPStr k Q) (sym $ mapᵏ-eq f a as▹) $
+       Pcons (pq pa) (λ α → prf▹ α (as▹ α) (pas▹ α))
+
+PStr : (A → 𝒰) → Stream A → 𝒰
+PStr P s = ∀ k → gPStr k P (s k)
+
+PStr-map : {P Q : A → 𝒰} {f : A → A}
+         → ({x : A} → P x → Q (f x))
+         → (s : Stream A) → PStr P s → PStr Q (mapˢ f s)
+PStr-map pq s ps k = gPStr-map pq (s k) (ps k)
+
 -- folding
 
 foldrᵏ-body : (A → ▹ k B → B) → ▹ k (gStream k A → B) → gStream k A → B
@@ -180,7 +202,7 @@ dropˢ : ℕ → Stream A → Stream A
 dropˢ zero    s = s
 dropˢ (suc n) s = dropˢ n (tailˢ s)
 
--- "every other" function
+-- "every other" function aka odds
 
 eoᵏ : Stream A → gStream k A
 eoᵏ = fix λ eo▹ s → cons (headˢ s) λ α → eo▹ α (tailˢ (tailˢ s))
@@ -188,6 +210,14 @@ eoᵏ = fix λ eo▹ s → cons (headˢ s) λ α → eo▹ α (tailˢ (tailˢ s)
 eo : Stream A → Stream A
 eo s k = eoᵏ s
 
+evens : Stream A → Stream A
+evens s = eo (tailˢ s)
+
+{-
+inter-even-odd : (s : Stream A)
+               → interleaveˢ (eo s) (evens s) ＝ s
+inter-even-odd s = fun-ext (λ k → {!!})
+-}
 -- diagonal function
 
 diagauxᵏ : (Stream A → Stream A) → gStream k (Stream A) → gStream k A

@@ -148,6 +148,46 @@ mapˢ-fusion f g s = fun-ext (mapᵏ-fusion f g ∘ s)
 mapˢ-repeat : (a : A) → (f : A → B) → mapˢ f (repeatˢ a) ＝ repeatˢ (f a)
 mapˢ-repeat a f = fun-ext (λ k → mapᵏ-repeat a f)
 
+-- lift a predicate to a stream
+
+gPStr-body : (k : Cl) → (A → 𝒰) → ▹ k (gStream k A → 𝒰) → gStream k A → 𝒰
+gPStr-body k P P▹ s = P (headᵏ s) × ▸ k (P▹ ⊛ (tail▹ᵏ s))
+
+gPStr : (k : Cl) → (A → 𝒰) → gStream k A → 𝒰
+gPStr k P = fix (gPStr-body k P)
+
+gPcons : ∀ {a as▹} {P : A → 𝒰} → P a → ▹[ α ∶ k ] (gPStr k P (as▹ α)) → gPStr k P (consᵏ a as▹)
+gPcons {k} {a} {as▹} {P} pa ps▹ =
+    pa
+  , (subst (λ q → ▸ k (dfix (gPStr-body k P) ⊛ q)) (sym $ tail-consᵏ a as▹) $
+     subst (λ q → ▸ k (q ⊛ as▹)) (sym $ pfix (gPStr-body k P)) $
+     ps▹)
+
+gP-match : ∀ {a as▹} {P : A → 𝒰} → gPStr k P (consᵏ a as▹) → P a × (▹[ α ∶ k ] (gPStr k P (as▹ α)))
+gP-match {k} {a} {as▹} {P} (pa , ps▸) =
+    pa
+  , (subst (λ q → ▸ k (q ⊛ as▹)) (pfix (gPStr-body k P)) $
+     subst (λ q → ▸ k (dfix (gPStr-body k P) ⊛ q)) (tail-consᵏ a as▹) $
+     ps▸)
+
+gPStr-map : {P Q : A → 𝒰} {f : A → A}
+         → ({x : A} → P x → Q (f x))
+         → (s : gStream k A) → gPStr k P s → gPStr k Q (mapᵏ f s)
+gPStr-map {k} {P} {Q} {f} pq =
+  fix λ prf▹ s ps →
+    let pa , pas▹ = gP-match (subst (gPStr k P) (uncons-eqᵏ s) ps) in
+    subst (gPStr k Q ∘ mapᵏ f) (sym $ uncons-eqᵏ s) $
+    subst (gPStr k Q) (sym $ mapᵏ-eq f (headᵏ s) (tail▹ᵏ s)) $
+    gPcons (pq pa) ((λ α → prf▹ α (tail▹ᵏ s α) (pas▹ α)))
+
+PStr : (A → 𝒰) → Stream A → 𝒰
+PStr P s = ∀ k → gPStr k P (s k)
+
+PStr-map : {P Q : A → 𝒰} {f : A → A}
+         → ({x : A} → P x → Q (f x))
+         → (s : Stream A) → PStr P s → PStr Q (mapˢ f s)
+PStr-map pq s ps k = gPStr-map pq (s k) (ps k)
+
 -- folding
 
 foldrᵏ-body : (A → ▹ k B → B) → ▹ k (gStream k A → B) → gStream k A → B

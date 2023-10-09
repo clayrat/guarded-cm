@@ -13,7 +13,7 @@ private variable
 -- guarded streams
 
 data Stream (A : 𝒰) : 𝒰 where
-  cons : (x : A) (xs : ▹ Stream A) → Stream A
+  cons : A → ▹ Stream A → Stream A
 
 headˢ : Stream A → A
 headˢ (cons x xs) = x
@@ -85,6 +85,20 @@ mapˢ-repeat a f = fix λ prf▹ →
     ＝⟨⟩
   repeatˢ (f a)
     ∎
+
+-- lift a predicate to a stream
+
+data PStr (P : A → 𝒰) : Stream A → 𝒰 where
+  Pcons : ∀ {a as▹} → P a → ▹[ α ] (PStr P (as▹ α)) → PStr P (cons a as▹)
+
+PStr-map : {P Q : A → 𝒰} {f : A → A}
+         → ({x : A} → P x → Q (f x))
+         → (s : Stream A) → PStr P s → PStr Q (mapˢ f s)
+PStr-map {Q} {f} pq =
+  fix λ prf▹ → λ where
+    .(cons a as▹) (Pcons {a} {as▹} pa pas▹) →
+       subst (PStr Q) (sym $ mapˢ-eq f a as▹) $
+       Pcons (pq pa) (λ α → prf▹ α (as▹ α) (pas▹ α))
 
 -- folding
 
