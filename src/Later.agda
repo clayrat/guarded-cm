@@ -43,7 +43,7 @@ postulate
 postulate
   force       : {A : Cl → 𝒰 ℓ}        → (∀ k → ▹ k (A k)) → ∀ k → A k
   force-delay : {A : Cl → 𝒰 ℓ}        → (f : ∀ k → ▹ k (A k)) → ∀ k → ▹[ α ∶ k ] force f k ＝ f k α
-  delay-force : {A : Cl → 𝒰 ℓ}        → (f : ∀ k → A k)       → ∀ k → force (λ k α → f k) k ＝ f k
+  delay-force : {A : Cl → 𝒰 ℓ}        → (f : ∀ k → A k)       → ∀ k → force (λ k′ α → f k′) k ＝ f k
   force^      : {A : ∀ k → ▹ k (𝒰 ℓ)} → (∀ k → ▸ k (A k))     → ∀ k → force A k
 -- No more postulates after this line.
 
