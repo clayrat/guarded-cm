@@ -157,8 +157,17 @@ scanl1ˢ f = fix (scanl1ˢ-body f)
 
 -- iterate
 
+iterateˢ-body : ▹ (A → A) → ▹ (A → Stream A) → A → Stream A
+iterateˢ-body f i▹ a = consˢ a (i▹ ⊛ (f ⊛ next a))
+
 iterateˢ : ▹ (A → A) → A → Stream A
-iterateˢ f = fix λ i▹ a → consˢ a (i▹ ⊛ (f ⊛ next a))
+iterateˢ f = fix (iterateˢ-body f)
+
+tail-iterateˢ : (f▹ : ▹ (A → A)) → (x : A)
+              → tail▹ˢ (iterateˢ f▹ x) ＝ ▹map (iterateˢ f▹) (f▹ ⊛ next x)
+tail-iterateˢ f x =
+  tail-cons x (dfix (iterateˢ-body f) ⊛ (f ⊛ next x))
+  ∙ ap (_⊛ (f ⊛ next x)) (pfix (iterateˢ-body f))
 
 -- interleave
 

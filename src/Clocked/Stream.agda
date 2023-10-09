@@ -166,11 +166,33 @@ scanl1ᵏ f = fix λ sc▹ s → cons (headᵏ s) (▹map (mapᵏ (f (headᵏ s)
 
 -- iterate
 
+iterateᵏ-body : ▹ k (A → A) → ▹ k (A → gStream k A) → A → gStream k A
+iterateᵏ-body f i▹ a = cons a (i▹ ⊛ (f ⊛ next a))
+
 iterateᵏ : ▹ k (A → A) → A → gStream k A
-iterateᵏ f = fix λ i▹ a → cons a (i▹ ⊛ (f ⊛ next a))
+iterateᵏ f = fix (iterateᵏ-body f)
+
+tail-iterateᵏ : (f▹ : ▹ k (A → A)) → (x : A)
+             → tail▹ᵏ (iterateᵏ f▹ x) ＝ ▹map (iterateᵏ f▹) (f▹ ⊛ next x)
+tail-iterateᵏ f x = ap (_⊛ (f ⊛ next x)) (pfix (iterateᵏ-body f))
 
 iterateˢ : (A → A) → A → Stream A
 iterateˢ f a k = iterateᵏ (next f) a
+
+tail-iterate : (f : A → A) → (x : A)
+             → tailˢ (iterateˢ f x) ＝ iterateˢ f (f x)
+tail-iterate f x =
+  fun-ext λ k →
+    tailˢ (iterateˢ f x) k
+      ＝⟨⟩
+    force (λ k′ → tail▹ᵏ {k = k′} (iterateᵏ (next f) x)) k
+      ＝⟨ ap (λ q → force q k) (fun-ext (λ k₁ → tail-iterateᵏ (next f) x)) ⟩
+    force (λ k′ → next (iterateᵏ {k = k′} (next f) (f x))) k
+      ＝⟨ delay-force (λ k′ → iterateᵏ {k = k′} (next f) (f x)) k ⟩
+    iterateᵏ {k = k} (next f) (f x)
+      ＝⟨⟩
+    iterateˢ f (f x) k
+      ∎
 
 -- interleave
 
@@ -204,11 +226,39 @@ dropˢ (suc n) s = dropˢ n (tailˢ s)
 
 -- "every other" function aka odds
 
+eoᵏ-body : ▹ k (Stream A → gStream k A) → Stream A → gStream k A
+eoᵏ-body eo▹ s = cons (headˢ s) (eo▹ ⊛ next (tailˢ (tailˢ s)))
+
 eoᵏ : Stream A → gStream k A
-eoᵏ = fix λ eo▹ s → cons (headˢ s) λ α → eo▹ α (tailˢ (tailˢ s))
+eoᵏ = fix eoᵏ-body
 
 eo : Stream A → Stream A
 eo s k = eoᵏ s
+
+eoᵏ-iterate : (f : A → A) → (x : A)
+            → eoᵏ {k = k} (iterateˢ f x) ＝ iterateᵏ (next (f ∘ f)) x
+eoᵏ-iterate {k} f =
+  fix {k = k} λ prf▹ x →
+    eoᵏ {k = k} (iterateˢ f x)
+      ＝⟨⟩
+    cons x (dfix eoᵏ-body ⊛ next (tailˢ (tailˢ (iterateˢ f x))))
+      ＝⟨ ap (λ q → cons x (q ⊛ next (tailˢ (tailˢ (iterateˢ f x))))) (pfix eoᵏ-body) ⟩
+    cons x (next (eoᵏ (tailˢ (tailˢ (iterateˢ f x)))))
+      ＝⟨ ap (λ q → cons x (next (eoᵏ (tailˢ q)))) (tail-iterate f x) ⟩
+    cons x (next (eoᵏ (tailˢ (iterateˢ f (f x)))))
+      ＝⟨ ap (λ q → cons x (next (eoᵏ q))) (tail-iterate f (f x)) ⟩
+    cons x (next (eoᵏ (iterateˢ f (f (f x)))))
+      ＝⟨ ap (cons x) (▹-ext (prf▹ ⊛ (next (f (f x))))) ⟩
+    cons x (next (iterateᵏ (next (f ∘ f)) (f (f x))))
+      ＝⟨ ap (λ q → cons x (q ⊛ next (f (f x)))) (sym $ pfix (iterateᵏ-body (next (f ∘ f)))) ⟩
+    cons x (dfix (iterateᵏ-body (next (f ∘ f))) ⊛ (next (f (f x))))
+      ＝⟨⟩
+    iterateᵏ (next (f ∘ f)) x
+      ∎
+
+eo-iterate : (f : A → A) → (x : A)
+           → eo (iterateˢ f x) ＝ iterateˢ (f ∘ f) x
+eo-iterate f x = fun-ext λ k → eoᵏ-iterate f x
 
 evens : Stream A → Stream A
 evens s = eo (tailˢ s)

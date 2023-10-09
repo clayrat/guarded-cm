@@ -113,8 +113,15 @@ scanl1ˢ f = fix λ sc▹ s → cons (headˢ s) (▹map (mapˢ (f (headˢ s))) (
 
 -- iterate
 
+iterateˢ-body : ▹ (A → A) → ▹ (A → Stream A) → A → Stream A
+iterateˢ-body f i▹ a = cons a (i▹ ⊛ (f ⊛ next a))
+
 iterateˢ : ▹ (A → A) → A → Stream A
-iterateˢ f = fix λ i▹ a → cons a (i▹ ⊛ (f ⊛ next a))
+iterateˢ f = fix (iterateˢ-body f)
+
+tail-iterateˢ : (f▹ : ▹ (A → A)) → (x : A)
+              → tail▹ˢ (iterateˢ f▹ x) ＝ ▹map (iterateˢ f▹) (f▹ ⊛ next x)
+tail-iterateˢ f x = ap (_⊛ (f ⊛ next x)) (pfix (iterateˢ-body f))
 
 -- interleave
 
