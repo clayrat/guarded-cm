@@ -29,13 +29,13 @@ Stream : 𝒰 → 𝒰
 Stream A = ∀ k → gStream k A
 
 consˢ : A → Stream A → Stream A
-consˢ a str k = cons a (next (str k))
+consˢ a s k = cons a (next (s k))
 
 headˢ : Stream A → A
-headˢ str = headᵏ (str k0)
+headˢ s = headᵏ (s k0)
 
 tailˢ : Stream A → Stream A
-tailˢ str = force λ k → tail▹ᵏ (str k)
+tailˢ s = force λ k → tail▹ᵏ (s k)
 
 head-consˢ : (a : A) → (as : Stream A)
            → headˢ (consˢ a as) ＝ a
@@ -196,11 +196,35 @@ tail-iterate f x =
 
 -- interleave
 
+interleaveᵏ-body : ▹ k (gStream k A → ▹ k (gStream k A) → gStream k A) → gStream k A → ▹ k (gStream k A) → gStream k A
+interleaveᵏ-body i▹ s t▹ = cons (headᵏ s) (i▹ ⊛ t▹ ⊛ next (tail▹ᵏ s))
+
 interleaveᵏ : gStream k A → ▹ k (gStream k A) → gStream k A
-interleaveᵏ = fix λ i▹ s t▹ → cons (headᵏ s) (i▹ ⊛ t▹ ⊛ next (tail▹ᵏ s))
+interleaveᵏ = fix interleaveᵏ-body
 
 interleaveˢ : Stream A → Stream A → Stream A
 interleaveˢ s t k = interleaveᵏ (s k) (next (t k))
+
+tail-interleaveᵏ : (s1 : gStream k A) → (s2▹ : ▹ k (gStream k A))
+                 → tail▹ᵏ (interleaveᵏ s1 s2▹) ＝ (▹map interleaveᵏ s2▹ ⊛ next (tail▹ᵏ s1))
+tail-interleaveᵏ s1 s2▹ = ap (λ q → q ⊛ s2▹ ⊛ next (tail▹ᵏ s1)) (pfix interleaveᵏ-body)
+
+tail-interleaveˢ : (s1 s2 : Stream A)
+                 → tailˢ (interleaveˢ s1 s2) ＝ interleaveˢ s2 (tailˢ s1)
+tail-interleaveˢ s1 s2 =
+  fun-ext λ k →
+    tailˢ (interleaveˢ s1 s2) k
+      ＝⟨⟩
+    force (λ k₁ → tail▹ᵏ (interleaveᵏ (s1 k₁) (next (s2 k₁)))) k
+      ＝⟨ ap (λ q → force q k) (fun-ext (λ k₁ → tail-interleaveᵏ (s1 k₁) (next (s2 k₁)))) ⟩
+    force (λ k₁ → next (interleaveᵏ (s2 k₁) (tail▹ᵏ (s1 k₁)))) k
+      ＝⟨ delay-force (λ k₁ → interleaveᵏ (s2 k₁) (tail▹ᵏ (s1 k₁))) k ⟩
+    interleaveᵏ (s2 k) (tail▹ᵏ (s1 k))
+      ＝⟨ ap (interleaveᵏ (s2 k)) (▹-ext (λ α → sym $ force-delay (λ k₁ → tail▹ᵏ (s1 k₁)) k α)) ⟩
+    interleaveᵏ (s2 k) (next (tailˢ s1 k))
+      ＝⟨⟩
+    interleaveˢ s2 (tailˢ s1) k
+      ∎
 
 -- zipping
 
@@ -260,14 +284,43 @@ eo-iterate : (f : A → A) → (x : A)
            → eo (iterateˢ f x) ＝ iterateˢ (f ∘ f) x
 eo-iterate f x = fun-ext λ k → eoᵏ-iterate f x
 
+head-eoᵏ : (s : Stream A)
+         → headᵏ {k = k} (eoᵏ s) ＝ headˢ s
+head-eoᵏ s = refl
+
+tail-eoᵏ : (s : Stream A)
+         → tail▹ᵏ {k = k} (eoᵏ s) ＝ next (eoᵏ (tailˢ (tailˢ s)))
+tail-eoᵏ {k} s = ap (_⊛ next (tailˢ (tailˢ s))) (pfix eoᵏ-body)
+
+head-eoˢ : (s : Stream A)
+         → headˢ (eo s) ＝ headˢ s
+head-eoˢ s = refl
+
+tail-eoˢ : (s : Stream A)
+         → tailˢ (eo s) ＝ eo (tailˢ (tailˢ s))
+tail-eoˢ s = fun-ext λ k →
+  tailˢ (eo s) k
+    ＝⟨⟩
+  force (λ k₁ → tail▹ᵏ (eoᵏ {k = k₁} s)) k
+    ＝⟨ ap (λ q → force q k) (fun-ext (λ k₁ → tail-eoᵏ s)) ⟩
+  force (λ k₁ → next (eoᵏ {k = k₁} (tailˢ (tailˢ s)))) k
+    ＝⟨ delay-force (λ k₁ → eoᵏ {k = k₁} (tailˢ (tailˢ s))) k  ⟩
+  eoᵏ {k = k} (tailˢ (tailˢ s))
+    ＝⟨⟩
+  eo (tailˢ (tailˢ s)) k
+    ∎
+
 evens : Stream A → Stream A
 evens s = eo (tailˢ s)
 
-{-
-inter-even-odd : (s : Stream A)
-               → interleaveˢ (eo s) (evens s) ＝ s
-inter-even-odd s = fun-ext (λ k → {!!})
--}
+head-evens : (s : Stream A)
+           → headˢ (evens s) ＝ headˢ (tailˢ s)
+head-evens s = refl
+
+tail-evens : (s : Stream A)
+           → tailˢ (evens s) ＝ evens (tailˢ (tailˢ s))
+tail-evens s = tail-eoˢ (tailˢ s)
+
 -- diagonal function
 
 diagauxᵏ : (Stream A → Stream A) → gStream k (Stream A) → gStream k A
