@@ -107,7 +107,7 @@ mapᵏ-repeat a f = fix λ prf▹ →
     ＝⟨ ap (cons (f a)) (▹-ext prf▹) ⟩
   cons (f a) (λ α → repeatᵏ (f a))
     ＝⟨ ap (cons (f a)) (▹-ext λ α → sym (pfix-ext (cons (f a)) α)) ⟩
-  cons (f a) (λ α → dfix (cons (f a)) α)
+  cons (f a) (dfix (cons (f a)))
     ＝⟨⟩
   repeatᵏ (f a)
     ∎
