@@ -1,4 +1,4 @@
-{-# OPTIONS --cubical --guarded #-}
+{-# OPTIONS --guarded #-}
 module Clocked.Conat where
 
 open import Prelude
@@ -176,6 +176,21 @@ to-streamᵏ-body ts▹ (cosu n▹) = cons true (ts▹ ⊛ n▹)
 
 to-streamᵏ : ℕ∞ᵏ k → gStream k Bool
 to-streamᵏ = fix to-streamᵏ-body
+
+infty-stream : to-streamᵏ {k = k} inftyᵏ ＝ repeatᵏ true
+infty-stream {k} = fix {k = k} λ prf▹ →
+  to-streamᵏ inftyᵏ
+    ＝⟨ ap (_$ inftyᵏ) (fix-path to-streamᵏ-body) ⟩
+  to-streamᵏ-body (next to-streamᵏ) inftyᵏ
+    ＝⟨ ap (to-streamᵏ-body (next to-streamᵏ)) (fix-path cosu) ⟩
+  to-streamᵏ-body (next to-streamᵏ) (cosu (next inftyᵏ))
+    ＝⟨⟩
+  cons true (next (to-streamᵏ inftyᵏ))
+    ＝⟨ ap (cons true) (▹-ext prf▹) ⟩
+  cons true (next (repeatᵏ true))
+    ＝⟨ sym $ fix-path (cons true) ⟩
+  repeatᵏ true
+    ∎
 
 to-streamᶜ : ℕ∞ → Stream Bool
 to-streamᶜ c k = to-streamᵏ (c k)
