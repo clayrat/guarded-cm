@@ -114,6 +114,9 @@ fromℕᶜ (suc n) = incᶜ (fromℕᶜ n)
 is-finiteᶜ : ℕ∞ → 𝒰
 is-finiteᶜ c = Σ[ n ꞉ ℕ ] (fromℕᶜ n ＝ c)
 
+finite-size : {x : ℕ∞} → is-finiteᶜ x → ℕ
+finite-size (n , _) = n
+
 is-finite-downᶜ′ : (x▹ : ▹ ℕ∞) → is-finiteᶜ (cosu x▹) → ▸ (▹map is-finiteᶜ x▹)
 is-finite-downᶜ′ x▹ (zero  , e) = λ _ → absurd (cosu≠coze (sym e))
 is-finite-downᶜ′ x▹ (suc n , e) = λ α → n , ▹-ap (cosu-inj e) α

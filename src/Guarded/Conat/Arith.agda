@@ -3,11 +3,6 @@ module Guarded.Conat.Arith where
 
 open import Prelude
 open import Data.Empty
-open import Data.Unit
-open import Data.Bool
-open import Data.Sum
-open import Data.Maybe
-open import Structures.IdentitySystem
 
 open import LaterG
 open import Guarded.Conat
@@ -263,3 +258,4 @@ _+:ᶜ_ x = fix (+:ᶜ-body x)
 +:ᶜ-sucr x y▹ = ap (_$ (cosu y▹)) (fix-path (+:ᶜ-body x))
 
 -- TODO https://proofassistants.stackexchange.com/questions/1545/how-to-prove-that-addition-is-commutative-for-conatural-numbers-in-coq
+
