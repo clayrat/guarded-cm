@@ -6,6 +6,7 @@ open import Data.Empty
 open import Data.Unit
 open import Data.Bool
 open import Data.Maybe
+open import Data.Nat
 open import Structures.IdentitySystem
 open import Later
 open import Clocked.Stream
@@ -77,7 +78,7 @@ inc-inftyᵏ = ap cosu (sym (pfix cosu))
 
 -- doesn't seem to scale to coinductive definition
 predᵏ : ℕ∞ᵏ k → Maybe (▹ k (ℕ∞ᵏ k))
-predᵏ  coze    = nothing
+predᵏ  coze     = nothing
 predᵏ (cosu c▹) = just c▹
 
 is-zeroᵏ : ℕ∞ᵏ k → Bool
@@ -150,6 +151,8 @@ unfoldᵏ f = fix (unfoldᵏ-body f)
 unfoldᶜ : (A → Maybe A) → A → ℕ∞
 unfoldᶜ f a k = unfoldᵏ f a
 
+-- ℕ interaction
+
 fromℕᵏ : ℕ → ℕ∞ᵏ k
 fromℕᵏ  zero   = coze
 fromℕᵏ (suc n) = incᵏ (fromℕᵏ n)
@@ -159,6 +162,16 @@ fromℕᶜ n k = fromℕᵏ n
 
 is-finiteᵏ : ℕ∞ᵏ k → 𝒰
 is-finiteᵏ c = Σ[ n ꞉ ℕ ] (fromℕᵏ n ＝ c)
+
+is-finite-downᵏ′ : (x▹ : ▹ k (ℕ∞ᵏ k)) → is-finiteᵏ (cosu x▹) → ▸ k (▹map is-finiteᵏ x▹)
+is-finite-downᵏ′ x▹ (zero  , e) = λ _ → absurd (cosu≠coze (sym e))
+is-finite-downᵏ′ x▹ (suc n , e) = λ α → n , ▹-ap (cosu-inj e) α
+
+is-finite-downᵏ : (x : ℕ∞ᵏ k) → is-finiteᵏ (incᵏ x) → ▹ k (is-finiteᵏ x)
+is-finite-downᵏ x = is-finite-downᵏ′ (next x)
+
+is-finite-upᵏ : (x : ℕ∞ᵏ k) → is-finiteᵏ x → is-finiteᵏ (incᵏ x)
+is-finite-upᵏ x (n , e) = suc n , ap cosu (▹-ext (next e))
 
 infty-not-finite′ : (n : ℕ) → inftyᶜ ≠ fromℕᶜ n
 infty-not-finite′  zero   eq = cosu≠coze $ happly eq k0
@@ -197,29 +210,3 @@ to-streamᶜ c k = to-streamᵏ (c k)
 
 _>ℕ_ : ℕ∞ → ℕ → Bool
 c >ℕ n = nthˢ n (to-streamᶜ c)
-
--- concatenation style
-addᵏ-body : ℕ∞ᵏ k → ▹ k (ℕ∞ᵏ k → ℕ∞ᵏ k) → ℕ∞ᵏ k → ℕ∞ᵏ k
-addᵏ-body x ax▹  coze    = x
-addᵏ-body x ax▹ (cosu y) = cosu (ax▹ ⊛ y)
-
-addᵏ : ℕ∞ᵏ k → ℕ∞ᵏ k → ℕ∞ᵏ k
-addᵏ x = fix (addᵏ-body x)
-
-addᶜ : ℕ∞ → ℕ∞ → ℕ∞
-addᶜ x y k = addᵏ (x k) (y k)
-
--- interleaving style
-addᵏ′-body : ▹ k (ℕ∞ᵏ k → ℕ∞ᵏ k → ℕ∞ᵏ k) → ℕ∞ᵏ k → ℕ∞ᵏ k → ℕ∞ᵏ k
-addᵏ′-body a▹  coze     coze    = coze
-addᵏ′-body a▹ (cosu x)  coze    = cosu x
-addᵏ′-body a▹  coze    (cosu y) = cosu y
-addᵏ′-body a▹ (cosu x) (cosu y) = cosu (next (cosu (a▹ ⊛ x ⊛ y)))
-
-addᵏ′ : ℕ∞ᵏ k → ℕ∞ᵏ k → ℕ∞ᵏ k
-addᵏ′ = fix addᵏ′-body
-
-addᶜ′ : ℕ∞ → ℕ∞ → ℕ∞
-addᶜ′ x y k = addᵏ′ (x k) (y k)
-
--- TODO https://proofassistants.stackexchange.com/questions/1545/how-to-prove-that-addition-is-commutative-for-conatural-numbers-in-coq
