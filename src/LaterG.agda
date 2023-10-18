@@ -62,10 +62,16 @@ _⊛_ : ▹ ((a : A) → B a)
 ▹-ap : {f g : ▹ A} → f ＝ g → ▸ λ α → f α ＝ g α
 ▹-ap eq α i = eq i α
 
+postulate
+  tick-irr : (x : ▹ A) → ▹[ α ] ▹[ β ] x α ＝ x β
+
 -- These will compute only on diamond ticks.
 postulate
   dfix : (▹ A → A) → ▹ A
   pfix : (f : ▹ A → A) → dfix f ＝ λ _ → f (dfix f)
+
+transport▹ : (A : I → ▹ 𝒰 ℓ) → ▸ A i0 → ▸ A i1
+transport▹ A = transp (λ i → ▸ A i) i0
 
 pfix-ext : (f : ▹ A → A) → ▸ λ α → dfix f α ＝ f (dfix f)
 pfix-ext f α i = pfix f i α

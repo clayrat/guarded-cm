@@ -7,6 +7,8 @@ open import Data.Empty
 open import LaterG
 open import Guarded.Conat
 
+-- partial order
+
 data _≤ᶜ_ : ℕ∞ → ℕ∞ → 𝒰 where
   z≤ᶜn : ∀ {n}                              → coze ≤ᶜ n
   s≤ᶜs : ∀ {m▹ n▹} → ▹[ α ] (m▹ α ≤ᶜ n▹ α) → cosu m▹ ≤ᶜ cosu n▹
@@ -33,6 +35,12 @@ data _≤ᶜ_ : ℕ∞ → ℕ∞ → 𝒰 where
   .(cosu x▹) .(cosu y▹) (s≤ᶜs {m▹ = x▹} {n▹ = y▹} xy▹) (s≤ᶜs {m▹ = y▹} {n▹ = x▹} yx▹) →
     ap cosu (▹-ext (λ α → prf▹ α (x▹ α) (y▹ α) (xy▹ α) (yx▹ α)))
 
+≤ᶜ-inc : (x : ℕ∞) → x ≤ᶜ incᶜ x
+≤ᶜ-inc = fix λ prf▹ → λ where
+  coze      → z≤ᶜn
+  (cosu x▹) → s≤ᶜs (transport▹ (λ i α → x▹ α ≤ᶜ cosu (λ α₁ → tick-irr x▹ α α₁ i))
+                               (prf▹ ⊛ x▹))
+
 ≤ᶜ-infty : (x : ℕ∞) → x ≤ᶜ infty
 ≤ᶜ-infty = fix λ prf▹ → λ where
   coze      → z≤ᶜn
@@ -40,7 +48,24 @@ data _≤ᶜ_ : ℕ∞ → ℕ∞ → 𝒰 where
                           (sym $ pfix cosu)
                           (prf▹ ⊛ x▹))
 
--- interleaving style
+-- strict(?) order
+
+_<ᶜ_ : ℕ∞ → ℕ∞ → 𝒰
+x <ᶜ y = is-finiteᶜ x × incᶜ x ≤ᶜ y
+
+<ᶜ-trans : (x y z : ℕ∞) → x <ᶜ y → y <ᶜ z → x <ᶜ z
+<ᶜ-trans x y z (fx , ix≤y) (_ , iy≤z) =
+  fx , ≤ᶜ-trans (incᶜ x) (incᶜ y) z
+                (≤ᶜ-trans (incᶜ x) y (incᶜ y) ix≤y (≤ᶜ-inc y))
+                iy≤z
+
+<ᶜ-weaken : {x y : ℕ∞} → x <ᶜ y → x ≤ᶜ y
+<ᶜ-weaken {x} {y} (_ , ix≤y) = ≤ᶜ-trans x (incᶜ x) y (≤ᶜ-inc x) ix≤y
+
+≺ᶜ-inc : {x : ℕ∞} → is-finiteᶜ x → x <ᶜ incᶜ x
+≺ᶜ-inc {x} fx = fx , ≤ᶜ-refl (incᶜ x)
+
+-- interleaving style operations
 
 -- minimum
 
@@ -258,4 +283,3 @@ _+:ᶜ_ x = fix (+:ᶜ-body x)
 +:ᶜ-sucr x y▹ = ap (_$ (cosu y▹)) (fix-path (+:ᶜ-body x))
 
 -- TODO https://proofassistants.stackexchange.com/questions/1545/how-to-prove-that-addition-is-commutative-for-conatural-numbers-in-coq
-

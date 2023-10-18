@@ -47,8 +47,8 @@ postulate
   force^      : {A : ∀ k → ▹ k (𝒰 ℓ)} → (∀ k → ▸ k (A k))     → ∀ k → force A k
 -- No more postulates after this line.
 
-transp▹ : (A : I → ▹ k (𝒰 ℓ)) → ▸ k (A i0) → ▸ k (A i1)
-transp▹ {k = k} A = transp (λ i → ▸ k (A i)) i0
+transport▹ : (A : I → ▹ k (𝒰 ℓ)) → ▸ k (A i0) → ▸ k (A i1)
+transport▹ {k = k} A = transp (λ i → ▸ k (A i)) i0
 
 hcomp▹ : (A : ▹ k (𝒰 ℓ)) (φ : I) (u : I → Partial φ (▸ k A))
   → (u0 : ▸ k A [ φ ↦ u i0 ]) → ▸ k A
