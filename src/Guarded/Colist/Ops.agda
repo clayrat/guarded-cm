@@ -2,9 +2,9 @@
 module Guarded.Colist.Ops where
 
 open import Prelude
+open import Data.Bool
 open import Data.Maybe
 open import Data.Nat
-open import Data.List
 
 open import LaterG
 open import Guarded.Colist
@@ -38,6 +38,14 @@ sumr c = foldrˡ (λ x → later ∘ ▹map (mapᵖ (x +_))) c (now zero)
 
 sum∞r : Colist ℕ∞ → Part ℕ∞
 sum∞r c = foldrˡ (λ x → later ∘ ▹map (mapᵖ (x +ᶜ_))) c (now coze)
+
+-- get
+-- delayed by `min n (size xs)`
+getˡ : ℕ → Colist A → Part (Maybe A)
+getˡ  zero    cnil         = now nothing
+getˡ  zero   (ccons x _ )  = now $ just x
+getˡ (suc _)  cnil         = now nothing
+getˡ (suc n) (ccons _ xs▹) = later (▹map (getˡ n) xs▹)
 
 -- size
 
