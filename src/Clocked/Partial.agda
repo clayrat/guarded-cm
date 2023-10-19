@@ -30,14 +30,14 @@ later x >>=ᵏ f = later λ α → x α >>=ᵏ f
 
 mapᵏ : (A → B) → gPart k A → gPart k B
 mapᵏ f (now a)   = now (f a)
-mapᵏ f (later p) = later (λ α → mapᵏ f (p α))
+mapᵏ f (later p) = later λ α → mapᵏ f (p α)
 -- mapᵏ f p = p >>=ᵏ (now ∘ f)
 
 apᵏ : gPart k (A → B) → gPart k A → gPart k B
-apᵏ (now f)    (now a)    = now (f a)
-apᵏ (now f)    (later pa) = later (λ α → apᵏ (now f) (pa α))
-apᵏ (later pf) (now a)    = later (λ α → apᵏ (pf α) (now a))
-apᵏ (later pf) (later pa) = later (λ α → later (λ α₁ → apᵏ (pf α) (pa α₁)))
+apᵏ (now f)     (now a)     = now (f a)
+apᵏ (now f)     (later pa▹) = later λ α → apᵏ (now f) (pa▹ α)
+apᵏ (later pf▹) (now a)     = later λ α → apᵏ (pf▹ α) (now a)
+apᵏ (later pf▹) (later pa▹) = later λ α → apᵏ (pf▹ α) (pa▹ α)
 -- apᵏ pf pa = pf >>=ᵏ λ f → pa >>=ᵏ (now ∘ f)
 
 Part : 𝒰 → 𝒰
