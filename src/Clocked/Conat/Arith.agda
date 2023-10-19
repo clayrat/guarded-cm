@@ -15,6 +15,8 @@ open import Clocked.Conat
 private variable
   k : Cl
 
+-- partial order
+
 data _≤ᵏ_ : ℕ∞ᵏ k → ℕ∞ᵏ k → 𝒰 where
   z≤ᵏn : ∀ {k n}                              → coze {k} ≤ᵏ n
   s≤ᵏs : ∀ {m▹ n▹} → ▹[ α ∶ k ] (m▹ α ≤ᵏ n▹ α) → cosu m▹ ≤ᵏ cosu n▹
@@ -41,6 +43,12 @@ data _≤ᵏ_ : ℕ∞ᵏ k → ℕ∞ᵏ k → 𝒰 where
   .(cosu x▹) .(cosu y▹) (s≤ᵏs {m▹ = x▹} {n▹ = y▹} xy▹) (s≤ᵏs {m▹ = y▹} {n▹ = x▹} yx▹) →
     ap cosu (▹-ext (λ α → prf▹ α (x▹ α) (y▹ α) (xy▹ α) (yx▹ α)))
 
+≤ᵏ-inc : (x : ℕ∞ᵏ k) → x ≤ᵏ incᵏ x
+≤ᵏ-inc {k} = fix {k = k} λ prf▹ → λ where
+  coze      → z≤ᵏn
+  (cosu x▹) → s≤ᵏs (transport▹ (λ i α → x▹ α ≤ᵏ cosu (λ α₁ → tick-irr x▹ α α₁ i))
+                               (prf▹ ⊛ x▹))
+
 ≤ᵏ-infty : (x : ℕ∞ᵏ k) → x ≤ᵏ inftyᵏ
 ≤ᵏ-infty {k} = fix {k = k} λ prf▹ → λ where
   coze      → z≤ᵏn
@@ -48,7 +56,57 @@ data _≤ᵏ_ : ℕ∞ᵏ k → ℕ∞ᵏ k → 𝒰 where
                           (sym $ pfix cosu)
                           (prf▹ ⊛ x▹))
 
--- interleaving style
+_≤ᶜ_ : ℕ∞ → ℕ∞ → 𝒰
+x ≤ᶜ y = ∀ k → x k ≤ᵏ y k
+
+¬s≤ᶜz : (x : ℕ∞) → ¬ (suᶜ x ≤ᶜ zeᶜ)
+¬s≤ᶜz x prf = ¬s≤ᵏz (next (x k0)) (prf k0)
+
+≤ᶜ-refl : (x : ℕ∞) → x ≤ᶜ x
+≤ᶜ-refl x k = ≤ᵏ-refl (x k)
+
+≤ᶜ-trans : (x y z : ℕ∞) → x ≤ᶜ y → y ≤ᶜ z → x ≤ᶜ z
+≤ᶜ-trans x y z xy yz k = ≤ᵏ-trans (x k) (y k) (z k) (xy k) (yz k)
+
+≤ᶜ-antisym : (x y : ℕ∞) → x ≤ᶜ y → y ≤ᶜ x → x ＝ y
+≤ᶜ-antisym x y xy yx = fun-ext λ k → ≤ᵏ-antisym (x k) (y k) (xy k) (yx k)
+
+≤ᶜ-inc : (x : ℕ∞) → x ≤ᶜ suᶜ x
+≤ᶜ-inc x k = ≤ᵏ-inc (x k)
+
+≤ᶜ-infty : (x : ℕ∞) → x ≤ᶜ inftyᶜ
+≤ᶜ-infty x k = ≤ᵏ-infty (x k)
+
+-- strict(?) order
+
+_<ᵏ_ : ℕ∞ᵏ k → ℕ∞ᵏ k → 𝒰
+x <ᵏ y = is-finiteᵏ x × incᵏ x ≤ᵏ y
+
+<ᵏ-trans : (x y z : ℕ∞ᵏ k) → x <ᵏ y → y <ᵏ z → x <ᵏ z
+<ᵏ-trans x y z (fx , ix≤y) (_ , iy≤z) =
+  fx , ≤ᵏ-trans (incᵏ x) (incᵏ y) z
+                (≤ᵏ-trans (incᵏ x) y (incᵏ y) ix≤y (≤ᵏ-inc y))
+                iy≤z
+
+<ᵏ-weaken : {x y : ℕ∞ᵏ k} → x <ᵏ y → x ≤ᵏ y
+<ᵏ-weaken {x} {y} (_ , ix≤y) = ≤ᵏ-trans x (incᵏ x) y (≤ᵏ-inc x) ix≤y
+
+≺ᵏ-inc : {x : ℕ∞ᵏ k} → is-finiteᵏ x → x <ᵏ incᵏ x
+≺ᵏ-inc {x} fx = fx , ≤ᵏ-refl (incᵏ x)
+
+_<ᶜ_ : ℕ∞ → ℕ∞ → 𝒰
+x <ᶜ y = ∀ k → x k <ᵏ y k
+
+<ᶜ-trans : (x y z : ℕ∞) → x <ᶜ y → y <ᶜ z → x <ᶜ z
+<ᶜ-trans x y z xy yz k = <ᵏ-trans (x k) (y k) (z k) (xy k) (yz k)
+
+<ᶜ-weaken : {x y : ℕ∞} → x <ᶜ y → x ≤ᶜ y
+<ᶜ-weaken xy k = <ᵏ-weaken (xy k)
+
+≺ᶜ-inc : {x : ℕ∞} → is-finiteᶜ x → x <ᶜ suᶜ x
+≺ᶜ-inc {x} (n , e) k = ≺ᵏ-inc (n , happly e k)
+
+-- interleaving style operations
 
 -- minimum
 
@@ -113,6 +171,36 @@ minᵏ-inftyr x = minᵏ-comm x inftyᵏ ∙ minᵏ-inftyl x
 
 ≤ᵏ-min-r : (x y : ℕ∞ᵏ k) → minᵏ x y ≤ᵏ y
 ≤ᵏ-min-r x y = subst (_≤ᵏ y) (minᵏ-comm y x) (≤ᵏ-min-l y x)
+
+minᶜ : ℕ∞ → ℕ∞ → ℕ∞
+minᶜ x y k = minᵏ (x k) (y k)
+
+minᶜ-zerol : (x : ℕ∞) → minᶜ zeᶜ x ＝ zeᶜ
+minᶜ-zerol x = refl
+
+minᶜ-zeror : (x : ℕ∞) → minᶜ x zeᶜ ＝ zeᶜ
+minᶜ-zeror x = fun-ext λ k → minᵏ-zeror (x k)
+
+minᶜ-idemp : (x : ℕ∞) → minᶜ x x ＝ x
+minᶜ-idemp x = fun-ext λ k → minᵏ-idemp (x k)
+
+minᶜ-comm : (x y : ℕ∞) → minᶜ x y ＝ minᶜ y x
+minᶜ-comm x y = fun-ext λ k → minᵏ-comm (x k) (y k)
+
+minᶜ-assoc : (x y z : ℕ∞) → minᶜ x (minᶜ y z) ＝ minᶜ (minᶜ x y) z
+minᶜ-assoc x y z = fun-ext λ k → minᵏ-assoc (x k) (y k) (z k)
+
+minᶜ-inftyl : (x : ℕ∞) → minᶜ inftyᶜ x ＝ x
+minᶜ-inftyl x = fun-ext λ k → minᵏ-inftyl (x k)
+
+minᶜ-inftyr : (x : ℕ∞) → minᶜ x inftyᶜ ＝ x
+minᶜ-inftyr x = fun-ext λ k → minᵏ-inftyr (x k)
+
+≤ᶜ-min-l : (x y : ℕ∞) → minᶜ x y ≤ᶜ x
+≤ᶜ-min-l x y k = ≤ᵏ-min-l (x k) (y k)
+
+≤ᶜ-min-r : (x y : ℕ∞) → minᶜ x y ≤ᶜ y
+≤ᶜ-min-r x y k = ≤ᵏ-min-r (x k) (y k)
 
 -- maximum
 

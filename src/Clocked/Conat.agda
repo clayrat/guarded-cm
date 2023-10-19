@@ -140,6 +140,8 @@ pred-inf = fun-ext λ k →
   inftyᶜ k
     ∎
 
+-- unfolding
+
 unfoldᵏ-body : (A → Maybe A) → ▹ k (A → ℕ∞ᵏ k) → A → ℕ∞ᵏ k
 unfoldᵏ-body f u▹ b with (f b)
 ... | nothing = coze
@@ -163,6 +165,9 @@ fromℕᶜ n k = fromℕᵏ n
 is-finiteᵏ : ℕ∞ᵏ k → 𝒰
 is-finiteᵏ c = Σ[ n ꞉ ℕ ] (fromℕᵏ n ＝ c)
 
+finite-sizeᵏ : {x : ℕ∞ᵏ k} → is-finiteᵏ x → ℕ
+finite-sizeᵏ (n , _) = n
+
 is-finite-downᵏ′ : (x▹ : ▹ k (ℕ∞ᵏ k)) → is-finiteᵏ (cosu x▹) → ▸ k (▹map is-finiteᵏ x▹)
 is-finite-downᵏ′ x▹ (zero  , e) = λ _ → absurd (cosu≠coze (sym e))
 is-finite-downᵏ′ x▹ (suc n , e) = λ α → n , ▹-ap (cosu-inj e) α
@@ -180,8 +185,13 @@ infty-not-finite′ (suc n) eq = infty-not-finite′ n (suᶜ-inj inftyᶜ (from
 is-finiteᶜ : ℕ∞ → 𝒰
 is-finiteᶜ c = Σ[ n ꞉ ℕ ] (fromℕᶜ n ＝ c)
 
+finite-sizeᶜ : {x : ℕ∞} → is-finiteᶜ x → ℕ
+finite-sizeᶜ (n , _) = n
+
 infty-not-finite : ¬ is-finiteᶜ inftyᶜ
 infty-not-finite (n , eq) = infty-not-finite′ n (sym eq)
+
+-- stream interaction
 
 to-streamᵏ-body : ▹ k (ℕ∞ᵏ k → gStream k Bool) → ℕ∞ᵏ k → gStream k Bool
 to-streamᵏ-body ts▹  coze     = repeatᵏ false
