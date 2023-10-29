@@ -30,6 +30,7 @@ postulate
 
 syntax ▹-syntax (λ α → e) = ▹[ α ] e
 
+-- aka pure
 next : A → ▹ A
 next x _ = x
 
@@ -37,7 +38,8 @@ next x _ = x
 ▸-next = refl
 
 _⊛_ : ▹ ((a : A) → B a)
-     → (a : ▹ A) → ▹[ α ] B (a α)
+     → (a : ▹ A)
+     → ▹[ α ] B (a α)
 (f ⊛ x) α = f α (x α)
 
 ▹map : ((a : A) → B a)
@@ -56,10 +58,10 @@ _⊛_ : ▹ ((a : A) → B a)
 ▹map² : {B C : 𝒰 ℓ} → (f : A → B → C) → ▹ A → ▹ B → ▹ C
 ▹map² f x y α = f (x α) (y α)
 
-▹-ext : {f g : ▹ A} → (▸ λ α → f α ＝ g α) → f ＝ g
+▹-ext : {f g : ▹ A} → (▹[ α ] f α ＝ g α) → f ＝ g
 ▹-ext eq i α = eq α i
 
-▹-ap : {f g : ▹ A} → f ＝ g → ▸ λ α → f α ＝ g α
+▹-ap : {f g : ▹ A} → f ＝ g → ▹[ α ] f α ＝ g α
 ▹-ap eq α i = eq i α
 
 postulate
@@ -67,13 +69,14 @@ postulate
 
 -- These will compute only on diamond ticks.
 postulate
+  -- delayed fixpoint
   dfix : (▹ A → A) → ▹ A
-  pfix : (f : ▹ A → A) → dfix f ＝ λ _ → f (dfix f)
+  pfix : (f : ▹ A → A) → dfix f ＝ next (f (dfix f))
 
 transport▹ : (A : I → ▹ 𝒰 ℓ) → ▸ A i0 → ▸ A i1
 transport▹ A = transp (λ i → ▸ A i) i0
 
-pfix-ext : (f : ▹ A → A) → ▸ λ α → dfix f α ＝ f (dfix f)
+pfix-ext : (f : ▹ A → A) → ▹[ α ] dfix f α ＝ f (dfix f)
 pfix-ext f α i = pfix f i α
 
 fix : (▹ A → A) → A

@@ -16,10 +16,10 @@ data Stream (A : 𝒰) : 𝒰 where
   cons : A → ▹ Stream A → Stream A
 
 headˢ : Stream A → A
-headˢ (cons x xs) = x
+headˢ (cons x xs▹) = x
 
 tail▹ˢ : Stream A → ▹ Stream A
-tail▹ˢ (cons x xs) = xs
+tail▹ˢ (cons x xs▹) = xs▹
 
 uncons-eq : (s : Stream A) → s ＝ cons (headˢ s) (tail▹ˢ s)
 uncons-eq (cons x xs) = refl
@@ -29,7 +29,7 @@ uncons-eq (cons x xs) = refl
 repeatˢ : A → Stream A
 repeatˢ a = fix (cons a)
 
-repeatˢ-eq : (a : A) → repeatˢ a ＝ cons a (λ α → repeatˢ a)
+repeatˢ-eq : (a : A) → repeatˢ a ＝ cons a (next $ repeatˢ a)
 repeatˢ-eq a = ap (cons a) (pfix (cons a))
 
 -- map
@@ -43,9 +43,8 @@ mapˢ f = fix (mapˢ-body f)
 mapˢ-eq : (f : A → B)
         → ∀ a as▹
         → mapˢ f (cons a as▹) ＝ cons (f a) (▹map (mapˢ f) as▹)
-mapˢ-eq f a as =
-  ap (cons (f a))
-     (▹-ext λ α → happly (pfix-ext (mapˢ-body f) α) (as α))
+mapˢ-eq f a as▹ =
+  ap (cons (f a)) (ap (_⊛ as▹) (pfix (mapˢ-body f)))
 
 mapˢ-head : (f : A → B) → (s : Stream A)
           → headˢ (mapˢ f s) ＝ f (headˢ s)
@@ -58,14 +57,14 @@ mapˢ-tail f (cons a as▹) = ap tail▹ˢ (mapˢ-eq f a as▹)
 mapˢ-fusion : (f : A → B) → (g : B → C) → (s : Stream A)
             → mapˢ g (mapˢ f s) ＝ mapˢ (g ∘ f) s
 mapˢ-fusion f g =
-  fix λ prf▹ → λ where
+  fix λ ih▹ → λ where
     (cons a as▹) →
       mapˢ g (mapˢ f (cons a as▹))
         ＝⟨ ap (mapˢ g) (mapˢ-eq f a as▹) ⟩
       mapˢ g (cons (f a) (▹map (mapˢ f) as▹))
         ＝⟨ mapˢ-eq g (f a) (▹map (mapˢ f) as▹) ⟩
       cons (g (f a)) (▹map (mapˢ g) (▹map (mapˢ f) as▹))
-        ＝⟨ ap (cons (g (f a))) (▹-ext (prf▹ ⊛ as▹)) ⟩
+        ＝⟨ ap (cons (g (f a))) (▹-ext (ih▹ ⊛ as▹)) ⟩
       cons (g (f a)) (▹map (mapˢ (g ∘ f)) as▹)
         ＝⟨ sym (mapˢ-eq (g ∘ f) a as▹) ⟩
       mapˢ (g ∘ f) (cons a as▹)
@@ -75,30 +74,33 @@ mapˢ-repeat : (a : A) → (f : A → B) → mapˢ f (repeatˢ a) ＝ repeatˢ (
 mapˢ-repeat a f = fix λ prf▹ →
   mapˢ f (repeatˢ a)
     ＝⟨ ap (mapˢ f) (repeatˢ-eq a)  ⟩
-  mapˢ f (cons a (λ α → repeatˢ a))
+  mapˢ f (cons a (next $ repeatˢ a))
     ＝⟨ mapˢ-eq f a (λ x → cons a (dfix (cons a))) ⟩
-  cons (f a) (λ α → mapˢ f (repeatˢ a))
+  cons (f a) (next $ mapˢ f (repeatˢ a))
     ＝⟨ ap (cons (f a)) (▹-ext prf▹) ⟩
-  cons (f a) (λ α → repeatˢ (f a))
+  cons (f a) (next $ repeatˢ (f a))
     ＝⟨ ap (cons (f a)) (▹-ext λ α → sym $ pfix-ext (cons (f a)) α) ⟩
-  cons (f a) (λ α → dfix (cons (f a)) α)
+  cons (f a) (dfix (cons (f a)))
     ＝⟨⟩
   repeatˢ (f a)
     ∎
 
 -- lift a predicate to a stream
 
-data PStr (P : A → 𝒰) : Stream A → 𝒰 where
-  Pcons : ∀ {a as▹} → P a → ▹[ α ] (PStr P (as▹ α)) → PStr P (cons a as▹)
+data Allˢ (P : A → 𝒰) : Stream A → 𝒰 where
+  All-cons : ∀ {a as▹}
+           → P a → ▹[ α ] (Allˢ P (as▹ α))
+           → Allˢ P (cons a as▹)
 
-PStr-map : {P Q : A → 𝒰} {f : A → A}
-         → ({x : A} → P x → Q (f x))
-         → (s : Stream A) → PStr P s → PStr Q (mapˢ f s)
-PStr-map {Q} {f} pq =
+Allˢ-map : {P : A → 𝒰} {Q : B → 𝒰} {f : A → B}
+         → (∀ {x} → P x → Q (f x))
+         → (s : Stream A)
+         → Allˢ P s → Allˢ Q (mapˢ f s)
+Allˢ-map {Q} {f} pq =
   fix λ prf▹ → λ where
-    .(cons a as▹) (Pcons {a} {as▹} pa pas▹) →
-       subst (PStr Q) (sym $ mapˢ-eq f a as▹) $
-       Pcons (pq pa) (λ α → prf▹ α (as▹ α) (pas▹ α))
+    .(cons a as▹) (All-cons {a} {as▹} pa pas▹) →
+       subst (Allˢ Q) (sym $ mapˢ-eq f a as▹) $
+       All-cons (pq pa) (λ α → prf▹ α (as▹ α) (pas▹ α))
 
 -- folding
 
@@ -131,12 +133,13 @@ interleaveˢ = fix λ i▹ s t▹ → cons (headˢ s) (i▹ ⊛ t▹ ⊛ next (t
 -- zipping
 
 zipWithˢ : (A → B → C) → Stream A → Stream B → Stream C
-zipWithˢ f = fix (λ zw▹ sa sb → cons (f (headˢ sa) (headˢ sb)) (zw▹ ⊛ tail▹ˢ sa ⊛ tail▹ˢ sb))
+zipWithˢ f = fix λ zw▹ sa sb → cons (f (headˢ sa) (headˢ sb))
+                                    (zw▹ ⊛ tail▹ˢ sa ⊛ tail▹ˢ sb)
 
 -- natural numbers
 
 natsˢ : Stream ℕ
-natsˢ = fix (λ nats▹ → cons 0 (▹map (mapˢ suc) nats▹))
+natsˢ = fix λ nats▹ → cons 0 (▹map (mapˢ suc) nats▹)
 
 natsˢ-tail : tail▹ˢ natsˢ ＝ next (mapˢ suc natsˢ)
 natsˢ-tail = ap tail▹ˢ (fix-path (λ nats▹ → cons 0 (λ α → mapˢ suc (nats▹ α))))
