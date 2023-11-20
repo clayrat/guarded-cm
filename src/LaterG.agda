@@ -34,25 +34,61 @@ syntax ▹-syntax (λ α → e) = ▹[ α ] e
 next : A → ▹ A
 next x _ = x
 
-▸-next : ▸ (next A) ＝ ▹ A
-▸-next = refl
-
 _⊛_ : ▹ ((a : A) → B a)
      → (a : ▹ A)
      → ▹[ α ] B (a α)
 (f ⊛ x) α = f α (x α)
 
+-- not allowed!
+
+--flatten : ▹ ▹ A → ▹ A
+--flatten a▹▹ α = (a▹▹ α) α
+
 ▹map : ((a : A) → B a)
      → (a : ▹ A) → ▹[ α ] B (a α)
 ▹map f x α = f (x α)
 
-▹map-id : {x : ▹ A}
-        → ▹map id x ＝ x
+-- definitional properties
+
+▸-next : ▸ (next A) ＝ ▹ A
+▸-next = refl
+
+-- functor laws
+
+▹map-id : {x▹ : ▹ A}
+        → ▹map id x▹ ＝ x▹
 ▹map-id = refl
 
-▹map-comp : {B C : 𝒰 ℓ} {f : A → B} {g : B -> C} {x : ▹ A}
-          → ▹map g (▹map f x) ＝ ▹map (g ∘ f) x
+▹map-comp : {B C : 𝒰 ℓ} {f : A → B} {g : B -> C} {x▹ : ▹ A}
+          → ▹map g (▹map f x▹) ＝ ▹map (g ∘ f) x▹
 ▹map-comp = refl
+
+-- applicative laws
+
+ap-id : {B : 𝒰}
+      → (f : A → B)
+      → (x▹ : ▹ A)
+      → (next id ⊛ x▹) ＝ x▹
+ap-id f x▹ = refl
+
+ap-comp : {B C : 𝒰}
+        → (f▹ : ▹ (A → B))
+        → (g▹ : ▹ (B → C))
+        → (x▹ : ▹ A)
+        → ((next λ g f → g ∘ f) ⊛ g▹ ⊛ f▹ ⊛ x▹) ＝ (g▹ ⊛ (f▹ ⊛ x▹))
+ap-comp f▹ g▹ x▹ = refl
+
+ap-homo : {B : 𝒰}
+        → (f : A → B)
+        → (x : A)
+        → (next f ⊛ next x) ＝ next (f x)
+ap-homo f x = refl
+
+ap-inter : {B : 𝒰}
+         → (f▹ : ▹ (A → B))
+         → (x : A)
+         → (f▹ ⊛ next x) ＝ ((next (_$ x)) ⊛ f▹)
+ap-inter f▹ x = refl
 
 -- TODO simplified
 ▹map² : {B C : 𝒰 ℓ} → (f : A → B → C) → ▹ A → ▹ B → ▹ C
