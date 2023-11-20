@@ -21,20 +21,7 @@ data Tree (A : 𝒰 ℓ) : 𝒰 ℓ where
   Leaf : A → Tree A
   Br   : Tree A → Tree A → Tree A
 
-shape : Tree A → Tree ⊤
-shape (Leaf _) = Leaf tt
-shape (Br l r) = Br (shape l) (shape r)
-
-all : (A → Bool) → Tree A → Bool
-all p (Leaf x) = p x
-all p (Br l r) = (all p l) and (all p r)
-
-fold1-tree : (A → A → A) → Tree A → A
-fold1-tree f (Leaf x) = x
-fold1-tree f (Br l r) = f (fold1-tree f l) (fold1-tree f r)
-
-min-tree : Tree ℕ → ℕ
-min-tree = fold1-tree min
+-- body
 
 replaceMinBody : Tree ℕ → ▹ ℕ → ▹ (Tree ℕ) × ℕ
 replaceMinBody (Leaf x) n▹ = ▹map Leaf n▹ , x
@@ -43,6 +30,27 @@ replaceMinBody (Br l r) n▹ =
       (r▹ , nr) = replaceMinBody r n▹
     in
   (▹map Br l▹ ⊛ r▹) , min nl nr
+
+-- main function
+
+replaceMin : Tree ℕ → ▹ Tree ℕ
+replaceMin t = feedback (replaceMinBody t)
+
+-- specification 
+
+-- map-reduce
+fold-tree : (A → B) → (B → B → B) → Tree A → B
+fold-tree fl fn (Leaf x) = fl x
+fold-tree fl fn (Br l r) = fn (fold-tree fl fn l) (fold-tree fl fn r)
+
+shape : Tree A → Tree ⊤
+shape = fold-tree (λ _ → Leaf tt) Br
+
+all : (A → Bool) → Tree A → Bool
+all p = fold-tree p _and_
+
+min-tree : Tree ℕ → ℕ
+min-tree = fold-tree id min
 
 -- output ▹tree has the same shape
 rmb-shape : (t : Tree ℕ) → (n▹ : ▹ ℕ)
@@ -66,8 +74,7 @@ rmb-min : (t : Tree ℕ) → (n▹ : ▹ ℕ)
 rmb-min (Leaf x) n▹ = refl
 rmb-min (Br l r) n▹ = ap² min (rmb-min l n▹) (rmb-min r n▹)
 
-replaceMin : Tree ℕ → ▹ Tree ℕ
-replaceMin t = feedback (replaceMinBody t)
+-- main properties
 
 rm-shape : (t : Tree ℕ)
          → ▹map shape (replaceMin t) ＝ next (shape t)

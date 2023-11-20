@@ -42,6 +42,15 @@ _>>=ᵈ_ : ∀ {m n} → Delayed A m → (A → Delayed B n) → Delayed B (m + 
 nowD x    >>=ᵈ f = f x
 laterD d▹ >>=ᵈ f = laterD (λ α → d▹ α >>=ᵈ f)
 
+-- wrong complexity!
+ap′ : ∀ {m n} → Delayed (A → B) m → Delayed A n → Delayed B (m + n)
+ap′ {B} {m} {n} df dn =
+  subst (Delayed B)
+     (+-assoc m n 0 ∙ +-zero-r (m + n)) $
+  df >>=ᵈ λ f →
+  dn >>=ᵈ λ n →
+  nowD (f n)
+
 map²ᵈ : ∀ {m n} → (A → B → C) → Delayed A m → Delayed B n → Delayed C (max m n)
 map²ᵈ f = apᵈ ∘ mapᵈ f
 

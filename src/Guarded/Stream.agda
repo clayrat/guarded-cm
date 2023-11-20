@@ -16,21 +16,21 @@ data Stream (A : 𝒰) : 𝒰 where
   cons : A → ▹ Stream A → Stream A
 
 headˢ : Stream A → A
-headˢ (cons x xs▹) = x
+headˢ (cons x _) = x
 
 tail▹ˢ : Stream A → ▹ Stream A
-tail▹ˢ (cons x xs▹) = xs▹
+tail▹ˢ (cons _ xs▹) = xs▹
 
 uncons-eq : (s : Stream A) → s ＝ cons (headˢ s) (tail▹ˢ s)
-uncons-eq (cons x xs) = refl
+uncons-eq (cons x xs▹) = refl
 
--- repeat
+-- repeat aka constant stream
 
 repeatˢ : A → Stream A
 repeatˢ a = fix (cons a)
 
 repeatˢ-eq : (a : A) → repeatˢ a ＝ cons a (next $ repeatˢ a)
-repeatˢ-eq a = ap (cons a) (pfix (cons a))
+repeatˢ-eq a = fix-path (cons a)
 
 -- map
 
@@ -43,8 +43,7 @@ mapˢ f = fix (mapˢ-body f)
 mapˢ-eq : (f : A → B)
         → ∀ a as▹
         → mapˢ f (cons a as▹) ＝ cons (f a) (▹map (mapˢ f) as▹)
-mapˢ-eq f a as▹ =
-  ap (cons (f a)) (ap (_⊛ as▹) (pfix (mapˢ-body f)))
+mapˢ-eq f a as▹ = happly (fix-path (mapˢ-body f)) (cons a as▹)
 
 mapˢ-head : (f : A → B) → (s : Stream A)
           → headˢ (mapˢ f s) ＝ f (headˢ s)
@@ -101,6 +100,14 @@ Allˢ-map {Q} {f} pq =
     .(cons a as▹) (All-cons {a} {as▹} pa pas▹) →
        subst (Allˢ Q) (sym $ mapˢ-eq f a as▹) $
        All-cons (pq pa) (λ α → prf▹ α (as▹ α) (pas▹ α))
+
+-- duplicate vs every-other
+
+dup : Stream A → Stream A
+dup = fix λ d▹ s → cons (headˢ s) (next (cons (headˢ s) (d▹ ⊛ tail▹ˢ s)))
+
+--eo : Stream A → Stream A
+--eo = fix λ e▹ s → cons (headˢ s) (e▹ ⊛ tail▹ˢ (tail▹ˢ s {!!})) 
 
 -- folding
 
