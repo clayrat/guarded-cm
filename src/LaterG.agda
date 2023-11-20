@@ -85,6 +85,22 @@ fix f = f (dfix f)
 fix-path : (f : ▹ A → A) → fix f ＝ f (next (fix f))
 fix-path f i = f (pfix f i)
 
+-- A form of Banach's fixed point theorem
+dfix-unique : ∀ {f▹ : ▹ A → A} {x : ▹ A}
+            → x ＝ next (f▹ x)
+            → x ＝ dfix f▹
+dfix-unique {f▹} e = fix λ ih▹ → e ∙ ▹-ext (▹map (ap f▹) ih▹) ∙ sym (pfix f▹)
+
+fix-unique : ∀ {f▹ : ▹ A → A} {x : A}
+           → x ＝ f▹ (next x)
+           → x ＝ fix f▹
+fix-unique {f▹} e = fix λ ih▹ → e ∙ ap f▹ (▹-ext ih▹) ∙ sym (fix-path f▹)
+
+▹Alg : 𝒰 ℓ → 𝒰 ℓ
+▹Alg A = ▹ A → A
+
+-- hlevel interaction
+
 ▹isContr→isContr▹ : {A : ▹ 𝒰 ℓ}
   → ▹[ α ] is-contr (A α)
   → is-contr (▹[ α ] (A α))
