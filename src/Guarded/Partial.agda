@@ -2,61 +2,77 @@
 module Guarded.Partial where
 
 open import Prelude
+open import Foundations.Transport
 open import Data.Empty
-open import Data.Bool
-open import Data.Nat
+open import Data.Bool hiding (Code ; decode)
+open import Data.Nat hiding (Code ; decode)
 open import Data.Maybe
-open import Data.Sum
+open import Data.Sum hiding (Code)
 open import LaterG
 
 private variable
-  A B C : 𝒰
+  ℓ ℓ′ ℓ″ : Level
+  A : 𝒰 ℓ
+  B : 𝒰 ℓ′
+  C : 𝒰 ℓ″
 
 -- guarded partiality monad aka Delay/Lift/Event
 
-data Part (A : 𝒰) : 𝒰 where
+data Part (A : 𝒰 ℓ) : 𝒰 ℓ where
   now   : A → Part A
   later : ▹ Part A → Part A
 
 module Part-code where
-  Code-body : ▹ (Part A → Part A → 𝒰) → Part A → Part A → 𝒰
+  Code-body : ▹ (Part A → Part A → 𝒰 (level-of-type A)) → Part A → Part A → 𝒰 (level-of-type A)
   Code-body C▹ (now a)    (now b)    = a ＝ b
-  Code-body C▹ (now _)    (later _)  = ⊥
-  Code-body C▹ (later _)  (now _)    = ⊥
+  Code-body C▹ (now _)    (later _)  = Lift _ ⊥
+  Code-body C▹ (later _)  (now _)    = Lift _ ⊥
   Code-body C▹ (later a▹) (later b▹) = ▸ (C▹ ⊛ a▹ ⊛ b▹)
 
-  Code : Part A → Part A → 𝒰
+  Code : Part A → Part A → 𝒰 (level-of-type A)
   Code = fix Code-body
+
+  Code-ll-eq : {a▹ b▹ : ▹ Part A} → Code (later a▹) (later b▹) ＝ ▸ (▹map Code a▹ ⊛ b▹)
+  Code-ll-eq {a▹} {b▹} i = ▹[ α ] (pfix Code-body i α (a▹ α) (b▹ α))
+
+  Code-ll⇉ : {a▹ b▹ : ▹ Part A} → Code (later a▹) (later b▹) → ▸ (▹map Code a▹ ⊛ b▹)
+  Code-ll⇉ = transport Code-ll-eq
+
+  ⇉Code-ll : {a▹ b▹ : ▹ Part A} → ▸ (▹map Code a▹ ⊛ b▹) → Code (later a▹) (later b▹)
+  ⇉Code-ll = transport (sym Code-ll-eq)
+
+  ⇉Code-ll⇉ : {a▹ b▹ : ▹ Part A} {c : Code (later a▹) (later b▹)}
+            → ⇉Code-ll (Code-ll⇉ c) ＝ c
+  ⇉Code-ll⇉ {c} = transport⁻-transport Code-ll-eq c
 
   Code-refl-body : ▹ ((p : Part A) → Code p p) → (p : Part A) → Code p p
   Code-refl-body C▹ (now a)    = refl
-  Code-refl-body C▹ (later p▹) =
-    λ α → transport (λ i → (sym $ pfix Code-body) i α (p▹ α) (p▹ α)) ((C▹ ⊛ p▹) α)
+  Code-refl-body C▹ (later p▹) = ⇉Code-ll (C▹ ⊛ p▹)
 
   Code-refl : (p : Part A) → Code p p
   Code-refl = fix Code-refl-body
 
-  encode : ∀ {p q} → p ＝ q → Code {A} p q
+  encode : {p q : Part A} → p ＝ q → Code p q
   encode {p} {q} e = subst (Code p) e (Code-refl p)
 
-  decode : ∀ p q → Code {A} p q → p ＝ q
+  decode : ∀ (p q : Part A) → Code p q → p ＝ q
   decode (now a)    (now b)    c = ap now c
-  decode (later a▹) (later b▹) c = ap later (▹-ext λ α → decode (a▹ α) (b▹ α) (transport (λ i → (pfix Code-body) i α (a▹ α) (b▹ α)) (c α)))
+  decode (later a▹) (later b▹) c = ap later (▹-ext λ α → decode (a▹ α) (b▹ α) (Code-ll⇉ c α))
 
   -- TODO hlevel
 
-now-inj : ∀ {A} {a b : A}
+now-inj : ∀ {a b : A}
         → now a ＝ now b → a ＝ b
 now-inj = Part-code.encode
 
-later-inj : ∀ {A} {a▹ b▹ : ▹ Part A}
+later-inj : ∀ {a▹ b▹ : ▹ Part A}
           → later a▹ ＝ later b▹ → a▹ ＝ b▹
-later-inj {a▹} {b▹} eq =
-  ▹-ext λ α → Part-code.decode (a▹ α) (b▹ α) (transport (λ i → pfix Part-code.Code-body i α (a▹ α) (b▹ α)) (Part-code.encode eq α))
+later-inj {a▹} {b▹} e =
+  ▹-ext λ α → Part-code.decode (a▹ α) (b▹ α) (transport (λ i → pfix Part-code.Code-body i α (a▹ α) (b▹ α)) (Part-code.encode e α))
 
-now≠later : ∀ {A} {a : A} {p▹ : ▹ Part A}
+now≠later : ∀ {a : A} {p▹ : ▹ Part A}
           → now a ≠ later p▹
-now≠later = Part-code.encode
+now≠later = lower ∘ Part-code.encode
 
 never : Part A
 never = fix later
@@ -64,7 +80,7 @@ never = fix later
 δᵖ : Part A → Part A
 δᵖ = later ∘ next
 
-δᵖ-inj : ∀ {A} {a b : Part A}
+δᵖ-inj : ∀ {a b : Part A}
        → δᵖ a ＝ δᵖ b → ▹ (a ＝ b)
 δᵖ-inj = ▹-ap ∘ later-inj
 
