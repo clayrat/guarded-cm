@@ -68,7 +68,7 @@ now-inj = Part-code.encode
 later-inj : ∀ {a▹ b▹ : ▹ Part A}
           → later a▹ ＝ later b▹ → a▹ ＝ b▹
 later-inj {a▹} {b▹} e =
-  ▹-ext λ α → Part-code.decode (a▹ α) (b▹ α) (transport (λ i → pfix Part-code.Code-body i α (a▹ α) (b▹ α)) (Part-code.encode e α))
+  ▹-ext λ α → Part-code.decode (a▹ α) (b▹ α) (Part-code.Code-ll⇉ (Part-code.encode e) α)
 
 now≠later : ∀ {a : A} {p▹ : ▹ Part A}
           → now a ≠ later p▹
