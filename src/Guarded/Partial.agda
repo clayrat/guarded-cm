@@ -4,10 +4,12 @@ module Guarded.Partial where
 open import Prelude
 open import Foundations.Transport
 open import Data.Empty
-open import Data.Bool hiding (Code ; decode)
-open import Data.Nat hiding (Code ; decode)
+open import Data.Bool hiding (Code ; decode ; identity-system)
+open import Data.Nat hiding (Code ; decode  ; identity-system)
 open import Data.Maybe
-open import Data.Sum hiding (Code)
+open import Data.Sum hiding (Code ; identity-system ; code-is-of-hlevel)
+open import Structures.IdentitySystem.Base
+
 open import LaterG
 
 private variable
@@ -59,7 +61,51 @@ module Part-code where
   decode (now a)    (now b)    c = ap now c
   decode (later a▹) (later b▹) c = ap later (▹-ext λ α → decode (a▹ α) (b▹ α) (Code-ll⇉ c α))
 
-  -- TODO hlevel
+  Code-refl-l-eq : {a▹ : ▹ Part A} → Code-refl (later a▹) ＝ ⇉Code-ll (▹map Code-refl a▹)
+  Code-refl-l-eq {a▹} i = ⇉Code-ll λ α → pfix Code-refl-body i α (a▹ α)
+
+  Code-refl-pathP : (p q : Part A) → (c : Code p q) → ＜ Code-refl p ／ (λ i → Code p (decode p q c i)) ＼ c ＞
+  Code-refl-pathP = fix λ ih▹ → λ where
+    (now x)    (now y)    c → λ i j → c (i ∧ j)
+    (later p▹) (later q▹) c →
+       let ihP : ＜ (▹map Code-refl p▹) ／ (λ i → ▹[ α ] Code (p▹ α) (decode (p▹ α) (q▹ α) (Code-ll⇉ c α) i)) ＼ (Code-ll⇉ c) ＞
+           ihP = ▹-extP λ α → ih▹ α (p▹ α) (q▹ α) (Code-ll⇉ c α)
+         in
+        to-pathP⁻ (Code-refl-l-eq ∙ transport-flip {A = λ i → Code-ll-eq {a▹ = p▹} (~ i)} (from-pathP⁻ ihP ∙ go))
+     where
+     go : {p▹ q▹ : ▹ Part A} {c : Code (later p▹) (later q▹)} →
+          transport (λ i → ▹[ α ] Code (p▹ α) (decode (p▹ α) (q▹ α) (Code-ll⇉ c α) (~ i))) (Code-ll⇉ c)
+           ＝
+          Code-ll⇉ (transport (λ i → Code (later p▹) (decode (later p▹) (later q▹) c (~ i))) c)
+     go {p▹} {q▹} {c} =
+         sym (transport-comp Code-ll-eq (λ i → ▹[ α ] Code (p▹ α) (decode (p▹ α) (q▹ α) (Code-ll⇉ c α) (~ i))) c)
+       ∙ ap (λ q → transport q c)
+            (square→commutes λ j i →
+              ▹[ α ] pfix Code-body j α (p▹ α) (decode (p▹ α) (q▹ α) (Code-ll⇉ c α) (~ i)))
+       ∙ transport-comp (λ i → Code (later p▹) (decode (later p▹) (later q▹) c (~ i))) Code-ll-eq c
+
+  identity-system : is-identity-system {A = Part A} Code Code-refl
+  identity-system .to-path      {a} {b} = decode a b
+  identity-system .to-path-over {a} {b} = Code-refl-pathP a b
+
+  code-is-of-hlevel : (p q : Part A) → (n : HLevel) → is-of-hlevel (2 + n) A → is-of-hlevel (1 + n) (Code p q)
+  code-is-of-hlevel = fix λ ih▹ → λ where
+    (now x)    (now y)    n al → path-is-of-hlevel′ (1 + n) al x y
+    (now x)    (later q▹) n al → Lift-is-of-hlevel (suc n) (hlevel (suc n))
+    (later p▹) (now y)    n al → Lift-is-of-hlevel (suc n) (hlevel (suc n))
+    (later p▹) (later q▹) n al →
+      ▹is-of-hlevel λ α → transport (λ i → is-of-hlevel (suc n) (pfix Code-body (~ i) α (p▹ α) (q▹ α)))
+                                    (ih▹ α (p▹ α) (q▹ α) n al)
+
+opaque
+  unfolding is-of-hlevel
+  Part-is-of-hlevel : (n : HLevel)
+                    → is-of-hlevel (2 + n) A
+                    → is-of-hlevel (2 + n) (Part A)
+  Part-is-of-hlevel n A-hl _ _ =
+    is-of-hlevel-≃ (1 + n)
+                   (identity-system-gives-path Part-code.identity-system ₑ⁻¹)
+                   (Part-code.code-is-of-hlevel _ _ n A-hl)
 
 now-inj : ∀ {a b : A}
         → now a ＝ now b → a ＝ b
