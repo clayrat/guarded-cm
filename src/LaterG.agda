@@ -178,6 +178,3 @@ fix-unique {f▹} e = fix λ ih▹ → e ∙ ap f▹ (▹-ext ih▹) ∙ sym (fi
 
 ▹trunc : ∥ ▹ A ∥₁ → ▹ ∥ A ∥₁
 ▹trunc = ∥-∥₁.rec (▹is-prop (next hlevel!)) (▹map ∣_∣₁)
-
-trunc▹ : ▹ ∥ A ∥₁ → ∥ ▹ A ∥₁
-trunc▹ x = ∣ {!▹map ? x!} ∣₁
