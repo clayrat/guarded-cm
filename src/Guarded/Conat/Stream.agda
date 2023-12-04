@@ -64,3 +64,20 @@ to-streamᶜ-decreasing =
     coze      → repeat-adj or-neg false
     (cosu n▹) →
       Adj-cons (next refl) λ α → transport (λ i → decreasing (pfix to-streamᶜ-body (~ i) α (n▹ α))) ((ih▹ ⊛ n▹) α)
+
+-- Cantor encoding (single bit)
+
+to-Cantorᶜ-body : ▹ (ℕ∞ → Stream Bool) → ℕ∞ → Stream Bool
+to-Cantorᶜ-body ts▹  coze     = cons-δ true (repeatˢ false)
+to-Cantorᶜ-body ts▹ (cosu n▹) = cons false (ts▹ ⊛ n▹)
+
+to-Cantorᶜ : ℕ∞ → Stream Bool
+to-Cantorᶜ = fix to-Cantorᶜ-body
+
+Cantor-infty : to-Cantorᶜ infty ＝ repeatˢ false
+Cantor-infty =
+  fix λ ih▹ →
+    ap (cons false) (▹-ext λ α → (λ i → dfix to-Cantorᶜ-body α (pfix cosu i α))
+                               ∙ (λ i → pfix to-Cantorᶜ-body i α infty)
+                               ∙ ih▹ α
+                               ∙ (λ i → pfix (cons false) (~ i) α))

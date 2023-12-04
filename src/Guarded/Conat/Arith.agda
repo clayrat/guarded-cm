@@ -61,6 +61,8 @@ data _≤ᶜ_ : ℕ∞ → ℕ∞ → 𝒰 where
   go {.coze}                    z≤ᶜn                 z≤ᶜn      = refl
   go {.(cosu m▹)} {.(cosu n▹)} (s≤ᶜs {m▹} {n▹} l₁▹) (s≤ᶜs l₂▹) = ap s≤ᶜs (▹-extP λ α → go (l₁▹ α) (l₂▹ α))
 
+-- ≤ᶜ-finite looks impossible
+
 -- strict(?) order
 
 _<ᶜ_ : ℕ∞ → ℕ∞ → 𝒰
