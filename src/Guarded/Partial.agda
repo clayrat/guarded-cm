@@ -137,10 +137,17 @@ _>>=ᵖ_ : Part A → (A → Part B) → Part B
 now x   >>=ᵖ f = f x
 later x >>=ᵖ f = later λ α → x α >>=ᵖ f
 
+delay-by-bindᵖ : (f : A → Part B) (x : A) (n : ℕ)
+               → (delay-by n x) >>=ᵖ f ＝ iter n δᵖ (f x)
+delay-by-bindᵖ f x  zero   = refl
+delay-by-bindᵖ f x (suc n) = ap later (▹-ext λ α → delay-by-bindᵖ f x n)
+
 mapᵖ : (A → B) → Part A → Part B
 mapᵖ f (now a)   = now (f a)
 mapᵖ f (later p) = later λ α → mapᵖ f (p α)
 -- mapᵖ f p = p >>=ᵖ (now ∘ f)
+
+-- functor laws
 
 mapᵖ-id : (p : Part A)
         → mapᵖ id p ＝ p
@@ -158,6 +165,12 @@ mapᵖ-comp (later p▹) = ap later (▹-ext λ α → mapᵖ-comp (p▹ α))
         → δᵖ (mapᵖ f p) ＝ mapᵖ f (δᵖ p)
 δᵖ-mapᵖ p = refl
 
+delay-by-mapᵖ : {f : A → B}
+              → (x : A) (n : ℕ)
+              → mapᵖ f (delay-by n x) ＝ delay-by n (f x)
+delay-by-mapᵖ x  zero   = refl
+delay-by-mapᵖ x (suc n) = ap later (▹-ext λ _ → delay-by-mapᵖ x n)
+
 -- should be derivable?
 mapᵖ-bind : {f : A → B} {g : B → Part C}
           → (p : Part A)
@@ -171,6 +184,25 @@ apᵖ (now f)     (later pa▹) = later λ α → apᵖ (now f) (pa▹ α)
 apᵖ (later pf▹) (now a)     = later λ α → apᵖ (pf▹ α) (now a)
 apᵖ (later pf▹) (later pa▹) = later λ α → apᵖ (pf▹ α) (pa▹ α)
 -- apᵖ pf pa = pf >>=ᵖ λ f → pa >>=ᵖ (now ∘ f)
+
+-- TODO applicative laws
+
+apᵖ-nowf : (f : A → B) (p : Part A)
+         → apᵖ (now f) p ＝ mapᵖ f p
+apᵖ-nowf f (now x)    = refl
+apᵖ-nowf f (later p▹) = ap later (▹-ext λ α → apᵖ-nowf f (p▹ α))
+
+apᵖ-nowx : (f : Part (A → B)) (x : A)
+         → apᵖ f (now x) ＝ mapᵖ (_$ x) f
+apᵖ-nowx (now f)    x = refl
+apᵖ-nowx (later f▹) x = ap later (▹-ext λ α → apᵖ-nowx (f▹ α) x)
+
+delay-by-apᵖ : (f : A → B) (nf : ℕ) (x : A) (nx : ℕ)
+             → apᵖ (delay-by nf f) (delay-by nx x) ＝ delay-by (max nf nx) (f x)
+delay-by-apᵖ f  zero    x  zero    = refl
+delay-by-apᵖ f  zero    x (suc nx) = ap later (▹-ext λ α → apᵖ-nowf f (delay-by nx x) ∙ delay-by-mapᵖ x nx)
+delay-by-apᵖ f (suc nf) x  zero    = ap later (▹-ext λ α → apᵖ-nowx (delay-by nf f) x ∙ delay-by-mapᵖ f nf)
+delay-by-apᵖ f (suc nf) x (suc nx) = ap later (▹-ext λ α → delay-by-apᵖ f nf x nx)
 
 map²ᵖ : (A → B → C) → Part A → Part B → Part C
 map²ᵖ f = apᵖ ∘ mapᵖ f
