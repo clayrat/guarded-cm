@@ -4,10 +4,14 @@ module Guarded.Conat.Stream where
 open import Prelude
 open import Data.Empty
 open import Data.Bool
+open import Data.Dec
 
 open import LaterG
 open import Guarded.Conat
 open import Guarded.Stream
+
+private variable
+  A : 𝒰
 
 -- stream interaction
 
@@ -81,3 +85,60 @@ Cantor-infty =
                                ∙ (λ i → pfix to-Cantorᶜ-body i α infty)
                                ∙ ih▹ α
                                ∙ (λ i → pfix (cons false) (~ i) α))
+
+-- stream closeness
+
+closenessˢ-body : is-discrete A
+                → ▹ (Stream A → Stream A → ℕ∞) → Stream A → Stream A → ℕ∞
+closenessˢ-body d c▹ (cons h₁ t▹₁) (cons h₂ t▹₂) with (is-discrete-β d h₁ h₂)
+... | yes e   = cosu (c▹ ⊛ t▹₁ ⊛ t▹₂)
+... | no ctra = coze
+
+closenessˢ : is-discrete A
+           → Stream A → Stream A → ℕ∞
+closenessˢ d = fix (closenessˢ-body d)
+
+closenessˢ-refl : (d : is-discrete A)
+                → (s : Stream A) → closenessˢ d s s ＝ infty
+closenessˢ-refl d = fix (go d)
+  where
+  go : ∀ {A} → (d : is-discrete A)
+     → ▹ ((s : Stream A) → closenessˢ d s s ＝ infty)
+     → (s : Stream A) → closenessˢ d s s ＝ infty
+  go d ih▹ (cons h t▹) with (is-discrete-β d h h)
+  ... | yes e = ap cosu (▹-ext λ α → (λ i → pfix (closenessˢ-body d) i α (t▹ α) (t▹ α))
+                                   ∙ ih▹ α (t▹ α)
+                                   ∙ ▹-ap (sym $ pfix cosu) α)
+  ... | no ctra = absurd (ctra refl)
+
+close∞→equalˢ : (d : is-discrete A)
+             → (s t : Stream A)
+             → closenessˢ d s t ＝ infty → s ＝ t
+close∞→equalˢ d = fix (go d)
+  where
+  go : ∀ {A} → (d : is-discrete A)
+     → ▹ ((s t : Stream A) → closenessˢ d s t ＝ infty → s ＝ t)
+     → (s t : Stream A) → closenessˢ d s t ＝ infty → s ＝ t
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) e with (is-discrete-β d h₁ h₂)
+  ... | yes eh = ap² cons eh (▹-ext λ α → ih▹ α (t▹₁ α) (t▹₂ α)
+                                             ((λ i → pfix (closenessˢ-body d) (~ i) α (t▹₁ α) (t▹₂ α))
+                                              ∙ ▹-ap (cosu-inj e ∙ pfix cosu) α))
+  ... | no ctra = absurd (cosu≠coze (sym e))
+
+closenessˢ-comm : (d : is-discrete A)
+                → (s t : Stream A) → closenessˢ d s t ＝ closenessˢ d t s
+closenessˢ-comm d = fix (go d)
+  where
+  go : ∀ {A} → (d : is-discrete A) →
+     ▹ ((s t : Stream A) → closenessˢ d s t ＝ closenessˢ d t s) →
+       (s t : Stream A) → closenessˢ d s t ＝ closenessˢ d t s
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) with (is-discrete-β d h₁ h₂)
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) | yes eh with (is-discrete-β d h₂ h₁) -- AARGH
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) | yes eh | yes eh′ =
+    ap cosu (▹-ext λ α → (λ i → pfix (closenessˢ-body d) i α (t▹₁ α) (t▹₂ α))
+                       ∙ ih▹ α (t▹₁ α) (t▹₂ α)
+                       ∙ λ i → pfix (closenessˢ-body d) (~ i) α (t▹₂ α) (t▹₁ α) )
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) | yes eh | no ctra′ = absurd (ctra′ (sym eh))
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) | no ctra with (is-discrete-β d h₂ h₁) -- AARGH
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) | no ctra | yes eh′ = absurd (ctra (sym eh′))
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) | no ctra | no ctra′ = refl

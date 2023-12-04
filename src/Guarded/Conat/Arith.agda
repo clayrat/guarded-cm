@@ -226,6 +226,42 @@ maxᶜ-inftyr x = maxᶜ-comm x infty ∙ maxᶜ-inftyl x
 ≤ᶜ-max-r : (x y : ℕ∞) → y ≤ᶜ maxᶜ x y
 ≤ᶜ-max-r x y = subst (y ≤ᶜ_) (maxᶜ-comm y x) (≤ᶜ-max-l y x)
 
+-- closeness
+
+closenessᶜ-body : ▹ (ℕ∞ → ℕ∞ → ℕ∞) → ℕ∞ → ℕ∞ → ℕ∞
+closenessᶜ-body c▹  coze      coze     = infty
+closenessᶜ-body c▹  coze     (cosu _)  = coze
+closenessᶜ-body c▹ (cosu _)   coze     = coze
+closenessᶜ-body c▹ (cosu m▹) (cosu n▹) = cosu (c▹ ⊛ m▹ ⊛ n▹)
+
+closenessᶜ : ℕ∞ → ℕ∞ → ℕ∞
+closenessᶜ = fix closenessᶜ-body
+
+closenessᶜ-refl : (n : ℕ∞) → closenessᶜ n n ＝ infty
+closenessᶜ-refl = fix λ ih▹ → λ where
+  coze      → refl
+  (cosu n▹) → ap cosu (▹-ext λ α → (λ i → pfix closenessᶜ-body i α (n▹ α) (n▹ α))
+                                 ∙ ih▹ α (n▹ α)
+                                 ∙ ▹-ap (sym $ pfix cosu) α)
+
+close∞→equal : (m n : ℕ∞) → closenessᶜ m n ＝ infty → m ＝ n
+close∞→equal = fix λ ih▹ → λ where
+  coze       coze     e → refl
+  coze      (cosu _)  e → absurd (cosu≠coze (sym e))
+  (cosu _)   coze     e → absurd (cosu≠coze (sym e))
+  (cosu m▹) (cosu n▹) e →
+    ap cosu (▹-ext λ α → ih▹ α (m▹ α) (n▹ α) ((λ i → pfix closenessᶜ-body (~ i) α (m▹ α) (n▹ α))
+                                              ∙ ▹-ap (cosu-inj e ∙ pfix cosu) α))
+
+closenessᶜ-comm : (m n : ℕ∞) → closenessᶜ m n ＝ closenessᶜ n m
+closenessᶜ-comm = fix λ ih▹ → λ where
+  coze       coze     → refl
+  coze      (cosu _)  → refl
+  (cosu _)   coze     → refl
+  (cosu m▹) (cosu n▹) → ap cosu (▹-ext λ α → (λ i → pfix closenessᶜ-body i α (m▹ α) (n▹ α))
+                                           ∙ ih▹ α (m▹ α) (n▹ α)
+                                           ∙ (λ i → pfix closenessᶜ-body (~ i) α (n▹ α) (m▹ α)))
+
 -- addition
 
 +ᶜ-body : ▹ (ℕ∞ → ℕ∞ → ℕ∞) → ℕ∞ → ℕ∞ → ℕ∞
