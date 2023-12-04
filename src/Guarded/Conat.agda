@@ -4,9 +4,9 @@ module Guarded.Conat where
 open import Prelude
 open import Data.Empty
 open import Data.Unit
-open import Data.Bool
+open import Data.Bool hiding (Code ; decode)
+open import Data.Nat hiding (Code ; decode)
 open import Data.Maybe
-open import Data.Nat
 open import Structures.IdentitySystem
 
 open import LaterG
@@ -48,24 +48,23 @@ Code-is-prop coze      coze    = hlevel!
 Code-is-prop coze     (cosu _) = hlevel!
 Code-is-prop (cosu _)  coze    = hlevel!
 Code-is-prop (cosu x) (cosu y) =
-  ▹isProp→isProp▹ (λ α → transport (λ i → is-prop ((sym $ pfix Code-body) i α (x α) (y α))) (Code-is-prop (x α) (y α)))
+  ▹is-prop (λ α → transport (λ i → is-prop ((sym $ pfix Code-body) i α (x α) (y α))) (Code-is-prop (x α) (y α)))
 
 ℕ∞-identity-system : is-identity-system Code Code-refl
 ℕ∞-identity-system = set-identity-system Code-is-prop (λ {x} {y} → decode x y)
 
-instance
-  ℕ∞-is-set : is-set ℕ∞
-  ℕ∞-is-set = identity-system→is-of-hlevel 1 ℕ∞-identity-system Code-is-prop
+ℕ∞-is-set : is-set ℕ∞
+ℕ∞-is-set = identity-system→is-of-hlevel 1 ℕ∞-identity-system Code-is-prop
 
 encode : {c1 c2 : ℕ∞} → c1 ＝ c2 → Code c1 c2
-encode {c1} {c2} eq = subst (Code c1) eq (Code-refl c1)
+encode {c1} {c2} e = subst (Code c1) e (Code-refl c1)
 
 cosu≠coze : {c : ▹ ℕ∞} → cosu c ≠ coze
 cosu≠coze {c} = encode
 
 cosu-inj : {c1 c2 : ▹ ℕ∞} → cosu c1 ＝ cosu c2 → c1 ＝ c2
-cosu-inj {c1} {c2} eq =
-  ▹-ext (λ α → decode (c1 α) (c2 α) (transport (λ i → pfix Code-body i α (c1 α) (c2 α)) (encode eq α)))
+cosu-inj {c1} {c2} e =
+  ▹-ext (λ α → decode (c1 α) (c2 α) (transport (λ i → pfix Code-body i α (c1 α) (c2 α)) (encode e α)))
 
 infty : ℕ∞
 infty = fix cosu
@@ -113,6 +112,9 @@ fromℕᶜ (suc n) = incᶜ (fromℕᶜ n)
 
 is-finiteᶜ : ℕ∞ → 𝒰
 is-finiteᶜ c = Σ[ n ꞉ ℕ ] (fromℕᶜ n ＝ c)
+
+is-finite-pᶜ : ℕ∞ → 𝒰
+is-finite-pᶜ c = ∃[ n ꞉ ℕ ] (fromℕᶜ n ＝ c)
 
 finite-size : {x : ℕ∞} → is-finiteᶜ x → ℕ
 finite-size (n , _) = n

@@ -174,3 +174,10 @@ fix-unique {f▹} e = fix λ ih▹ → e ∙ ap f▹ (▹-ext ih▹) ∙ sym (fi
 ▹is-set-□ hyp p q r s i j α = hyp α
   (λ i → p i α) (λ i → q i α) (λ j → r j α) (λ j → s j α) i j
 
+-- prop truncation interaction
+
+▹trunc : ∥ ▹ A ∥₁ → ▹ ∥ A ∥₁
+▹trunc = ∥-∥₁.rec (▹is-prop (next hlevel!)) (▹map ∣_∣₁)
+
+trunc▹ : ▹ ∥ A ∥₁ → ∥ ▹ A ∥₁
+trunc▹ x = ∣ {!▹map ? x!} ∣₁
