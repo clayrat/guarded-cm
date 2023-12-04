@@ -52,7 +52,14 @@ data _≤ᶜ_ : ℕ∞ → ℕ∞ → 𝒰 where
 ≤ᶜ-mono x y l = s≤ᶜs (next l)
 
 ≤ᶜ-loc : (x y : ℕ∞) → incᶜ x ≤ᶜ incᶜ y → ▹ (x ≤ᶜ y)
-≤ᶜ-loc x y (s≤ᶜs l▹) = {!l▹!}
+≤ᶜ-loc x y (s≤ᶜs l▹) = l▹
+
+≤ᶜ-prop : (x y : ℕ∞) → is-prop (x ≤ᶜ y)
+≤ᶜ-prop x y = is-prop-η go
+  where
+  go : ∀ {x y} → (p₁ p₂ : x ≤ᶜ y) → p₁ ＝ p₂
+  go {.coze}                    z≤ᶜn                 z≤ᶜn      = refl
+  go {.(cosu m▹)} {.(cosu n▹)} (s≤ᶜs {m▹} {n▹} l₁▹) (s≤ᶜs l₂▹) = ap s≤ᶜs (▹-extP λ α → go (l₁▹ α) (l₂▹ α))
 
 -- strict(?) order
 
@@ -73,6 +80,12 @@ x <ᶜ y = is-finite-pᶜ x × incᶜ x ≤ᶜ y
 
 <ᶜ-mono : (x y : ℕ∞) → x <ᶜ y → incᶜ x <ᶜ incᶜ y
 <ᶜ-mono x y (fx , ix≤y) = is-finite-p-upᶜ x fx , ≤ᶜ-mono (incᶜ x) y ix≤y
+
+<ᶜ-loc : (x y : ℕ∞) → incᶜ x <ᶜ incᶜ y → ▹ (x <ᶜ y)
+<ᶜ-loc x y (fx , ix≤y) = ▹map² _,_ (is-finite-down-pᶜ x fx) (≤ᶜ-loc (incᶜ x) y ix≤y)
+
+<ᶜ-prop : (x y : ℕ∞) → is-prop (x <ᶜ y)
+<ᶜ-prop x y = ×-is-of-hlevel 1 hlevel! (≤ᶜ-prop (incᶜ x) y)
 
 -- interleaving style operations
 

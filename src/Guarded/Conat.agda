@@ -152,5 +152,11 @@ is-finite-upᶜ x (n , e) = suc n , ap cosu (▹-ext (next e))
 is-finite-pᶜ : ℕ∞ → 𝒰
 is-finite-pᶜ c = ∃[ n ꞉ ℕ ] (fromℕᶜ n ＝ c)
 
+is-finite-down-pᶜ′ : (x▹ : ▹ ℕ∞) → is-finite-pᶜ (cosu x▹) → ▸ (▹map is-finite-pᶜ x▹)
+is-finite-down-pᶜ′ x▹ p = ▹trunc id (∥-∥₁.map (is-finite-downᶜ′ x▹) p)
+
+is-finite-down-pᶜ : (x : ℕ∞) → is-finite-pᶜ (incᶜ x) → ▹ (is-finite-pᶜ x)
+is-finite-down-pᶜ x = is-finite-down-pᶜ′ (next x)
+
 is-finite-p-upᶜ : (x : ℕ∞) → is-finite-pᶜ x → is-finite-pᶜ (incᶜ x)
 is-finite-p-upᶜ x = ∥-∥₁.map (is-finite-upᶜ x)
