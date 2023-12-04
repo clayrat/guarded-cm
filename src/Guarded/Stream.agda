@@ -2,9 +2,9 @@
 module Guarded.Stream where
 
 open import Prelude
-open import Data.Bool
-open import Data.Nat
-open import Data.List
+open import Data.Bool hiding (Code ; decode)
+open import Data.Nat hiding (Code ; decode)
+open import Data.List hiding (Code ; decode)
 open import LaterG
 
 private variable
@@ -14,6 +14,38 @@ private variable
 
 data Stream (A : 𝒰) : 𝒰 where
   cons : A → ▹ Stream A → Stream A
+
+Code-body : ▹ (Stream A → Stream A → 𝒰) → Stream A → Stream A → 𝒰
+Code-body C▹ (cons h₁ t▹₁) (cons h₂ t▹₂) = (h₁ ＝ h₂) × ▸ (C▹ ⊛ t▹₁ ⊛ t▹₂)
+
+Code : Stream A → Stream A → 𝒰
+Code = fix Code-body
+
+Code-refl-body : ▹ ((s : Stream A) → Code s s) → (s : Stream A) → Code s s
+Code-refl-body C▹ (cons h t▹) =
+  refl , λ α → transport (λ i → pfix Code-body (~ i) α (t▹ α) (t▹ α)) ((C▹ ⊛ t▹) α)
+
+Code-refl : (s : Stream A) → Code s s
+Code-refl = fix Code-refl-body
+
+decode : (s t : Stream A) → Code s t → s ＝ t
+decode (cons h₁ t▹₁) (cons h₂ t▹₂) (e , c) =
+  ap² cons e (▹-ext λ α → decode (t▹₁ α) (t▹₂ α) (transport (λ i → pfix Code-body i α (t▹₁ α) (t▹₂ α)) (c α)))
+
+encode : {c1 c2 : Stream A} → c1 ＝ c2 → Code c1 c2
+encode {c1} {c2} e = subst (Code c1) e (Code-refl c1)
+
+-- TODO hlevel
+
+cons-inj : {h₁ h₂ : A} {t▹₁ t▹₂ : ▹ Stream A}
+         → cons h₁ t▹₁ ＝ cons h₂ t▹₂
+         → (h₁ ＝ h₂) × (t▹₁ ＝ t▹₂)
+cons-inj {t▹₁} {t▹₂} e =
+  let ee = encode e in
+  ee .fst , ▹-ext λ α → decode (t▹₁ α) (t▹₂ α) (transport (λ i → pfix Code-body i α (t▹₁ α) (t▹₂ α)) (ee .snd α))
+
+cons-δ : A → Stream A → Stream A
+cons-δ a s = cons a (next s)
 
 headˢ : Stream A → A
 headˢ (cons x _) = x
@@ -84,7 +116,7 @@ mapˢ-repeat a f = fix λ prf▹ →
   repeatˢ (f a)
     ∎
 
--- lift a predicate to a stream
+-- predicates on a stream
 
 data Allˢ (P : A → 𝒰) : Stream A → 𝒰 where
   All-cons : ∀ {a as▹}
@@ -101,13 +133,27 @@ Allˢ-map {Q} {f} pq =
        subst (Allˢ Q) (sym $ mapˢ-eq f a as▹) $
        All-cons (pq pa) (λ α → prf▹ α (as▹ α) (pas▹ α))
 
+data Adjˢ (P : A → A → 𝒰) : Stream A → 𝒰 where
+  Adj-cons : ∀ {a s▹}
+           → ▹[ α ] P a (headˢ (s▹ α)) → ▹[ α ] (Adjˢ P (s▹ α))
+           → Adjˢ P (cons a s▹)
+
+repeat-adj : {P : A → A → 𝒰}
+           → (∀ a → P a a)
+           → ∀ a → Adjˢ P (repeatˢ a)
+repeat-adj {P} Pr a =
+  fix λ ih▹ → Adj-cons (λ α → transport (λ i → P a (headˢ (pfix (cons a) (~ i) α))) (Pr a))
+                       (λ α → transport (λ i → Adjˢ P (pfix (cons a) (~ i) α)) (ih▹ α))
+
 -- duplicate vs every-other
 
 dup : Stream A → Stream A
 dup = fix λ d▹ s → cons (headˢ s) (next (cons (headˢ s) (d▹ ⊛ tail▹ˢ s)))
 
+-- impossible
+
 --eo : Stream A → Stream A
---eo = fix λ e▹ s → cons (headˢ s) (e▹ ⊛ tail▹ˢ (tail▹ˢ s {!!})) 
+--eo = fix λ e▹ s → cons (headˢ s) (e▹ ⊛ tail▹ˢ (tail▹ˢ s {!!}))
 
 -- folding
 

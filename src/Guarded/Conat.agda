@@ -6,11 +6,11 @@ open import Data.Empty
 open import Data.Unit
 open import Data.Bool hiding (Code ; decode)
 open import Data.Nat hiding (Code ; decode)
+open import Data.Sum hiding (Code)
 open import Data.Maybe
 open import Structures.IdentitySystem
 
 open import LaterG
-open import Guarded.Stream
 
 private variable
   A B C : 𝒰
@@ -64,16 +64,22 @@ cosu≠coze {c} = encode
 
 cosu-inj : {c1 c2 : ▹ ℕ∞} → cosu c1 ＝ cosu c2 → c1 ＝ c2
 cosu-inj {c1} {c2} e =
-  ▹-ext (λ α → decode (c1 α) (c2 α) (transport (λ i → pfix Code-body i α (c1 α) (c2 α)) (encode e α)))
+  ▹-ext λ α → decode (c1 α) (c2 α) (transport (λ i → pfix Code-body i α (c1 α) (c2 α)) (encode e α))
 
 infty : ℕ∞
 infty = fix cosu
 
+-- aka δ
 incᶜ : ℕ∞ → ℕ∞
 incᶜ = cosu ∘ next
 
 inc-inftyᶜ : incᶜ infty ＝ infty
 inc-inftyᶜ = ap cosu (sym (pfix cosu))
+
+infty-unique : ∀ {n : ℕ∞}
+                → n ＝ incᶜ n
+                → n ＝ infty
+infty-unique = fix-unique {f▹ = cosu}
 
 -- doesn't seem to scale to coinductive definition
 predᶜ : ℕ∞ → Maybe (▹ ℕ∞)
@@ -84,6 +90,17 @@ is-zeroᶜ : ℕ∞ → Bool
 is-zeroᶜ  coze    = true
 is-zeroᶜ (cosu _) = false
 
+is-posᶜ : ℕ∞ → Bool
+is-posᶜ = not ∘ is-zeroᶜ
+
+from-bool : Bool → ℕ∞
+from-bool true  = incᶜ coze
+from-bool false = coze
+
+bool-is-inv : from-bool is-right-inverse-of is-posᶜ
+bool-is-inv false = refl
+bool-is-inv true  = refl
+
 pred0ᶜ : ℕ∞ → ▹ ℕ∞
 pred0ᶜ  coze     = next coze
 pred0ᶜ (cosu c▹) = c▹
@@ -93,6 +110,10 @@ pred-sucᶜ = refl
 
 pred-infᶜ : pred0ᶜ infty ＝ next infty
 pred-infᶜ = pfix cosu
+
+splitᶜ : (n : ℕ∞) → (n ＝ coze) ⊎ (n ＝ cosu (pred0ᶜ n))
+splitᶜ  coze    = inl refl
+splitᶜ (cosu x) = inr refl
 
 -- unfolding
 
@@ -113,9 +134,6 @@ fromℕᶜ (suc n) = incᶜ (fromℕᶜ n)
 is-finiteᶜ : ℕ∞ → 𝒰
 is-finiteᶜ c = Σ[ n ꞉ ℕ ] (fromℕᶜ n ＝ c)
 
-is-finite-pᶜ : ℕ∞ → 𝒰
-is-finite-pᶜ c = ∃[ n ꞉ ℕ ] (fromℕᶜ n ＝ c)
-
 finite-size : {x : ℕ∞} → is-finiteᶜ x → ℕ
 finite-size (n , _) = n
 
@@ -129,26 +147,10 @@ is-finite-downᶜ x = is-finite-downᶜ′ (next x)
 is-finite-upᶜ : (x : ℕ∞) → is-finiteᶜ x → is-finiteᶜ (incᶜ x)
 is-finite-upᶜ x (n , e) = suc n , ap cosu (▹-ext (next e))
 
--- stream interaction
+-- propositional version
 
-to-streamᶜ-body : ▹ (ℕ∞ → Stream Bool) → ℕ∞ → Stream Bool
-to-streamᶜ-body ts▹  coze     = repeatˢ false
-to-streamᶜ-body ts▹ (cosu n▹) = cons true (ts▹ ⊛ n▹)
+is-finite-pᶜ : ℕ∞ → 𝒰
+is-finite-pᶜ c = ∃[ n ꞉ ℕ ] (fromℕᶜ n ＝ c)
 
-to-streamᶜ : ℕ∞ → Stream Bool
-to-streamᶜ = fix to-streamᶜ-body
-
-infty-stream : to-streamᶜ infty ＝ repeatˢ true
-infty-stream = fix λ prf▹ →
-  to-streamᶜ infty
-    ＝⟨ ap (_$ infty) (fix-path to-streamᶜ-body) ⟩
-  to-streamᶜ-body (next to-streamᶜ) infty
-    ＝⟨ ap (to-streamᶜ-body (next to-streamᶜ)) (fix-path cosu) ⟩
-  to-streamᶜ-body (next to-streamᶜ) (cosu (next infty))
-    ＝⟨⟩
-  cons true (next (to-streamᶜ infty))
-    ＝⟨ ap (cons true) (▹-ext prf▹) ⟩
-  cons true (next (repeatˢ true))
-    ＝⟨ sym $ fix-path (cons true) ⟩
-  repeatˢ true
-    ∎
+is-finite-p-upᶜ : (x : ℕ∞) → is-finite-pᶜ x → is-finite-pᶜ (incᶜ x)
+is-finite-p-upᶜ x = ∥-∥₁.map (is-finite-upᶜ x)

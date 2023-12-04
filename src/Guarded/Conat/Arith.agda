@@ -10,7 +10,7 @@ open import Guarded.Conat
 -- partial order
 
 data _≤ᶜ_ : ℕ∞ → ℕ∞ → 𝒰 where
-  z≤ᶜn : ∀ {n}                              → coze ≤ᶜ n
+  z≤ᶜn : ∀ {n}                             → coze ≤ᶜ n
   s≤ᶜs : ∀ {m▹ n▹} → ▹[ α ] (m▹ α ≤ᶜ n▹ α) → cosu m▹ ≤ᶜ cosu n▹
 
 ¬s≤ᶜz : (x▹ : ▹ ℕ∞) → ¬ (cosu x▹ ≤ᶜ coze)
@@ -48,10 +48,16 @@ data _≤ᶜ_ : ℕ∞ → ℕ∞ → 𝒰 where
                           (sym $ pfix cosu)
                           (prf▹ ⊛ x▹))
 
+≤ᶜ-mono : (x y : ℕ∞) → x ≤ᶜ y → incᶜ x ≤ᶜ incᶜ y
+≤ᶜ-mono x y l = s≤ᶜs (next l)
+
+≤ᶜ-loc : (x y : ℕ∞) → incᶜ x ≤ᶜ incᶜ y → ▹ (x ≤ᶜ y)
+≤ᶜ-loc x y (s≤ᶜs l▹) = {!l▹!}
+
 -- strict(?) order
 
 _<ᶜ_ : ℕ∞ → ℕ∞ → 𝒰
-x <ᶜ y = is-finiteᶜ x × incᶜ x ≤ᶜ y
+x <ᶜ y = is-finite-pᶜ x × incᶜ x ≤ᶜ y
 
 <ᶜ-trans : (x y z : ℕ∞) → x <ᶜ y → y <ᶜ z → x <ᶜ z
 <ᶜ-trans x y z (fx , ix≤y) (_ , iy≤z) =
@@ -62,8 +68,11 @@ x <ᶜ y = is-finiteᶜ x × incᶜ x ≤ᶜ y
 <ᶜ-weaken : {x y : ℕ∞} → x <ᶜ y → x ≤ᶜ y
 <ᶜ-weaken {x} {y} (_ , ix≤y) = ≤ᶜ-trans x (incᶜ x) y (≤ᶜ-inc x) ix≤y
 
-≺ᶜ-inc : {x : ℕ∞} → is-finiteᶜ x → x <ᶜ incᶜ x
+≺ᶜ-inc : {x : ℕ∞} → is-finite-pᶜ x → x <ᶜ incᶜ x
 ≺ᶜ-inc {x} fx = fx , ≤ᶜ-refl (incᶜ x)
+
+<ᶜ-mono : (x y : ℕ∞) → x <ᶜ y → incᶜ x <ᶜ incᶜ y
+<ᶜ-mono x y (fx , ix≤y) = is-finite-p-upᶜ x fx , ≤ᶜ-mono (incᶜ x) y ix≤y
 
 -- interleaving style operations
 
