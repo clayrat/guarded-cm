@@ -3,6 +3,7 @@ module Guarded.Conat.Arith where
 
 open import Prelude
 open import Data.Empty
+open import Data.Sum
 
 open import LaterG
 open import Guarded.Conat
@@ -107,6 +108,11 @@ minᶜ-zerol x = refl
 minᶜ-zeror : (x : ℕ∞) → minᶜ x coze ＝ coze
 minᶜ-zeror  coze     = refl
 minᶜ-zeror (cosu x▹) = refl
+
+minᶜ-zero-inv : (m n : ℕ∞) → minᶜ m n ＝ coze → (m ＝ coze) ⊎ (n ＝ coze)
+minᶜ-zero-inv  coze      n        e = inl refl
+minᶜ-zero-inv (cosu m▹)  coze     e = inr refl
+minᶜ-zero-inv (cosu m▹) (cosu n▹) e = absurd (cosu≠coze e)
 
 minᶜ-idemp : (x : ℕ∞) → minᶜ x x ＝ x
 minᶜ-idemp = fix λ prf▹ → λ where
