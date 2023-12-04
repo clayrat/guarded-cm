@@ -8,6 +8,7 @@ open import Data.Dec
 
 open import LaterG
 open import Guarded.Conat
+open import Guarded.Conat.Arith
 open import Guarded.Stream
 
 private variable
@@ -142,3 +143,42 @@ closenessˢ-comm d = fix (go d)
   go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) | no ctra with (is-discrete-β d h₂ h₁) -- AARGH
   go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) | no ctra | yes eh′ = absurd (ctra (sym eh′))
   go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) | no ctra | no ctra′ = refl
+
+closenessˢ-ultra : (d : is-discrete A)
+                 → (x y z : Stream A)
+                 → minᶜ (closenessˢ d x y) (closenessˢ d y z) ≤ᶜ closenessˢ d x z
+closenessˢ-ultra d = fix (go d)
+  where
+  go : ∀ {A} → (d : is-discrete A)
+     → ▹ ((x y z : Stream A) → minᶜ (closenessˢ d x y) (closenessˢ d y z) ≤ᶜ closenessˢ d x z)
+     → (x y z : Stream A) → minᶜ (closenessˢ d x y) (closenessˢ d y z) ≤ᶜ closenessˢ d x z
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) (cons h₃ t▹₃) with (is-discrete-β d h₁ h₂)
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) (cons h₃ t▹₃) | yes e₁₂ with (is-discrete-β d h₂ h₃)
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) (cons h₃ t▹₃) | yes e₁₂ | yes e₂₃ with (is-discrete-β d h₁ h₃)
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) (cons h₃ t▹₃) | yes e₁₂ | yes e₂₃ | yes e₁₃ =
+    s≤ᶜs λ α →
+      transport (λ i → pfix minᶜ-body (~ i) α (dfix (closenessˢ-body d) α (t▹₁ α) (t▹₂ α))
+                                              (dfix (closenessˢ-body d) α (t▹₂ α) (t▹₃ α))
+                                            ≤ᶜ dfix (closenessˢ-body d) α (t▹₁ α) (t▹₃ α)) $
+      transport (λ i → minᶜ (pfix (closenessˢ-body d) (~ i) α (t▹₁ α) (t▹₂ α))
+                            (pfix (closenessˢ-body d) (~ i) α (t▹₂ α) (t▹₃ α))
+                          ≤ᶜ pfix (closenessˢ-body d) (~ i) α (t▹₁ α) (t▹₃ α)) $
+      ih▹ α (t▹₁ α) (t▹₂ α) (t▹₃ α)
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) (cons h₃ t▹₃) | yes e₁₂ | yes e₂₃ | no ne₁₃ =
+    absurd (ne₁₃ (e₁₂ ∙ e₂₃))
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) (cons h₃ t▹₃) | yes e₁₂ | no ne₂₃ with (is-discrete-β d h₁ h₃)
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) (cons h₃ t▹₃) | yes e₁₂ | no ne₂₃ | yes e₁₃ =
+    absurd (ne₂₃ (sym e₁₂ ∙ e₁₃))
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) (cons h₃ t▹₃) | yes e₁₂ | no ne₂₃ | no ne₁₃ =
+    z≤ᶜn
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) (cons h₃ t▹₃) | no ne₁₂ with (is-discrete-β d h₂ h₃)
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) (cons h₃ t▹₃) | no ne₁₂ | yes e₂₃ with (is-discrete-β d h₁ h₃)
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) (cons h₃ t▹₃) | no ne₁₂ | yes e₂₃ | yes e₁₃ =
+    absurd (ne₁₂ (e₁₃ ∙ sym e₂₃))
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) (cons h₃ t▹₃) | no ne₁₂ | yes e₂₃ | no ne₁₃ =
+    z≤ᶜn
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) (cons h₃ t▹₃) | no ne₁₂ | no ne₂₃ with (is-discrete-β d h₁ h₃)
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) (cons h₃ t▹₃) | no ne₁₂ | no ne₂₃ | yes e₁₃ =
+    z≤ᶜn
+  go d ih▹ (cons h₁ t▹₁) (cons h₂ t▹₂) (cons h₃ t▹₃) | no ne₁₂ | no ne₂₃ | no ne₁₃ =
+    z≤ᶜn

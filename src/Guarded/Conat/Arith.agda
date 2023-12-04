@@ -262,6 +262,26 @@ closenessᶜ-comm = fix λ ih▹ → λ where
                                            ∙ ih▹ α (m▹ α) (n▹ α)
                                            ∙ (λ i → pfix closenessᶜ-body (~ i) α (n▹ α) (m▹ α)))
 
+closenessᶜ-ultra : (x y z : ℕ∞)
+                 → minᶜ (closenessᶜ x y) (closenessᶜ y z) ≤ᶜ closenessᶜ x z
+closenessᶜ-ultra = fix λ ih▹ → λ where
+  coze       coze      coze     → ≤ᶜ-infty (minᶜ infty infty)
+  coze       coze     (cosu z▹) → z≤ᶜn
+  coze      (cosu y▹)  coze     → z≤ᶜn
+  coze      (cosu y▹) (cosu z▹) → z≤ᶜn
+  (cosu x▹)  coze      coze     → z≤ᶜn
+  (cosu x▹)  coze     (cosu z▹) → z≤ᶜn
+  (cosu x▹) (cosu y▹)  coze     → z≤ᶜn
+  (cosu x▹) (cosu y▹) (cosu z▹) →
+    s≤ᶜs λ α →
+      transport (λ i → pfix minᶜ-body (~ i) α (dfix closenessᶜ-body α (x▹ α) (y▹ α))
+                                              (dfix closenessᶜ-body α (y▹ α) (z▹ α))
+                                            ≤ᶜ dfix closenessᶜ-body α (x▹ α) (z▹ α)) $
+      transport (λ i → minᶜ (pfix closenessᶜ-body (~ i) α (x▹ α) (y▹ α))
+                            (pfix closenessᶜ-body (~ i) α (y▹ α) (z▹ α))
+                          ≤ᶜ pfix closenessᶜ-body (~ i) α (x▹ α) (z▹ α)) $
+      ih▹ α (x▹ α) (y▹ α) (z▹ α)
+
 -- addition
 
 +ᶜ-body : ▹ (ℕ∞ → ℕ∞ → ℕ∞) → ℕ∞ → ℕ∞ → ℕ∞
