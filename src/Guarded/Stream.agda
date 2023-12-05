@@ -8,17 +8,20 @@ open import Data.List hiding (Code ; decode)
 open import LaterG
 
 private variable
-  A B C : 𝒰
+  ℓ ℓ′ ℓ″ : Level
+  A : 𝒰 ℓ
+  B : 𝒰 ℓ′
+  C : 𝒰 ℓ″
 
 -- guarded streams
 
-data Stream (A : 𝒰) : 𝒰 where
+data Stream (A : 𝒰 ℓ) : 𝒰 ℓ where
   cons : A → ▹ Stream A → Stream A
 
-Code-body : ▹ (Stream A → Stream A → 𝒰) → Stream A → Stream A → 𝒰
+Code-body : ▹ (Stream A → Stream A → 𝒰 (level-of-type A)) → Stream A → Stream A → 𝒰 (level-of-type A)
 Code-body C▹ (cons h₁ t▹₁) (cons h₂ t▹₂) = (h₁ ＝ h₂) × ▸ (C▹ ⊛ t▹₁ ⊛ t▹₂)
 
-Code : Stream A → Stream A → 𝒰
+Code : Stream A → Stream A → 𝒰 (level-of-type A)
 Code = fix Code-body
 
 Code-refl-body : ▹ ((s : Stream A) → Code s s) → (s : Stream A) → Code s s

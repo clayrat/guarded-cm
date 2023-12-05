@@ -13,7 +13,8 @@ open import Guarded.Stream
 open import Guarded.Stream.Quantifiers
 
 private variable
-  A : 𝒰
+  ℓ : Level
+  A : 𝒰 ℓ
 
 -- stream interaction
 
