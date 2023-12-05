@@ -10,6 +10,7 @@ open import LaterG
 open import Guarded.Conat
 open import Guarded.Conat.Arith
 open import Guarded.Stream
+open import Guarded.Stream.Quantifiers
 
 private variable
   A : 𝒰

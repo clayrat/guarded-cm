@@ -116,35 +116,6 @@ mapˢ-repeat a f = fix λ prf▹ →
   repeatˢ (f a)
     ∎
 
--- predicates on a stream
-
-data Allˢ (P : A → 𝒰) : Stream A → 𝒰 where
-  All-cons : ∀ {a as▹}
-           → P a → ▹[ α ] (Allˢ P (as▹ α))
-           → Allˢ P (cons a as▹)
-
-Allˢ-map : {P : A → 𝒰} {Q : B → 𝒰} {f : A → B}
-         → (∀ {x} → P x → Q (f x))
-         → (s : Stream A)
-         → Allˢ P s → Allˢ Q (mapˢ f s)
-Allˢ-map {Q} {f} pq =
-  fix λ prf▹ → λ where
-    .(cons a as▹) (All-cons {a} {as▹} pa pas▹) →
-       subst (Allˢ Q) (sym $ mapˢ-eq f a as▹) $
-       All-cons (pq pa) (λ α → prf▹ α (as▹ α) (pas▹ α))
-
-data Adjˢ (P : A → A → 𝒰) : Stream A → 𝒰 where
-  Adj-cons : ∀ {a s▹}
-           → ▹[ α ] P a (headˢ (s▹ α)) → ▹[ α ] (Adjˢ P (s▹ α))
-           → Adjˢ P (cons a s▹)
-
-repeat-adj : {P : A → A → 𝒰}
-           → (∀ a → P a a)
-           → ∀ a → Adjˢ P (repeatˢ a)
-repeat-adj {P} Pr a =
-  fix λ ih▹ → Adj-cons (λ α → transport (λ i → P a (headˢ (pfix (cons a) (~ i) α))) (Pr a))
-                       (λ α → transport (λ i → Adjˢ P (pfix (cons a) (~ i) α)) (ih▹ α))
-
 -- duplicate vs every-other
 
 dup : Stream A → Stream A
