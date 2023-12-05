@@ -156,9 +156,19 @@ interleaveˢ = fix λ i▹ s t▹ → cons (headˢ s) (i▹ ⊛ t▹ ⊛ next (t
 
 -- zipping
 
+zipWithˢ-body : (A → B → C)
+              → ▹ (Stream A → Stream B → Stream C)
+              → Stream A → Stream B → Stream C
+zipWithˢ-body f zw▹ sa sb = cons (f (headˢ sa) (headˢ sb)) (zw▹ ⊛ tail▹ˢ sa ⊛ tail▹ˢ sb)
+
 zipWithˢ : (A → B → C) → Stream A → Stream B → Stream C
-zipWithˢ f = fix λ zw▹ sa sb → cons (f (headˢ sa) (headˢ sb))
-                                    (zw▹ ⊛ tail▹ˢ sa ⊛ tail▹ˢ sb)
+zipWithˢ f = fix (zipWithˢ-body f)
+
+zipWithˢ-eq : (f : A → B → C)
+            → ∀ a as▹ b bs▹
+            → zipWithˢ f (cons a as▹) (cons b bs▹) ＝ cons (f a b) (▹map (zipWithˢ f) as▹ ⊛ bs▹)
+zipWithˢ-eq f a as▹ b bs▹ =
+  happly (happly (fix-path (zipWithˢ-body f)) (cons a as▹)) (cons b bs▹)
 
 -- natural numbers
 

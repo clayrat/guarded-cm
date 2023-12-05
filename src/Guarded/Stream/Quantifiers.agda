@@ -45,6 +45,15 @@ Allˢ-map {Q} {f} pq =
        subst (Allˢ Q) (sym $ mapˢ-eq f a s▹) $
        All-cons (pq pa) (λ α → prf▹ α (s▹ α) (ps▹ α))
 
+Allˢ-zipWith : {P : A → 𝒰} {Q : B → 𝒰} {R : C → 𝒰} {f : A → B → C}
+             → (∀ {x y} → P x → Q y → R (f x y))
+             → (s : Stream A) → (t : Stream B)
+             → Allˢ P s → Allˢ Q t → Allˢ R (zipWithˢ f s t)
+Allˢ-zipWith {R} {f} pqr = fix λ prf▹ → λ where
+  .(cons a s▹) .(cons b t▹) (All-cons {a} {s▹} pa as▹) (All-cons {a = b} {s▹ = t▹} qb at▹) →
+     subst (Allˢ R) (sym $ zipWithˢ-eq f a s▹ b t▹) $
+     All-cons (pqr pa qb) λ α → prf▹ α (s▹ α) (t▹ α) (as▹ α) (at▹ α)
+
 ¬Any→All¬ : ∀ {P : A → 𝒰}
           → (s : Stream A) → ¬ (Anyˢ P s) → Allˢ (¬_ ∘ P) s
 ¬Any→All¬ {P} = fix λ prf▹ → λ where
