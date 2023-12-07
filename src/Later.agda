@@ -36,11 +36,9 @@ syntax ▹-syntax k (λ α → e) = ▹[ α ∶ k ] e
 postulate
   tick-irr : {k : Cl} (x : ▹ k A) → ▹[ α ∶ k ] ▹[ β ∶ k ] x α ＝ x β
 
-postulate
   dfix : (▹ k A → A) → ▹ k A
   pfix : (f : ▹ k A → A) → dfix f ＝ λ _ → f (dfix f)
 
-postulate
   force       : {A : Cl → 𝒰 ℓ}        → (∀ k → ▹ k (A k)) → ∀ k → A k
   force-delay : {A : Cl → 𝒰 ℓ}        → (f : ∀ k → ▹ k (A k)) → ∀ k → ▹[ α ∶ k ] force f k ＝ f k α
   delay-force : {A : Cl → 𝒰 ℓ}        → (f : ∀ k → A k)       → ∀ k → force (λ k′ α → f k′) k ＝ f k
