@@ -267,8 +267,27 @@ zipWithᵏ-eq : (f : A → B → C)
 zipWithᵏ-eq f a as▹ b bs▹ =
   happly (happly (fix-path (zipWithᵏ-body f)) (cons a as▹)) (cons b bs▹)
 
+zipWithᵏ-comm : (f : A → A → B)
+              → (∀ a b → f a b ＝ f b a)
+              → ∀ s t → zipWithᵏ {k = k} f s t ＝ zipWithᵏ f t s
+zipWithᵏ-comm f fc = fix λ ih▹ → λ where
+  (cons x s▹) (cons y t▹) → zipWithᵏ-eq f x s▹ y t▹
+                          ∙ ap² cons (fc x y) (▹-ext λ α → ih▹ α (s▹ α) (t▹ α))
+                          ∙ sym (zipWithᵏ-eq f y t▹ x s▹)
+
+zipᵏ : gStream k A → gStream k B → gStream k (A × B)
+zipᵏ = zipWithᵏ (_,_)
+
 zipWithˢ : (A → B → C) → Stream A → Stream B → Stream C
 zipWithˢ f sa sb k = zipWithᵏ f (sa k) (sb k)
+
+zipWithˢ-comm : (f : A → A → B)
+              → (∀ a b → f a b ＝ f b a)
+              → ∀ s t → zipWithˢ f s t ＝ zipWithˢ f t s
+zipWithˢ-comm f fc s t = fun-ext λ k → zipWithᵏ-comm f fc (s k) (t k)
+
+zipˢ : Stream A → Stream B → Stream (A × B)
+zipˢ = zipWithˢ (_,_)
 
 -- indexing
 

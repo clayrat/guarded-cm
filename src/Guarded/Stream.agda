@@ -173,6 +173,17 @@ zipWithˢ-eq : (f : A → B → C)
 zipWithˢ-eq f a as▹ b bs▹ =
   happly (happly (fix-path (zipWithˢ-body f)) (cons a as▹)) (cons b bs▹)
 
+zipWithˢ-comm : (f : A → A → B)
+              → (∀ a b → f a b ＝ f b a)
+              → ∀ s t → zipWithˢ f s t ＝ zipWithˢ f t s
+zipWithˢ-comm f fc = fix λ ih▹ → λ where
+  (cons x s▹) (cons y t▹) → zipWithˢ-eq f x s▹ y t▹
+                          ∙ ap² cons (fc x y) (▹-ext λ α → ih▹ α (s▹ α) (t▹ α))
+                          ∙ sym (zipWithˢ-eq f y t▹ x s▹)
+
+zipˢ : Stream A → Stream B → Stream (A × B)
+zipˢ = zipWithˢ (_,_)
+
 -- natural numbers
 
 natsˢ : Stream ℕ
