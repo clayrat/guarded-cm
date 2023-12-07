@@ -15,12 +15,11 @@ postulate
   k0   : Cl
   Tick : Cl → LockU
 
-private
-  variable
-    ℓ ℓ′ : Level
-    A : 𝒰 ℓ
-    B : A → 𝒰 ℓ′
-    k : Cl
+private variable
+  ℓ ℓ′ : Level
+  A : 𝒰 ℓ
+  B : A → 𝒰 ℓ′
+  k : Cl
 
 ▹ : Cl → 𝒰 ℓ → 𝒰 ℓ
 ▹ k A = (@tick α : Tick k) → A
@@ -59,16 +58,15 @@ next x α = x
 ▸-next : ▸ k (next A) ＝ ▹ k A
 ▸-next = refl
 
---next-inj : {x y : A} → next {k = k} x ＝ next y → ▹ k (x ＝ y)
---next-inj eq α i = eq i α
-
 _⊛_ : ▹ k ((a : A) → B a)
   → (a : ▹ k A) → ▹[ α ∶ k ] B (a α)
-(f ⊛ x) k = f k (x k)
+(f ⊛ x) α = f α (x α)
 
 ▹map : ((a : A) → B a)
   → (a : ▹ k A) → ▹[ α ∶ k ] B (a α)
-▹map f x k = f (x k)
+▹map f x α = f (x α)
+
+-- functor laws
 
 ▹map-id : {x : ▹ k A}
         → ▹map id x ＝ x
@@ -78,37 +76,56 @@ _⊛_ : ▹ k ((a : A) → B a)
           → ▹map g (▹map f x) ＝ ▹map (g ∘ f) x
 ▹map-comp = refl
 
-Σ▹
-  : Σ[ x ꞉ ▹ k A ] (▹[ α ∶ k ] B (x α))
-  → ▹ k (Σ[ a ꞉ A ] B a)
-Σ▹ (x , y) α = (x α) , (y α)
+-- applicative laws
 
-▹Σ
-  : ▹[ α ∶ k ]     Σ[ a ꞉ A ] B a
-  → Σ[ x ꞉ ▹ k A ] (▹[ α ∶ k ] B (x α))
-▹Σ f = (λ α → fst (f α)) , λ α → snd (f α)
+ap-id : {B : 𝒰}
+      → (f : A → B)
+      → (x▹ : ▹ k A)
+      → (next id ⊛ x▹) ＝ x▹
+ap-id f x▹ = refl
 
-▹-ext : {A : I → 𝒰 ℓ} {x : ▹ k (A i0)} {y : ▹ k (A i1)}
-  → ▹[ α ∶ k ] PathP A (x α) (y α) → PathP (λ i → ▹ k (A i)) x y
+ap-comp : {B C : 𝒰}
+        → (f▹ : ▹ k (A → B))
+        → (g▹ : ▹ k (B → C))
+        → (x▹ : ▹ k A)
+        → ((next λ g f → g ∘ f) ⊛ g▹ ⊛ f▹ ⊛ x▹) ＝ (g▹ ⊛ (f▹ ⊛ x▹))
+ap-comp f▹ g▹ x▹ = refl
+
+ap-homo : {B : 𝒰}
+        → (f : A → B)
+        → (x : A)
+        → (next {k = k} f ⊛ next x) ＝ next (f x)
+ap-homo f x = refl
+
+ap-inter : {B : 𝒰}
+         → (f▹ : ▹ k (A → B))
+         → (x : A)
+         → (f▹ ⊛ next x) ＝ ((next (_$ x)) ⊛ f▹)
+ap-inter f▹ x = refl
+
+-- path interaction
+
+▹-ext : {A : I → 𝒰 ℓ} {x▹ : ▹ k (A i0)} {y▹ : ▹ k (A i1)}
+      → ▹[ α ∶ k ] ＜ (x▹ α) ／ (λ i → A i) ＼ (y▹ α) ＞
+      → ＜ x▹ ／ (λ i → ▹ k (A i)) ＼ y▹ ＞
 ▹-ext p i α = p α i
 
-▹-ap : {A : I → 𝒰 ℓ} {x : ▹ k (A i0)} {y : ▹ k (A i1)}
-  → PathP (λ i → ▹ k (A i)) x y → ▹[ α ∶ k ] PathP A (x α) (y α)
+▹-ap : {A : I → 𝒰 ℓ} {x▹ : ▹ k (A i0)} {y▹ : ▹ k (A i1)}
+     → ＜ x▹ ／ (λ i → ▹ k (A i)) ＼ y▹ ＞
+     → ▹[ α ∶ k ] ＜ (x▹ α) ／ (λ i → A i) ＼ (y▹ α) ＞
 ▹-ap p α i = p i α
 
--- TODO remove?
+▹-extP : {A : I → ▹ k (𝒰 ℓ)} {x▹ : ▹[ α ∶ k ] A i0 α} {y▹ : ▹[ α ∶ k ] A i1 α}
+     → (▹[ α ∶ k ] ＜ (x▹ α) ／ (λ i → A i α) ＼ (y▹ α) ＞)
+     → ＜ x▹ ／ (λ i → ▹[ α ∶ k ] A i α) ＼ y▹ ＞
+▹-extP e i α = e α i
 
-▹x=▹y→▹x=y : (x y : ▹ k A)
-  → (x ＝ y)
-    -------------------------
-  → ▹[ α ∶ k ] x α ＝ y α
-▹x=▹y→▹x=y x y e α i = e i α
+▹-apP : {A : I → ▹ k (𝒰 ℓ)} {x▹ : ▹[ α ∶ k ] A i0 α} {y▹ : ▹[ α ∶ k ] A i1 α}
+     → ＜ x▹ ／ (λ i → ▹[ α ∶ k ] A i α) ＼ y▹ ＞
+     → (▹[ α ∶ k ] ＜ (x▹ α) ／ (λ i → A i α) ＼ (y▹ α) ＞)
+▹-apP e α i = e i α
 
-▹x=y→▹x=▹y : (x y : ▹ k A)
-  → ▹[ α ∶ k ] x α ＝ y α
-    -------------------------
-  → x ＝ y
-▹x=y→▹x=▹y x y e i α = e α i
+-- fixpoint
 
 fix : (▹ k A → A) → A
 fix f = f (dfix f)
@@ -119,8 +136,15 @@ pfix-ext f α i = pfix f i α
 fix-path : (f : ▹ k A → A) → fix f ＝ f (next (fix f))
 fix-path f i = f (pfix f i)
 
-delay : {A : Cl → 𝒰 ℓ} → (∀ k → A k) → ∀ k → ▹ k (A k)
-delay a k _ = a k
+-- sigma interaction
+
+Σ▹ : Σ[ x ꞉ ▹ k A ] (▹[ α ∶ k ] B (x α))
+   → ▹ k (Σ[ a ꞉ A ] B a)
+Σ▹ (x , y) α = (x α) , (y α)
+
+▹Σ : ▹[ α ∶ k ]     Σ[ a ꞉ A ] B a
+   → Σ[ x ꞉ ▹ k A ] (▹[ α ∶ k ] B (x α))
+▹Σ f = (λ α → fst (f α)) , λ α → snd (f α)
 
 ▹Σ≃Σ▹ : Iso (▹[ α ∶ k ] Σ[ a ꞉ A ] B a) (Σ[ x ꞉ ▹ k A ] (▹[ α ∶ k ] B (x α)))
 ▹Σ≃Σ▹ = ▹Σ , iso Σ▹
@@ -154,6 +178,11 @@ pfixΣ f = {!!}
        f x -----------------------------------> g x
 -}
 
+-- delay and force
+
+delay : {A : Cl → 𝒰 ℓ} → (∀ k → A k) → ∀ k → ▹ k (A k)
+delay a k _ = a k
+
 ▹x=▹y→x=y : {x y : A}
   → ((k : Cl) → next {k = k} x ＝ next y)
   → (k : Cl) → x ＝ y
@@ -164,34 +193,60 @@ pfixΣ f = {!!}
   (force (λ k → ▹x=▹y k i) k )
 
 ▹-is-faithful : {A B : 𝒰 ℓ} → (f g : A → B)
-  → (p : ∀ k → Path (▹ k A → ▹ k B) (▹map f) (▹map g))
-  → (k : Cl) → f ＝ g
+  → (∀ k → Path (▹ k A → ▹ k B) (▹map f) (▹map g))
+  → ∀ k → f ＝ g
 ▹-is-faithful {A} {B} f g p k i x = primComp (λ _ → B) sq (force (λ k α → p k i (next x) α) k)
   where
     sq : I → Partial (~ i ∨ i) B
     sq j (i = i0) = delay-force (λ _ → f x) k j
     sq j (i = i1) = delay-force (λ _ → g x) k j
 
+-- fixed point uniqueness
+
+dfix-unique : ∀ {f▹ : ▹ k A → A} {x : ▹ k A}
+            → x ＝ next (f▹ x)
+            → x ＝ dfix f▹
+dfix-unique {f▹} e = fix λ ih▹ → e ∙ ▹-ext (▹map (ap f▹) ih▹) ∙ sym (pfix f▹)
+
+fix-unique : ∀ {f▹ : ▹ k A → A} {x : A}
+           → x ＝ f▹ (next x)
+           → x ＝ fix f▹
+fix-unique {f▹} e = fix λ ih▹ → e ∙ ap f▹ (▹-ext ih▹) ∙ sym (fix-path f▹)
+
+▹Alg : ∀ {k} → 𝒰 ℓ → 𝒰 ℓ
+▹Alg {k} A = ▹ k A → A
+
 -- hlevel interaction
 
-▹isContr→isContr▹ : {A : ▹ k (𝒰 ℓ)}
+▹is-contr : {A : ▹ k (𝒰 ℓ)}
   → ▹[ α ∶ k ] is-contr (A α)
   → is-contr (▹[ α ∶ k ] (A α))
-▹isContr→isContr▹ p = is-contr-η $ (λ α → is-contr-β (p α) .fst) , λ y i α → is-contr-β (p α) .snd (y α) i
+▹is-contr p = is-contr-η $ (λ α → is-contr-β (p α) .fst) , λ y i α → is-contr-β (p α) .snd (y α) i
 
-▹isProp→isProp▹ : {A : ▹ k (𝒰 ℓ)}
+▹is-prop : {A : ▹ k (𝒰 ℓ)}
   → ▹[ α ∶ k ] is-prop (A α)
   → is-prop (▹[ α ∶ k ] (A α))
-▹isProp→isProp▹ p = is-prop-η λ x y i α → is-prop-β (p α) (x α) (y α) i
+▹is-prop p = is-prop-η λ x y i α → is-prop-β (p α) (x α) (y α) i
 
-▹isSet→isSet▹ : {A : ▹ k (𝒰 ℓ)}
-  → ▹[ α ∶ k ] is-set (A α)
-  → is-set (▹[ α ∶ k ] (A α))
-▹isSet→isSet▹ hyp = is-set-η λ x y p q i j α →
-  is-set-β (hyp α) (x α) (y α) (λ j → p j α) (λ j → q j α) i j
+▹is-of-hlevel : {A : ▹ k (𝒰 ℓ)} {n : HLevel}
+  → ▹[ α ∶ k ] is-of-hlevel n (A α)
+  → is-of-hlevel n (▹[ α ∶ k ] (A α))
+▹is-of-hlevel {n = zero}          = ▹is-contr
+▹is-of-hlevel {n = suc zero}      = ▹is-prop
+▹is-of-hlevel {n = suc (suc n)} a =
+  is-of-hlevel-η n λ p q →
+    retract→is-of-hlevel (suc n) ▹-extP ▹-apP (λ _ → refl)
+    (▹is-of-hlevel λ α → is-of-hlevel-β n (a α) (p α) (q α))
 
-▹isSet□→isSet□▹ : {A : ▹ k (𝒰 ℓ)}
+▹is-set-□ : {A : ▹ k (𝒰 ℓ)}
   → ▹[ α ∶ k ] is-set-□ (A α)
   → is-set-□ (▹[ α ∶ k ] (A α))
-▹isSet□→isSet□▹ hyp p q r s i j α = hyp α
+▹is-set-□ hyp p q r s i j α = hyp α
   (λ i → p i α) (λ i → q i α) (λ j → r j α) (λ j → s j α) i j
+
+-- prop truncation interaction
+
+▹trunc : ∀ {B : ▹ k (𝒰 ℓ′)}
+       → (A → ▹[ α ∶ k ] B α)
+       → ∥ A ∥₁ → ▹[ α ∶ k ] ∥ B α ∥₁
+▹trunc f = ∥-∥₁.rec (▹is-prop (λ α → hlevel!)) (λ x α → ∣ f x α ∣₁)

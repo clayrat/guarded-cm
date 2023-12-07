@@ -6,11 +6,10 @@ open import Prelude
 open import Foundations.Cubes
 open import Prim
 
-private
-  variable
-    ℓ ℓ′ ℓ″ : Level
-    A : 𝒰 ℓ
-    B : A → 𝒰 ℓ′
+private variable
+  ℓ ℓ′ ℓ″ : Level
+  A : 𝒰 ℓ
+  B : A → 𝒰 ℓ′
 
 infixl 4 _⊛_
 infixr -2 ▹-syntax
@@ -97,12 +96,15 @@ ap-inter f▹ x = refl
 transport▹ : (A : I → ▹ 𝒰 ℓ) → ▸ A i0 → ▸ A i1
 transport▹ A = transp (λ i → ▸ A i) i0
 
-▹-ext : {f g : ▹ A}
-      → (▹[ α ] f α ＝ g α) → f ＝ g
-▹-ext e i α = e α i
+▹-ext : {A : I → 𝒰 ℓ} {x▹ : ▹ (A i0)} {y▹ : ▹ (A i1)}
+      → ▹[ α ] ＜ (x▹ α) ／ (λ i → A i) ＼ (y▹ α) ＞
+      → ＜ x▹ ／ (λ i → ▹ (A i)) ＼ y▹ ＞
+▹-ext p i α = p α i
 
-▹-ap : {f g : ▹ A} → f ＝ g → ▹[ α ] f α ＝ g α
-▹-ap e α i = e i α
+▹-ap : {A : I → 𝒰 ℓ} {x▹ : ▹ (A i0)} {y▹ : ▹ (A i1)}
+     → ＜ x▹ ／ (λ i → ▹ (A i)) ＼ y▹ ＞
+     → ▹[ α ] ＜ (x▹ α) ／ (λ i → A i) ＼ (y▹ α) ＞
+▹-ap p α i = p i α
 
 ▹-extP : {P : I → ▹ 𝒰 ℓ} {x▹ : ▹[ α ] P i0 α} {y▹ : ▹[ α ] P i1 α}
      → (▹[ α ] ＜ (x▹ α) ／ (λ i → P i α) ＼ (y▹ α) ＞)
@@ -118,7 +120,6 @@ postulate
   tick-irr : (x : ▹ A) → ▹[ α ] ▹[ β ] x α ＝ x β
 
 -- These will compute only on diamond ticks.
-postulate
   -- delayed fixpoint
   dfix : (▹ A → A) → ▹ A
   pfix : (f : ▹ A → A) → dfix f ＝ next (f (dfix f))
