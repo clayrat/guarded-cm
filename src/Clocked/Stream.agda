@@ -63,7 +63,7 @@ uncons-eqᵏ (cons x xs) = refl
 
 -- coinductive streams
 
-Stream : 𝒰 → 𝒰
+Stream : 𝒰 ℓ → 𝒰 ℓ
 Stream A = ∀ k → gStream k A
 
 consˢ : A → Stream A → Stream A
@@ -73,7 +73,7 @@ headˢ : Stream A → A
 headˢ s = headᵏ (s k0)
 
 tailˢ : Stream A → Stream A
-tailˢ s = force λ k → tail▹ᵏ (s k)
+tailˢ s = force (tail▹ᵏ ∘ s)
 
 head-consˢ : (a : A) → (as : Stream A)
            → headˢ (consˢ a as) ＝ a
@@ -82,6 +82,9 @@ head-consˢ a as = refl
 tail-consˢ : (a : A) → (as : Stream A)
            → tailˢ (consˢ a as) ＝ as
 tail-consˢ a as = fun-ext (delay-force as)
+
+tail-eq : (s : Stream A) → ∀ k → tail▹ᵏ (s k) ＝ next (tailˢ s k)
+tail-eq s k = sym $ ▹-ext (force-delay (tail▹ᵏ ∘ s) k)
 
 consˢ-inj : {h₁ h₂ : A} {t₁ t₂ : Stream A}
           → consˢ h₁ t₁ ＝ consˢ h₂ t₂

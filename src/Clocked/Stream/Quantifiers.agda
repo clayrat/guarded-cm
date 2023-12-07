@@ -100,7 +100,7 @@ data gAny≤ (k : Cl) (P : A → 𝒰 ℓ′) : ℕ → gStream k A → 𝒰 (le
 Any≤ : (A → 𝒰 ℓ′) → ℕ → Stream A → 𝒰 (level-of-type A ⊔ ℓ′)
 Any≤ P n s = ∀ k → gAny≤ k P n (s k)
 
-data gAll≤ (k : Cl)  (P : A → 𝒰 ℓ′) : ℕ → gStream k A → 𝒰 (level-of-type A ⊔ ℓ′) where
+data gAll≤ (k : Cl) (P : A → 𝒰 ℓ′) : ℕ → gStream k A → 𝒰 (level-of-type A ⊔ ℓ′) where
   gAll≤-nil  : ∀ {a s▹}
              → P a
              → gAll≤ k P zero (cons a s▹)
@@ -110,6 +110,15 @@ data gAll≤ (k : Cl)  (P : A → 𝒰 ℓ′) : ℕ → gStream k A → 𝒰 (l
 
 All≤ : (A → 𝒰 ℓ′) → ℕ → Stream A → 𝒰 (level-of-type A ⊔ ℓ′)
 All≤ P n s = ∀ k → gAll≤ k P n (s k)
+
+All≤-nil : ∀ {P : A → 𝒰 ℓ′} {a s}
+         → P a → All≤ P zero (consˢ a s)
+All≤-nil p k = gAll≤-nil p
+
+All≤-cons : ∀ {P : A → 𝒰 ℓ′} {a s n}
+          → P a → All≤ P n s  -- guard?
+          → All≤ P (suc n) (consˢ a s)
+All≤-cons p a k = gAll≤-cons p (next (a k))
 
 -- adjacent elements
 

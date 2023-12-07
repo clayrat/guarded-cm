@@ -129,6 +129,9 @@ pred-suc {c} = fun-ext (delay-force c)
 suᶜ≠zeᶜ : {c : ℕ∞} → suᶜ c ≠ zeᶜ
 suᶜ≠zeᶜ e = cosu≠coze (happly e k0)
 
+inftyᶜ≠zeᶜ : inftyᶜ ≠ zeᶜ
+inftyᶜ≠zeᶜ e = cosu≠coze (happly e k0)
+
 suᶜ-inj : (c1 c2 : ℕ∞) → suᶜ c1 ＝ suᶜ c2 → c1 ＝ c2
 suᶜ-inj c1 c2 e = sym (pred-suc {c = c1}) ∙ ap pred0ᶜ e ∙ pred-suc {c = c2}
 

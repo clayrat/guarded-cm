@@ -59,6 +59,12 @@ data _≤ᵏ_ : ℕ∞ᵏ k → ℕ∞ᵏ k → 𝒰 where
 _≤ᶜ_ : ℕ∞ → ℕ∞ → 𝒰
 x ≤ᶜ y = ∀ k → x k ≤ᵏ y k
 
+z≤ᶜn : {x : ℕ∞} → zeᶜ ≤ᶜ x
+z≤ᶜn k = z≤ᵏn
+
+s≤ᶜs : {x y : ℕ∞} → x ≤ᶜ y → suᶜ x ≤ᶜ suᶜ y
+s≤ᶜs l k = s≤ᵏs (next (l k))
+
 ¬s≤ᶜz : (x : ℕ∞) → ¬ (suᶜ x ≤ᶜ zeᶜ)
 ¬s≤ᶜz x prf = ¬s≤ᵏz (next (x k0)) (prf k0)
 
