@@ -2,19 +2,55 @@
 module Clocked.Stream where
 
 open import Prelude
-open import Data.Bool
-open import Data.Nat
-open import Data.List
+open import Data.Bool hiding (Code ; decode)
+open import Data.Nat hiding (Code ; decode)
+open import Data.List hiding (Code ; decode)
 open import Later
 
 private variable
-  A B C : 𝒰
+  ℓ ℓ′ ℓ″ : Level
+  A : 𝒰 ℓ
+  B : 𝒰 ℓ′
+  C : 𝒰 ℓ″
   k : Cl
 
 -- clocked streams
 
-data gStream (k : Cl) (A : 𝒰) : 𝒰 where
+data gStream (k : Cl) (A : 𝒰 ℓ) : 𝒰 ℓ where
   cons : A → ▹ k (gStream k A) → gStream k A
+
+Code-body : ▹ k (gStream k A → gStream k A → 𝒰 (level-of-type A))
+               → gStream k A → gStream k A → 𝒰 (level-of-type A)
+Code-body {k} C▹ (cons h₁ t▹₁) (cons h₂ t▹₂) = (h₁ ＝ h₂) × ▸ k (C▹ ⊛ t▹₁ ⊛ t▹₂)
+
+Code : gStream k A → gStream k A → 𝒰 (level-of-type A)
+Code = fix Code-body
+
+Code-refl-body : ▹ k ((s : gStream k A) → Code s s) → (s : gStream k A) → Code s s
+Code-refl-body C▹ (cons h t▹) =
+  refl , λ α → transport (λ i → pfix Code-body (~ i) α (t▹ α) (t▹ α)) ((C▹ ⊛ t▹) α)
+
+Code-refl : (s : gStream k A) → Code s s
+Code-refl = fix Code-refl-body
+
+decode : (s t : gStream k A) → Code s t → s ＝ t
+decode (cons h₁ t▹₁) (cons h₂ t▹₂) (e , c) =
+  ap² cons e (▹-ext λ α → decode (t▹₁ α) (t▹₂ α) (transport (λ i → pfix Code-body i α (t▹₁ α) (t▹₂ α)) (c α)))
+
+encode : {c1 c2 : gStream k A} → c1 ＝ c2 → Code c1 c2
+encode {c1} {c2} e = subst (Code c1) e (Code-refl c1)
+
+-- TODO hlevel
+
+cons-inj : {h₁ h₂ : A} {t▹₁ t▹₂ : ▹ k (gStream k A)}
+         → cons h₁ t▹₁ ＝ cons h₂ t▹₂
+         → (h₁ ＝ h₂) × (t▹₁ ＝ t▹₂)
+cons-inj {t▹₁} {t▹₂} e =
+  let ee = encode e in
+  ee .fst , ▹-ext λ α → decode (t▹₁ α) (t▹₂ α) (transport (λ i → pfix Code-body i α (t▹₁ α) (t▹₂ α)) (ee .snd α))
+
+cons-δ : A → gStream k A → gStream k A
+cons-δ a s = cons a (next s)
 
 headᵏ : gStream k A → A
 headᵏ (cons x xs) = x
@@ -25,11 +61,13 @@ tail▹ᵏ (cons x xs) = xs
 uncons-eqᵏ : (s : gStream k A) → s ＝ cons (headᵏ s) (tail▹ᵏ s)
 uncons-eqᵏ (cons x xs) = refl
 
+-- coinductive streams
+
 Stream : 𝒰 → 𝒰
 Stream A = ∀ k → gStream k A
 
 consˢ : A → Stream A → Stream A
-consˢ a s k = cons a (next (s k))
+consˢ a s k = cons-δ a (s k)
 
 headˢ : Stream A → A
 headˢ s = headᵏ (s k0)
@@ -44,6 +82,12 @@ head-consˢ a as = refl
 tail-consˢ : (a : A) → (as : Stream A)
            → tailˢ (consˢ a as) ＝ as
 tail-consˢ a as = fun-ext (delay-force as)
+
+consˢ-inj : {h₁ h₂ : A} {t₁ t₂ : Stream A}
+          → consˢ h₁ t₁ ＝ consˢ h₂ t₂
+          → (h₁ ＝ h₂) × (t₁ ＝ t₂)
+consˢ-inj e =
+  (cons-inj (happly e k0) .fst , fun-ext (force λ k → ▹-ap (cons-inj (happly e k) .snd)))
 
 -- repeat
 
@@ -131,28 +175,6 @@ mapˢ-fusion f g s = fun-ext (mapᵏ-fusion f g ∘ s)
 mapˢ-repeat : (a : A) → (f : A → B) → mapˢ f (repeatˢ a) ＝ repeatˢ (f a)
 mapˢ-repeat a f = fun-ext λ k → mapᵏ-repeat a f
 
--- lift a predicate to a stream
-
-data gPStr (k : Cl) (P : A → 𝒰) : gStream k A → 𝒰 where
-  Pcons : ∀ {a as▹} → P a → ▹[ α ∶ k ] (gPStr k P (as▹ α)) → gPStr k P (cons a as▹)
-
-gPStr-map : {P Q : A → 𝒰} {f : A → A}
-          → ({x : A} → P x → Q (f x))
-          → (s : gStream k A) → gPStr k P s → gPStr k Q (mapᵏ f s)
-gPStr-map {k} {Q} {f} pq =
-  fix {k = k} λ prf▹ → λ where
-    .(cons a as▹) (Pcons {a} {as▹} pa pas▹) →
-       subst (gPStr k Q) (sym $ mapᵏ-eq f a as▹) $
-       Pcons (pq pa) (λ α → prf▹ α (as▹ α) (pas▹ α))
-
-PStr : (A → 𝒰) → Stream A → 𝒰
-PStr P s = ∀ k → gPStr k P (s k)
-
-PStr-map : {P Q : A → 𝒰} {f : A → A}
-         → ({x : A} → P x → Q (f x))
-         → (s : Stream A) → PStr P s → PStr Q (mapˢ f s)
-PStr-map pq s ps k = gPStr-map pq (s k) (ps k)
-
 -- folding
 
 foldrᵏ-body : (A → ▹ k B → B) → ▹ k (gStream k A → B) → gStream k A → B
@@ -228,8 +250,19 @@ tail-interleaveˢ s1 s2 =
 
 -- zipping
 
+zipWithᵏ-body : (A → B → C)
+              → ▹ k (gStream k A → gStream k B → gStream k C)
+              → gStream k A → gStream k B → gStream k C
+zipWithᵏ-body f zw▹ sa sb = cons (f (headᵏ sa) (headᵏ sb)) (zw▹ ⊛ tail▹ᵏ sa ⊛ tail▹ᵏ sb)
+
 zipWithᵏ : (A → B → C) → gStream k A → gStream k B → gStream k C
-zipWithᵏ f = fix (λ zw▹ sa sb → cons (f (headᵏ sa) (headᵏ sb)) (zw▹ ⊛ tail▹ᵏ sa ⊛ tail▹ᵏ sb))
+zipWithᵏ f = fix (zipWithᵏ-body f)
+
+zipWithᵏ-eq : (f : A → B → C)
+            → ∀ a as▹ b bs▹
+            → zipWithᵏ {k = k} f (cons a as▹) (cons b bs▹) ＝ cons (f a b) (▹map (zipWithᵏ f) as▹ ⊛ bs▹)
+zipWithᵏ-eq f a as▹ b bs▹ =
+  happly (happly (fix-path (zipWithᵏ-body f)) (cons a as▹)) (cons b bs▹)
 
 zipWithˢ : (A → B → C) → Stream A → Stream B → Stream C
 zipWithˢ f sa sb k = zipWithᵏ f (sa k) (sb k)

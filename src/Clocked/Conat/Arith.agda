@@ -267,6 +267,81 @@ maxᵏ-inftyr x = maxᵏ-comm x inftyᵏ ∙ maxᵏ-inftyl x
 ≤ᵏ-max-r : (x y : ℕ∞ᵏ k) → y ≤ᵏ maxᵏ x y
 ≤ᵏ-max-r x y = subst (y ≤ᵏ_) (maxᵏ-comm y x) (≤ᵏ-max-l y x)
 
+maxᶜ : ℕ∞ → ℕ∞ → ℕ∞
+maxᶜ x y k = maxᵏ (x k) (y k)
+
+-- closeness
+
+closenessᵏ-body : ▹ k (ℕ∞ᵏ k → ℕ∞ᵏ k → ℕ∞ᵏ k) → ℕ∞ᵏ k → ℕ∞ᵏ k → ℕ∞ᵏ k
+closenessᵏ-body c▹  coze      coze     = inftyᵏ
+closenessᵏ-body c▹  coze     (cosu _)  = coze
+closenessᵏ-body c▹ (cosu _)   coze     = coze
+closenessᵏ-body c▹ (cosu m▹) (cosu n▹) = cosu (c▹ ⊛ m▹ ⊛ n▹)
+
+closenessᵏ : ℕ∞ᵏ k → ℕ∞ᵏ k → ℕ∞ᵏ k
+closenessᵏ = fix closenessᵏ-body
+
+closenessᵏ-refl : (n : ℕ∞ᵏ k) → closenessᵏ n n ＝ inftyᵏ
+closenessᵏ-refl = fix λ ih▹ → λ where
+  coze      → refl
+  (cosu n▹) → ap cosu (▹-ext λ α → (λ i → pfix closenessᵏ-body i α (n▹ α) (n▹ α))
+                                 ∙ ih▹ α (n▹ α)
+                                 ∙ ▹-ap (sym $ pfix cosu) α)
+
+close∞→equalᵏ : (m n : ℕ∞ᵏ k) → closenessᵏ m n ＝ inftyᵏ → m ＝ n
+close∞→equalᵏ = fix λ ih▹ → λ where
+  coze       coze     e → refl
+  coze      (cosu _)  e → absurd (cosu≠coze (sym e))
+  (cosu _)   coze     e → absurd (cosu≠coze (sym e))
+  (cosu m▹) (cosu n▹) e →
+    ap cosu (▹-ext λ α → ih▹ α (m▹ α) (n▹ α) ((λ i → pfix closenessᵏ-body (~ i) α (m▹ α) (n▹ α))
+                                              ∙ ▹-ap (cosu-inj e ∙ pfix cosu) α))
+
+closenessᵏ-comm : (m n : ℕ∞ᵏ k) → closenessᵏ m n ＝ closenessᵏ n m
+closenessᵏ-comm = fix λ ih▹ → λ where
+  coze       coze     → refl
+  coze      (cosu _)  → refl
+  (cosu _)   coze     → refl
+  (cosu m▹) (cosu n▹) → ap cosu (▹-ext λ α → (λ i → pfix closenessᵏ-body i α (m▹ α) (n▹ α))
+                                           ∙ ih▹ α (m▹ α) (n▹ α)
+                                           ∙ (λ i → pfix closenessᵏ-body (~ i) α (n▹ α) (m▹ α)))
+
+closenessᵏ-ultra : (x y z : ℕ∞ᵏ k)
+                 → minᵏ (closenessᵏ x y) (closenessᵏ y z) ≤ᵏ closenessᵏ x z
+closenessᵏ-ultra = fix λ ih▹ → λ where
+  coze       coze      coze     → ≤ᵏ-infty (minᵏ inftyᵏ inftyᵏ)
+  coze       coze     (cosu z▹) → z≤ᵏn
+  coze      (cosu y▹)  coze     → z≤ᵏn
+  coze      (cosu y▹) (cosu z▹) → z≤ᵏn
+  (cosu x▹)  coze      coze     → z≤ᵏn
+  (cosu x▹)  coze     (cosu z▹) → z≤ᵏn
+  (cosu x▹) (cosu y▹)  coze     → z≤ᵏn
+  (cosu x▹) (cosu y▹) (cosu z▹) →
+    s≤ᵏs λ α →
+      transport (λ i → pfix minᵏ-body (~ i) α (dfix closenessᵏ-body α (x▹ α) (y▹ α))
+                                              (dfix closenessᵏ-body α (y▹ α) (z▹ α))
+                                            ≤ᵏ dfix closenessᵏ-body α (x▹ α) (z▹ α)) $
+      transport (λ i → minᵏ (pfix closenessᵏ-body (~ i) α (x▹ α) (y▹ α))
+                            (pfix closenessᵏ-body (~ i) α (y▹ α) (z▹ α))
+                          ≤ᵏ pfix closenessᵏ-body (~ i) α (x▹ α) (z▹ α)) $
+      ih▹ α (x▹ α) (y▹ α) (z▹ α)
+
+closenessᶜ : ℕ∞ → ℕ∞ → ℕ∞
+closenessᶜ x y k = closenessᵏ (x k) (y k)
+
+closenessᶜ-refl : (n : ℕ∞) → closenessᶜ n n ＝ inftyᶜ
+closenessᶜ-refl n = fun-ext λ k → closenessᵏ-refl (n k)
+
+close∞→equalᶜ : (m n : ℕ∞) → closenessᶜ m n ＝ inftyᶜ → m ＝ n
+close∞→equalᶜ m n e = fun-ext λ k → close∞→equalᵏ (m k) (n k) (happly e k)
+
+closenessᶜ-comm : (m n : ℕ∞) → closenessᶜ m n ＝ closenessᶜ n m
+closenessᶜ-comm m n = fun-ext λ k → closenessᵏ-comm (m k) (n k)
+
+closenessᶜ-ultra : (x y z : ℕ∞)
+                 → minᶜ (closenessᶜ x y) (closenessᶜ y z) ≤ᶜ closenessᶜ x z
+closenessᶜ-ultra x y z k = closenessᵏ-ultra (x k) (y k) (z k)
+
 -- addition
 
 +ᵏ-body : ▹ k (ℕ∞ᵏ k → ℕ∞ᵏ k → ℕ∞ᵏ k) → ℕ∞ᵏ k → ℕ∞ᵏ k → ℕ∞ᵏ k

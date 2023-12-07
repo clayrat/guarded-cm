@@ -4,12 +4,12 @@ module Clocked.Conat where
 open import Prelude
 open import Data.Empty
 open import Data.Unit
-open import Data.Bool
-open import Data.Maybe
-open import Data.Nat
+open import Data.Bool hiding (Code ; decode)
+open import Data.Maybe hiding (Code)
+open import Data.Nat hiding (Code ; decode)
 open import Structures.IdentitySystem
+
 open import Later
-open import Clocked.Stream
 
 private variable
   A B C : 𝒰
@@ -53,19 +53,18 @@ Code-is-prop (cosu x) (cosu y) =
 ℕ∞ᵏ-identity-system : is-identity-system (Code {k}) Code-refl
 ℕ∞ᵏ-identity-system = set-identity-system Code-is-prop (λ {x} {y} → decode x y)
 
-instance
-  ℕ∞ᵏ-is-set : is-set (ℕ∞ᵏ k)
-  ℕ∞ᵏ-is-set = identity-system→is-of-hlevel 1 ℕ∞ᵏ-identity-system Code-is-prop
+ℕ∞ᵏ-is-set : is-set (ℕ∞ᵏ k)
+ℕ∞ᵏ-is-set = identity-system→is-of-hlevel 1 ℕ∞ᵏ-identity-system Code-is-prop
 
 encode : {c1 c2 : ℕ∞ᵏ k} → c1 ＝ c2 → Code c1 c2
-encode {c1} {c2} eq = subst (Code c1) eq (Code-refl c1)
+encode {c1} {c2} e = subst (Code c1) e (Code-refl c1)
 
 cosu≠coze : {c : ▹ k (ℕ∞ᵏ k)} → cosu c ≠ coze
 cosu≠coze {c} = encode
 
 cosu-inj : {c1 c2 : ▹ k (ℕ∞ᵏ k)} → cosu c1 ＝ cosu c2 → c1 ＝ c2
-cosu-inj {c1} {c2} eq =
-  ▹-ext (λ α → decode (c1 α) (c2 α) (transport (λ i → pfix Code-body i α (c1 α) (c2 α)) (encode eq α)))
+cosu-inj {c1} {c2} e =
+  ▹-ext (λ α → decode (c1 α) (c2 α) (transport (λ i → pfix Code-body i α (c1 α) (c2 α)) (encode e α)))
 
 inftyᵏ : ℕ∞ᵏ k
 inftyᵏ = fix cosu
@@ -106,6 +105,9 @@ zeᶜ k = coze
 suᶜ : ℕ∞ → ℕ∞
 suᶜ s k = incᵏ (s k)
 
+ℕ∞-is-set : is-set ℕ∞
+ℕ∞-is-set = Π-is-of-hlevel 2 λ k → ℕ∞ᵏ-is-set
+
 inftyᶜ : ℕ∞
 inftyᶜ k = inftyᵏ
 
@@ -124,8 +126,11 @@ pred-zero = fun-ext (delay-force (λ _ → coze))
 pred-suc : {c : ℕ∞} → pred0ᶜ (suᶜ c) ＝ c
 pred-suc {c} = fun-ext (delay-force c)
 
+suᶜ≠zeᶜ : {c : ℕ∞} → suᶜ c ≠ zeᶜ
+suᶜ≠zeᶜ e = cosu≠coze (happly e k0)
+
 suᶜ-inj : (c1 c2 : ℕ∞) → suᶜ c1 ＝ suᶜ c2 → c1 ＝ c2
-suᶜ-inj c1 c2 eq = sym (pred-suc {c = c1}) ∙ ap pred0ᶜ eq ∙ pred-suc {c = c2}
+suᶜ-inj c1 c2 e = sym (pred-suc {c = c1}) ∙ ap pred0ᶜ e ∙ pred-suc {c = c2}
 
 pred-inf : pred0ᶜ inftyᶜ ＝ inftyᶜ
 pred-inf = fun-ext λ k →
@@ -179,8 +184,8 @@ is-finite-upᵏ : (x : ℕ∞ᵏ k) → is-finiteᵏ x → is-finiteᵏ (incᵏ 
 is-finite-upᵏ x (n , e) = suc n , ap cosu (▹-ext (next e))
 
 infty-not-finite′ : (n : ℕ) → inftyᶜ ≠ fromℕᶜ n
-infty-not-finite′  zero   eq = cosu≠coze $ happly eq k0
-infty-not-finite′ (suc n) eq = infty-not-finite′ n (suᶜ-inj inftyᶜ (fromℕᶜ n) (su-inftyᶜ ∙ eq))
+infty-not-finite′  zero   e = cosu≠coze $ happly e k0
+infty-not-finite′ (suc n) e = infty-not-finite′ n (suᶜ-inj inftyᶜ (fromℕᶜ n) (su-inftyᶜ ∙ e))
 
 is-finiteᶜ : ℕ∞ → 𝒰
 is-finiteᶜ c = Σ[ n ꞉ ℕ ] (fromℕᶜ n ＝ c)
@@ -189,34 +194,4 @@ finite-sizeᶜ : {x : ℕ∞} → is-finiteᶜ x → ℕ
 finite-sizeᶜ (n , _) = n
 
 infty-not-finite : ¬ is-finiteᶜ inftyᶜ
-infty-not-finite (n , eq) = infty-not-finite′ n (sym eq)
-
--- stream interaction
-
-to-streamᵏ-body : ▹ k (ℕ∞ᵏ k → gStream k Bool) → ℕ∞ᵏ k → gStream k Bool
-to-streamᵏ-body ts▹  coze     = repeatᵏ false
-to-streamᵏ-body ts▹ (cosu n▹) = cons true (ts▹ ⊛ n▹)
-
-to-streamᵏ : ℕ∞ᵏ k → gStream k Bool
-to-streamᵏ = fix to-streamᵏ-body
-
-infty-stream : to-streamᵏ {k = k} inftyᵏ ＝ repeatᵏ true
-infty-stream {k} = fix {k = k} λ prf▹ →
-  to-streamᵏ inftyᵏ
-    ＝⟨ ap (_$ inftyᵏ) (fix-path to-streamᵏ-body) ⟩
-  to-streamᵏ-body (next to-streamᵏ) inftyᵏ
-    ＝⟨ ap (to-streamᵏ-body (next to-streamᵏ)) (fix-path cosu) ⟩
-  to-streamᵏ-body (next to-streamᵏ) (cosu (next inftyᵏ))
-    ＝⟨⟩
-  cons true (next (to-streamᵏ inftyᵏ))
-    ＝⟨ ap (cons true) (▹-ext prf▹) ⟩
-  cons true (next (repeatᵏ true))
-    ＝⟨ sym $ fix-path (cons true) ⟩
-  repeatᵏ true
-    ∎
-
-to-streamᶜ : ℕ∞ → Stream Bool
-to-streamᶜ c k = to-streamᵏ (c k)
-
-_>ℕ_ : ℕ∞ → ℕ → Bool
-c >ℕ n = nthˢ n (to-streamᶜ c)
+infty-not-finite (n , e) = infty-not-finite′ n (sym e)
