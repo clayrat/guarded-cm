@@ -41,14 +41,14 @@ Code-refl = fix Code-refl-body
 decode : ∀ m n → Code {k} m n → m ＝ n
 decode  coze     coze    c = refl
 decode (cosu x) (cosu y) c =
-  ap cosu (▹-ext (λ α → decode (x α) (y α) (transport (λ i → (pfix Code-body) i α (x α) (y α)) (c α))))
+  ap cosu (▹-ext λ α → decode (x α) (y α) (transport (λ i → (pfix Code-body) i α (x α) (y α)) (c α)))
 
 Code-is-prop : ∀ m n → is-prop (Code {k} m n)
 Code-is-prop coze      coze    = hlevel!
 Code-is-prop coze     (cosu _) = hlevel!
 Code-is-prop (cosu _)  coze    = hlevel!
 Code-is-prop (cosu x) (cosu y) =
-  ▹isProp→isProp▹ (λ α → transport (λ i → is-prop ((sym $ pfix Code-body) i α (x α) (y α))) (Code-is-prop (x α) (y α)))
+  ▹is-prop λ α → transport (λ i → is-prop ((sym $ pfix Code-body) i α (x α) (y α))) (Code-is-prop (x α) (y α))
 
 ℕ∞ᵏ-identity-system : is-identity-system (Code {k}) Code-refl
 ℕ∞ᵏ-identity-system = set-identity-system Code-is-prop (λ {x} {y} → decode x y)
@@ -64,7 +64,7 @@ cosu≠coze {c} = encode
 
 cosu-inj : {c1 c2 : ▹ k (ℕ∞ᵏ k)} → cosu c1 ＝ cosu c2 → c1 ＝ c2
 cosu-inj {c1} {c2} e =
-  ▹-ext (λ α → decode (c1 α) (c2 α) (transport (λ i → pfix Code-body i α (c1 α) (c2 α)) (encode e α)))
+  ▹-ext λ α → decode (c1 α) (c2 α) (transport (λ i → pfix Code-body i α (c1 α) (c2 α)) (encode e α))
 
 inftyᵏ : ℕ∞ᵏ k
 inftyᵏ = fix cosu
