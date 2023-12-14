@@ -40,13 +40,16 @@ nextR⇉ {A} = subst (Rou-next A) (pfix (Rou-body A))
        → Rou-next A (dfix (Rou-body A))
 ⇉nextR {A} = subst (Rou-next A) (sym $ pfix (Rou-body A))
 
+-- constructors & recursor
+
 overR : Rou A
 overR = inl tt
 
 nextR : ((▹ Rou A → ▹ Colist A) → Colist A) → Rou A
-nextR {A} f = inr (⇉nextR f)
+nextR = inr ∘ ⇉nextR
 
-rec : B → (((▹ Rou A → ▹ Colist A) → Colist A) → B) → Rou A → B
+rec : B → (((▹ Rou A → ▹ Colist A) → Colist A) → B)
+    → Rou A → B
 rec o _  (inl tt) = o
 rec _ nf (inr f)  = nf (nextR⇉ f)
 

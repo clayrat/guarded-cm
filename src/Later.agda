@@ -201,6 +201,11 @@ delay a k _ = a k
     sq j (i = i0) = delay-force (λ _ → f x) k j
     sq j (i = i1) = delay-force (λ _ → g x) k j
 
+-- feedback combinator
+
+feedback : (▹ k A → B k × A) → B k
+feedback f = fst (fix (f ∘ ▹map snd))
+
 -- fixed point uniqueness
 
 dfix-unique : ∀ {f▹ : ▹ k A → A} {x : ▹ k A}

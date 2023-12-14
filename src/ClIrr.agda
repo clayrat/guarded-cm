@@ -5,7 +5,7 @@ module ClIrr where
 open import Prelude
 open import Later
 
--- whenever t : ∀κ.A and κ is not in A, then evaluating t at different clocks give the same result
+-- whenever x : ∀κ.A and κ is not in A, then evaluating x at different clocks gives the same result
 postulate
   clock-irr : {ℓ : Level} {A : 𝒰 ℓ} {κ₁ κ₂ : Cl}
             → (x : Cl → A) → x κ₁ ＝ x κ₂
