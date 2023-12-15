@@ -16,32 +16,6 @@ private variable
 
 -- predicates on a stream
 
-data gAny (k : Cl) (P : A → 𝒰 ℓ′) : gStream k A → 𝒰 (level-of-type A ⊔ ℓ′) where
-  gAny-here  : ∀ {a s▹}
-             → P a → gAny k P (cons a s▹)
-  gAny-there : ∀ {a s▹}
-             → ▹[ α ∶ k ] (gAny k P (s▹ α))
-             → gAny k P (cons a s▹)
-
-gAny-map : {P : A → 𝒰 ℓ′} {Q : B → 𝒰 ℓ″} {f : A → B}
-         → ({x : A} → P x → Q (f x))
-         → (s : gStream k A)
-         → gAny k P s → gAny k Q (mapᵏ f s)
-gAny-map {k} {Q} {f} pq =
-  fix λ prf▹ → λ where
-    .(cons a s▹) (gAny-here {a} {s▹} p)   → gAny-here (pq p)
-    .(cons a s▹) (gAny-there {a} {s▹} a▹) →
-       subst (gAny k Q) (sym $ mapᵏ-eq f a s▹) $
-       gAny-there {a = f a} λ α → prf▹ α (s▹ α) (a▹ α)
-
-Any : (A → 𝒰 ℓ′) → Stream A → 𝒰 (level-of-type A ⊔ ℓ′)
-Any P s = ∀ k → gAny k P (s k)
-
-Any-map : {P : A → 𝒰 ℓ′} {Q : B → 𝒰 ℓ″} {f : A → B}
-        → ({x : A} → P x → Q (f x))
-        → (s : Stream A) → Any P s → Any Q (mapˢ f s)
-Any-map pq s ps k = gAny-map pq (s k) (ps k)
-
 data gAll (k : Cl) (P : A → 𝒰 ℓ′) : gStream k A → 𝒰 (level-of-type A ⊔ ℓ′) where
   gAll-cons : ∀ {a s▹}
             → P a → ▹[ α ∶ k ] (gAll k P (s▹ α))
@@ -79,15 +53,6 @@ All-zipWith : {P : A → 𝒰 ℓ′} {Q : B → 𝒰 ℓ″} {R : C → 𝒰 �
             → All P s → All Q t → All R (zipWithˢ f s t)
 All-zipWith pqr s t ps pt k = gAll-zipWith pqr (s k) (t k) (ps k) (pt k)
 
-¬gAny→gAll¬ : ∀ {P : A → 𝒰 ℓ′}
-            → (s : gStream k A) → ¬ (gAny k P s) → gAll k (¬_ ∘ P) s
-¬gAny→gAll¬ {k} {P} = fix λ prf▹ → λ where
-  (cons h t▹) n →
-    gAll-cons (n ∘ gAny-here)
-             (λ α → prf▹ α (t▹ α) (λ a → n (gAny-there (λ β → subst (gAny k P) (tick-irr t▹ α β) a))))
-
--- ¬Any→All¬ ?
-
 -- prefix versions
 
 data gAny≤ (k : Cl) (P : A → 𝒰 ℓ′) : ℕ → gStream k A → 𝒰 (level-of-type A ⊔ ℓ′) where
@@ -97,8 +62,25 @@ data gAny≤ (k : Cl) (P : A → 𝒰 ℓ′) : ℕ → gStream k A → 𝒰 (le
               → ▹[ α ∶ k ] (gAny≤ k P n (s▹ α))
               → gAny≤ k P (suc n) (cons a s▹)
 
+gAny≤-map : {P : A → 𝒰} {Q : B → 𝒰} {f : A → B}
+          → (∀ {x} → P x → Q (f x))
+          → (n : ℕ) → (s : gStream k A)
+          → gAny≤ k P n s → gAny≤ k Q n (mapᵏ f s)
+gAny≤-map {k} {Q} {f} pq =
+  fix λ prf▹ → λ where
+    n        .(cons a s▹) (gAny≤-here {a} {s▹} pa)      → gAny≤-here (pq pa)
+    .(suc n) .(cons a s▹) (gAny≤-there {a} {s▹} {n} a▹) →
+       subst (gAny≤ k Q (suc n)) (sym $ mapᵏ-eq f a s▹) $
+       gAny≤-there (prf▹ ⊛ (next n) ⊛′ s▹ ⊛′ a▹)
+
 Any≤ : (A → 𝒰 ℓ′) → ℕ → Stream A → 𝒰 (level-of-type A ⊔ ℓ′)
 Any≤ P n s = ∀ k → gAny≤ k P n (s k)
+
+Any≤-map : {P : A → 𝒰} {Q : B → 𝒰} {f : A → B}
+         → (∀ {x} → P x → Q (f x))
+         → (n : ℕ) → (s : Stream A)
+         → Any≤ P n s → Any≤ Q n (mapˢ f s)
+Any≤-map pq n s a k = gAny≤-map pq n (s k) (a k)
 
 data gAll≤ (k : Cl) (P : A → 𝒰 ℓ′) : ℕ → gStream k A → 𝒰 (level-of-type A ⊔ ℓ′) where
   gAll≤-nil  : ∀ {a s▹}

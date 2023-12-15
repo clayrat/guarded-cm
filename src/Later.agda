@@ -8,6 +8,7 @@ open import Foundations.Cubes
 open import Prim
 
 infixl 4 _⊛_
+infixl 4 _⊛′_
 infixr -2 ▹-syntax
 
 postulate
@@ -61,6 +62,12 @@ next x α = x
 _⊛_ : ▹ k ((a : A) → B a)
   → (a : ▹ k A) → ▹[ α ∶ k ] B (a α)
 (f ⊛ x) α = f α (x α)
+
+_⊛′_ : ∀ {A : ▹ k (𝒰 ℓ)} {B : ▹[ α ∶ k ] (A α → 𝒰 ℓ′)}
+     → ▹[ α ∶ k ] ((a : A α) → B α a)
+     → (a : ▹[ α ∶ k ] A α)
+     → ▹[ α ∶ k ] B α (a α)
+(f ⊛′ x) α = f α (x α)
 
 ▹map : ((a : A) → B a)
   → (a : ▹ k A) → ▹[ α ∶ k ] B (a α)

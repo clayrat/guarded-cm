@@ -21,8 +21,8 @@ data gPart (k : Cl) (A : 𝒰) : 𝒰 where
 neverᵏ : gPart k A
 neverᵏ = fix later
 
-stallᵏ : gPart k A → gPart k A
-stallᵏ = later ∘ next
+δᵏ : gPart k A → gPart k A
+δᵏ = later ∘ next
 
 _>>=ᵏ_ : gPart k A → (A → gPart k B) → gPart k B
 now x   >>=ᵏ f = f x
@@ -46,8 +46,8 @@ Part A = ∀ k → gPart k A
 neverᵖ : Part A
 neverᵖ k = neverᵏ
 
-stallᵖ : Part A → Part A
-stallᵖ p k = stallᵏ (p k)
+δᵖ : Part A → Part A
+δᵖ p k = δᵏ (p k)
 
 pureᵖ : A → Part A
 pureᵖ a k = now a
