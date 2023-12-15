@@ -16,6 +16,33 @@ private variable
 
 -- predicates on a stream
 
+data gAt (k : Cl) (P : A → 𝒰 ℓ′) : ℕ → gStream k A → 𝒰 (level-of-type A ⊔ ℓ′) where
+  gAt-here  : ∀ {a s▹}
+            → P a → gAt k P 0 (cons a s▹)
+  gAt-there : ∀ {a s▹ n}
+            → ▹[ α ∶ k ] (gAt k P n (s▹ α))
+            → gAt k P (suc n) (cons a s▹)
+
+At : (A → 𝒰 ℓ′) → ℕ → Stream A → 𝒰 (level-of-type A ⊔ ℓ′)
+At P n s = ∀ k → gAt k P n (s k)
+
+gAt-map : {P : A → 𝒰} {Q : B → 𝒰} {f : A → B}
+        → (∀ {x} → P x → Q (f x))
+        → (n : ℕ) → (s : gStream k A)
+        → gAt k P n s → gAt k Q n (mapᵏ f s)
+gAt-map {k} {Q} {f} pq =
+  fix λ prf▹ → λ where
+    .zero    .(cons a s▹) (gAt-here {a} {s▹} p)   → gAt-here (pq p)
+    .(suc n) .(cons a s▹) (gAt-there {a} {s▹} {n} a▹) →
+       subst (gAt k Q (suc n)) (sym $ mapᵏ-eq f a s▹) $
+       gAt-there {a = f a} (prf▹ ⊛ next n ⊛′ s▹ ⊛′ a▹)
+
+At-map : {P : A → 𝒰} {Q : B → 𝒰} {f : A → B}
+       → (∀ {x} → P x → Q (f x))
+       → (n : ℕ) → (s : Stream A)
+       → At P n s → At Q n (mapˢ f s)
+At-map pq n s a k = gAt-map pq n (s k) (a k)
+
 data gAll (k : Cl) (P : A → 𝒰 ℓ′) : gStream k A → 𝒰 (level-of-type A ⊔ ℓ′) where
   gAll-cons : ∀ {a s▹}
             → P a → ▹[ α ∶ k ] (gAll k P (s▹ α))

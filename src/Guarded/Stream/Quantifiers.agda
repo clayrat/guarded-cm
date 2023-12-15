@@ -15,6 +15,24 @@ private variable
 
 -- predicates on a stream
 
+data Atˢ (P : A → 𝒰 ℓ′) : ℕ → Stream A → 𝒰 (level-of-type A ⊔ ℓ′) where
+  At-here  : ∀ {a s▹}
+           → P a → Atˢ P 0 (cons a s▹)
+  At-there : ∀ {a s▹ n}
+           → ▹[ α ] (Atˢ P n (s▹ α))
+           → Atˢ P (suc n) (cons a s▹)
+
+Atˢ-map : {P : A → 𝒰} {Q : B → 𝒰} {f : A → B}
+        → (∀ {x} → P x → Q (f x))
+        → (n : ℕ) → (s : Stream A)
+        → Atˢ P n s → Atˢ Q n (mapˢ f s)
+Atˢ-map {Q} {f} pq =
+  fix λ prf▹ → λ where
+    .zero    .(cons a s▹) (At-here {a} {s▹} p)   → At-here (pq p)
+    .(suc n) .(cons a s▹) (At-there {a} {s▹} {n} a▹) →
+       subst (Atˢ Q (suc n)) (sym $ mapˢ-eq f a s▹) $
+       At-there {a = f a} (prf▹ ⊛ next n ⊛′ s▹ ⊛′ a▹)
+
 data Allˢ (P : A → 𝒰 ℓ′) : Stream A → 𝒰 (level-of-type A ⊔ ℓ′) where
   All-cons : ∀ {a s▹}
            → P a → ▹[ α ] (Allˢ P (s▹ α))
@@ -63,7 +81,7 @@ Any≤ˢ-map {Q} {f} pq =
     n        .(cons a s▹) (Any≤-here {a} {s▹} pa)      → Any≤-here (pq pa)
     .(suc n) .(cons a s▹) (Any≤-there {a} {s▹} {n} a▹) →
        subst (Any≤ˢ Q (suc n)) (sym $ mapˢ-eq f a s▹) $
-       Any≤-there (prf▹ ⊛ (next n) ⊛′ s▹ ⊛′ a▹)
+       Any≤-there (prf▹ ⊛ next n ⊛′ s▹ ⊛′ a▹)
 
 data All≤ˢ (P : A → 𝒰 ℓ′) : ℕ → Stream A → 𝒰 (level-of-type A ⊔ ℓ′) where
   All≤-nil  : ∀ {a s▹}
