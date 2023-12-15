@@ -63,6 +63,15 @@ Allˢ-zipWith {R} {f} pqr = fix λ prf▹ → λ where
      subst (Allˢ R) (sym $ zipWithˢ-eq f a s▹ b t▹) $
      All-cons (pqr pa qb) λ α → prf▹ α (s▹ α) (t▹ α) (as▹ α) (at▹ α)
 
+¬Any→All¬ : ∀ {P : A → 𝒰 ℓ′}
+          → (s : Stream A)
+          → ¬ (Σ[ n ꞉ ℕ ] Atˢ P n s) → Allˢ (¬_ ∘ P) s
+¬Any→All¬ {P} = fix λ prf▹ → λ where
+  (cons h t▹) na →
+    All-cons (λ ph → na (0 , At-here ph))
+             (prf▹ ⊛′ t▹ ⊛′ λ α → λ where
+                (n , a) → na (suc n , At-there λ β → subst (Atˢ P n) (tick-irr t▹ α β) a))
+
 -- prefix versions
 
 data Any≤ˢ (P : A → 𝒰 ℓ′) : ℕ → Stream A → 𝒰 (level-of-type A ⊔ ℓ′) where
