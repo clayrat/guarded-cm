@@ -12,6 +12,7 @@ private variable
   B : A → 𝒰 ℓ′
 
 infixl 4 _⊛_
+infixl 4 _⊛′_
 infixr -2 ▹-syntax
 
 -- We postulate Tick as it is supposed to be an abstract sort.
@@ -37,6 +38,12 @@ _⊛_ : ▹ ((a : A) → B a)
      → (a : ▹ A)
      → ▹[ α ] B (a α)
 (f ⊛ x) α = f α (x α)
+
+_⊛′_ : ∀ {A : ▹ 𝒰 ℓ} {B : ▹[ α ] (A α → 𝒰 ℓ′)}
+     → ▹[ α ] ((a : A α) → B α a)
+     → (a : ▹[ α ] A α)
+     → ▹[ α ] B α (a α)
+(f ⊛′ x) α = f α (x α)
 
 -- not allowed!
 

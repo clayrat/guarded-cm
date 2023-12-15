@@ -5,8 +5,8 @@ open import Prelude
 open import Foundations.Transport
 open import Data.Empty
 open import Data.Bool hiding (Code ; decode ; identity-system)
-open import Data.Nat hiding (Code ; decode  ; identity-system)
-open import Data.Maybe
+open import Data.Nat hiding (Code ; decode ; identity-system)
+open import Data.Maybe hiding (Code ; code-is-of-hlevel ; identity-system)
 open import Data.Sum hiding (Code ; identity-system ; code-is-of-hlevel)
 open import Structures.IdentitySystem.Base
 
