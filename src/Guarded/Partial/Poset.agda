@@ -1,11 +1,12 @@
 {-# OPTIONS --guarded #-}
-module Guarded.Partial.DCPO where
+module Guarded.Partial.Poset where
 
 open import Prelude
 open import Data.Empty
 
 open import LaterG
 open import Guarded.Partial
+open import Guarded.Partial.Converges
 
 private variable
   ℓ ℓ′ ℓ″ : Level
@@ -34,6 +35,15 @@ data _⊑ᵖ_ {ℓ} {A : 𝒰 ℓ} : Part A → A → 𝒰 ℓ where
 never⊑ : (a : A) → never ⊑ᵖ a
 never⊑ a = fix λ ih▹ → l⊑ᵖ λ α → transport (λ i → pfix later (~ i) α ⊑ᵖ a) (ih▹ α)
 
+delay⊑ : (n : ℕ) (a : A) → delay-by n a ⊑ᵖ a
+delay⊑ zero    a = n⊑ᵖ refl
+delay⊑ (suc n) a = l⊑ᵖ (next (delay⊑ n a))
+
+⇓→⊑ : {a : A} {p : Part A}
+    → is-set A
+    → p ⇓ᵖ a → p ⊑ᵖ a
+⇓→⊑ {a} {p} sA = ∥-∥₁.rec (⊑-prop sA a p) λ where (n , e) → subst (_⊑ᵖ a) (sym e) (delay⊑ n a)
+
 -- partial order
 
 data _≤ᵖ_ {ℓ} {A : 𝒰 ℓ} : Part A → Part A → 𝒰 ℓ where
@@ -57,21 +67,23 @@ data _≤ᵖ_ {ℓ} {A : 𝒰 ℓ} : Part A → Part A → 𝒰 ℓ where
   (now x)    (later q▹) → is-prop-η λ xq₁ → absurd (¬now≤later xq₁)
   (later p▹) (later q▹) → is-prop-η λ where (l≤ᵖl pq▹₁) (l≤ᵖl pq▹₂) → ap l≤ᵖl (is-prop-β (▹is-prop (ih▹ ⊛′ p▹ ⊛′ q▹)) pq▹₁ pq▹₂)
 
+-- poset laws
+
 refl≤ : (p : Part A) → p ≤ᵖ p
 refl≤ = fix λ ih▹ → λ where
   (now x) → ≤ᵖn (n⊑ᵖ refl)
   (later p▹) → l≤ᵖl (ih▹ ⊛ p▹)
 
-≤-contra-⊑ : (a : A) → (p q : Part A)
+≤-left-⊑ : (a : A) → (p q : Part A)
            → p ≤ᵖ q → q ⊑ᵖ a → p ⊑ᵖ a
-≤-contra-⊑ a = fix λ ih▹ → λ where
+≤-left-⊑ a = fix λ ih▹ → λ where
   p           .(now x)    (≤ᵖn px)                       (n⊑ᵖ {x} e) → subst (p ⊑ᵖ_) e px
   .(later p▹) .(later q▹) (l≤ᵖl {m▹ = p▹} {n▹ = q▹} pq▹) (l⊑ᵖ qa▹)   → l⊑ᵖ (ih▹ ⊛′ p▹ ⊛′ q▹ ⊛′ pq▹ ⊛′ qa▹)
 
 trans≤ : (p q r : Part A)
        → p ≤ᵖ q → q ≤ᵖ r → p ≤ᵖ r
 trans≤ = fix λ ih▹ → λ where
-  p           q           (now z)    pq                   (≤ᵖn qz)             → ≤ᵖn (≤-contra-⊑ z p q pq qz)
+  p           q           (now z)    pq                   (≤ᵖn qz)             → ≤ᵖn (≤-left-⊑ z p q pq qz)
   .(later p▹) .(later q▹) (later r▹) (l≤ᵖl {m▹ = p▹} pq▹) (l≤ᵖl {m▹ = q▹} qr▹) → l≤ᵖl (ih▹ ⊛′ p▹ ⊛′ q▹ ⊛′ r▹ ⊛′ pq▹ ⊛′ qr▹)
 
 antisym≤ : (p q : Part A)
@@ -80,7 +92,7 @@ antisym≤ = fix λ ih▹ → λ where
   .(now _)    .(now _)    (≤ᵖn (n⊑ᵖ exy))                (≤ᵖn _)    → ap now exy
   .(later p▹) .(later q▹) (l≤ᵖl {m▹ = p▹} {n▹ = q▹} pq▹) (l≤ᵖl qp▹) → ap later (▹-ext (ih▹ ⊛′ p▹ ⊛′ q▹  ⊛′ pq▹ ⊛′ qp▹))
 
--- TODO directed-complete laws
+-- bottom
 
 never≤ : (p : Part A) → never ≤ᵖ p
 never≤ = fix λ ih▹ → λ where
