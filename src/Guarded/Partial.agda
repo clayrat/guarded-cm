@@ -187,6 +187,25 @@ apᵖ (later pf▹) (later pa▹) = later λ α → apᵖ (pf▹ α) (pa▹ α)
 
 -- TODO applicative laws
 
+-- monad laws
+
+bind-left-id : {a : A} {f : A → Part B}
+              → now a >>=ᵖ f ＝ f a
+bind-left-id = refl
+
+bind-right-id : (p : Part A)
+               → p >>=ᵖ now ＝ p
+bind-right-id = fix λ ih▹ → λ where
+  (now x)    → refl
+  (later p▹) → ap later (▹-ext (ih▹ ⊛ p▹))
+
+bind-assoc : {f : A → Part B} {g : B → Part C}
+            → (p : Part A)
+            → (p >>=ᵖ f) >>=ᵖ g ＝ p >>=ᵖ (λ x → f x >>=ᵖ g)
+bind-assoc = fix λ ih▹ → λ where
+  (now x)    → refl
+  (later p▹) → ap later (▹-ext (ih▹ ⊛ p▹))
+
 apᵖ-nowf : (f : A → B) (p : Part A)
          → apᵖ (now f) p ＝ mapᵖ f p
 apᵖ-nowf f (now x)    = refl
