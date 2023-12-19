@@ -11,3 +11,4 @@ References:
 * [Berger, Matthes, Setzer, [2019] "Martin Hofmann's Case for Non-Strictly Positive Data Types"](https://hal.science/hal-02365814)
 * [Jaber, Riba, [2021] "Temporal Refinements for Guarded Recursive Types"](https://hal.science/hal-02512655)
 * https://www.cs.bham.ac.uk/~mhe/TypeTopology/CoNaturals.index.html
+* https://www.schoolofhaskell.com/user/edwardk/cellular-automata/part-2
