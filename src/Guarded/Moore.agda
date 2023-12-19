@@ -6,10 +6,11 @@ open import Prelude
 open import LaterG
 
 private variable
-  ℓ ℓ′ ℓ″ : Level
+  ℓ ℓ′ ℓ″ ℓ‴ : Level
   A : 𝒰 ℓ
   B : 𝒰 ℓ′
   C : 𝒰 ℓ″
+  D : 𝒰 ℓ‴
 
 -- Moore machine
 
@@ -27,6 +28,17 @@ mapᵐ-body f m▹ (M b tr) = M (f b) λ a → m▹ ⊛ tr a
 mapᵐ : (B → C)
      → Moore A B → Moore A C
 mapᵐ f = fix (mapᵐ-body f)
+
+-- profunctor
+
+dimapᵐ-body : (D → A) → (B → C)
+            → ▹ (Moore A B → Moore D C)
+            → Moore A B → Moore D C
+dimapᵐ-body f g d▹ (M b tr) = M (g b) λ d → d▹ ⊛ tr (f d)
+
+dimapᵐ : (D → A) → (B → C)
+       → Moore A B → Moore D C
+dimapᵐ f g = fix (dimapᵐ-body f g)
 
 -- comonad
 
@@ -57,8 +69,3 @@ moorel-body f m▹ b = M b λ a → m▹ ⊛ f b a
 
 moorel : (B → A → ▹ B) → B → Moore A B
 moorel f = fix (moorel-body f)
-
-moorel1-body : (▹ B → A → B)
-            → ▹ (B → Moore A B)
-            → B → Moore A B
-moorel1-body f m▹ b = M b λ a → m▹ ⊛ ?
