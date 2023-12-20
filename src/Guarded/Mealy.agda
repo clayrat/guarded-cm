@@ -30,7 +30,7 @@ mapᵐ : (B → C)
      → Mealy A B → Mealy A C
 mapᵐ f = fix (mapᵐ-body f)
 
--- profunctor
+-- profunctor / arrow
 
 dimapᵐ-body : (D → A) → (B → C)
             → ▹ (Mealy A B → Mealy D C)
@@ -49,6 +49,14 @@ firstᵐ-body f▹ (My tr) = My λ where (a , c) → let btr' = tr a in
 
 firstᵐ : Mealy A B → Mealy (A × C) (B × C)
 firstᵐ = fix firstᵐ-body
+
+arrᵐ-body : (A → B) → ▹ Mealy A B → Mealy A B
+arrᵐ-body f a▹ = My λ a → f a , a▹
+
+arrᵐ : (A → B) → Mealy A B
+arrᵐ f = fix (arrᵐ-body f)
+
+-- TODO ArrowChoice / ArrowApply
 
 -- applicative
 

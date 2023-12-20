@@ -84,3 +84,5 @@ moorel-body f m▹ b = M b λ a → m▹ ⊛ f b a
 
 moorel : (B → A → ▹ B) → B → Moore A B
 moorel f = fix (moorel-body f)
+
+-- TODO mfix ?
