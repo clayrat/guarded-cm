@@ -84,6 +84,7 @@ idᵐ-body i▹ = My λ a → a , i▹
 idᵐ : Mealy A A
 idᵐ = fix idᵐ-body
 
+-- aka cascade product
 catᵐ-body : ▹ (Mealy A B → Mealy B C → Mealy A C)
           → Mealy A B → Mealy B C → Mealy A C
 catᵐ-body c▹ (My tra) (My trb) = My λ a → let btr' = tra a
@@ -92,3 +93,17 @@ catᵐ-body c▹ (My tra) (My trb) = My λ a → let btr' = tra a
 
 catᵐ : Mealy A B → Mealy B C → Mealy A C
 catᵐ = fix catᵐ-body
+
+-- aka direct product
+prodᵐ-body : ▹ (Mealy A B → Mealy C D → Mealy (A × C) (B × D))
+           → Mealy A B → Mealy C D → Mealy (A × C) (B × D)
+prodᵐ-body p▹ (My tra) (My trc) = My λ where (a , c) →
+                                               let btr = tra a
+                                                   dtr = trc c
+                                                 in
+                                               (btr .fst , dtr .fst) , (p▹ ⊛ btr .snd ⊛ dtr .snd)
+
+prodᵐ : Mealy A B → Mealy C D → Mealy (A × C) (B × D)
+prodᵐ = fix prodᵐ-body
+
+-- TODO monotone + trace ?
