@@ -40,6 +40,21 @@ dimapᵐ : (D → A) → (B → C)
        → Moore A B → Moore D C
 dimapᵐ f g = fix (dimapᵐ-body f g)
 
+-- applicative
+
+pureᵐ-body : B → ▹ Moore A B → Moore A B
+pureᵐ-body b p▹ = M b λ _ → p▹
+
+pureᵐ : B → Moore A B
+pureᵐ b = fix (pureᵐ-body b)
+
+apᵐ-body : ▹ (Moore A (B → C) → Moore A B → Moore A C)
+         → Moore A (B → C) → Moore A B → Moore A C
+apᵐ-body a▹ (M f trf) (M b trb) = M (f b) λ a → a▹ ⊛ trf a ⊛ trb a
+
+apᵐ : Moore A (B → C) → Moore A B → Moore A C
+apᵐ = fix apᵐ-body
+
 -- comonad
 
 extractᵐ : Moore A B → B

@@ -41,3 +41,46 @@ dimapᵐ-body f g d▹ (My tr) = My λ d → let btr' = tr (f d) in
 dimapᵐ : (D → A) → (B → C)
        → Mealy A B → Mealy D C
 dimapᵐ f g = fix (dimapᵐ-body f g)
+
+firstᵐ-body : ▹ (Mealy A B → Mealy (A × C) (B × C))
+            → Mealy A B → Mealy (A × C) (B × C)
+firstᵐ-body f▹ (My tr) = My λ where (a , c) → let btr' = tr a in
+                                      (btr' .fst , c) , (f▹ ⊛ btr' .snd)
+
+firstᵐ : Mealy A B → Mealy (A × C) (B × C)
+firstᵐ = fix firstᵐ-body
+
+-- applicative
+
+pureᵐ-body : B → ▹ Mealy A B → Mealy A B
+pureᵐ-body b p▹ = My λ _ → b , p▹
+
+pureᵐ : B → Mealy A B
+pureᵐ b = fix (pureᵐ-body b)
+
+apᵐ-body : ▹ (Mealy A (B → C) → Mealy A B → Mealy A C)
+         → Mealy A (B → C) → Mealy A B → Mealy A C
+apᵐ-body a▹ (My trf) (My tra) = My λ a → let ftr = trf a
+                                             btr = tra a
+                                          in
+                                         ftr .fst (btr .fst) , (a▹ ⊛ ftr .snd ⊛ btr .snd)
+
+apᵐ : Mealy A (B → C) → Mealy A B → Mealy A C
+apᵐ = fix apᵐ-body
+
+-- category
+
+idᵐ-body : ▹ Mealy A A → Mealy A A
+idᵐ-body i▹ = My λ a → a , i▹
+
+idᵐ : Mealy A A
+idᵐ = fix idᵐ-body
+
+catᵐ-body : ▹ (Mealy A B → Mealy B C → Mealy A C)
+          → Mealy A B → Mealy B C → Mealy A C
+catᵐ-body c▹ (My tra) (My trb) = My λ a → let btr' = tra a
+                                              ctr″ = trb (btr' .fst)
+                                           in ctr″ .fst , (c▹ ⊛ btr' .snd ⊛ ctr″ .snd)
+
+catᵐ : Mealy A B → Mealy B C → Mealy A C
+catᵐ = fix catᵐ-body
