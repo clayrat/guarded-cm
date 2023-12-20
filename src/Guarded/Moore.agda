@@ -85,4 +85,13 @@ moorel-body f m▹ b = Mre b λ a → m▹ ⊛ f b a
 moorel : (B → A → ▹ B) → B → Moore A B
 moorel f = fix (moorel-body f)
 
+-- composition (cascade product?)
+
+catᵐ-body : ▹ (Moore A B → Moore B C → Moore A C)
+          → Moore A B → Moore B C → Moore A C
+catᵐ-body m▹ (Mre b tra) (Mre c trb) = Mre c λ a → m▹ ⊛ tra a ⊛ trb b
+
+catᵐ : Moore A B → Moore B C → Moore A C
+catᵐ = fix catᵐ-body
+
 -- TODO mfix ?
