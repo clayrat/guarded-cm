@@ -145,7 +145,6 @@ delay-by-bindᵖ f x (suc n) = ap later (▹-ext λ α → delay-by-bindᵖ f x 
 mapᵖ : (A → B) → Part A → Part B
 mapᵖ f (now a)   = now (f a)
 mapᵖ f (later p) = later λ α → mapᵖ f (p α)
--- mapᵖ f p = p >>=ᵖ (now ∘ f)
 
 -- functor laws
 
@@ -171,19 +170,12 @@ delay-by-mapᵖ : {f : A → B}
 delay-by-mapᵖ x  zero   = refl
 delay-by-mapᵖ x (suc n) = ap later (▹-ext λ _ → delay-by-mapᵖ x n)
 
--- should be derivable?
-mapᵖ-bind : {f : A → B} {g : B → Part C}
-          → (p : Part A)
-          → mapᵖ f p >>=ᵖ g ＝ p >>=ᵖ (g ∘ f)
-mapᵖ-bind (now x)    = refl
-mapᵖ-bind (later p▹) = ap later (▹-ext λ α → mapᵖ-bind (p▹ α))
-
 apᵖ : Part (A → B) → Part A → Part B
 apᵖ (now f)     (now a)     = now (f a)
 apᵖ (now f)     (later pa▹) = later λ α → apᵖ (now f) (pa▹ α)
 apᵖ (later pf▹) (now a)     = later λ α → apᵖ (pf▹ α) (now a)
 apᵖ (later pf▹) (later pa▹) = later λ α → apᵖ (pf▹ α) (pa▹ α)
--- apᵖ pf pa = pf >>=ᵖ λ f → pa >>=ᵖ (now ∘ f)
+-- apᵖ pf pa = pf >>=ᵖ λ f → mapᵖ f pa
 
 -- TODO applicative laws
 
@@ -201,10 +193,22 @@ bind-right-id = fix λ ih▹ → λ where
 
 bind-assoc : {f : A → Part B} {g : B → Part C}
             → (p : Part A)
-            → (p >>=ᵖ f) >>=ᵖ g ＝ p >>=ᵖ (λ x → f x >>=ᵖ g)
+            → (p >>=ᵖ f) >>=ᵖ g ＝ p >>=ᵖ λ x → f x >>=ᵖ g
 bind-assoc = fix λ ih▹ → λ where
   (now x)    → refl
   (later p▹) → ap later (▹-ext (ih▹ ⊛ p▹))
+
+bind-map : {f : A → B}
+         → (p : Part A)
+         → p >>=ᵖ (now ∘ f) ＝ mapᵖ f p
+bind-map = fix λ ih▹ → λ where
+  (now x)    → refl
+  (later p▹) → ap later (▹-ext (ih▹ ⊛ p▹))
+
+mapᵖ-bind : {f : A → B} {g : B → Part C}
+          → (p : Part A)
+          → mapᵖ f p >>=ᵖ g ＝ p >>=ᵖ (g ∘ f)
+mapᵖ-bind {f} {g} p = ap (_>>=ᵖ g) (sym $ bind-map p) ∙ bind-assoc p
 
 apᵖ-nowf : (f : A → B) (p : Part A)
          → apᵖ (now f) p ＝ mapᵖ f p

@@ -5,7 +5,7 @@ open import Prelude
 open import Data.Unit
 open import LaterG
 
--- can be viewed a variation on a Mealy machine
+-- can be viewed as a variation on a Mealy machine
 -- or a combination of a partiality and (generalized) state monad
 
 private variable
