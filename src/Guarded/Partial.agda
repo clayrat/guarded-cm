@@ -142,6 +142,13 @@ delay-by-bindᵖ : (f : A → Part B) (x : A) (n : ℕ)
 delay-by-bindᵖ f x  zero   = refl
 delay-by-bindᵖ f x (suc n) = ap later (▹-ext λ α → delay-by-bindᵖ f x n)
 
+bind-δᵖ : {f : A → Part B}
+        → (p : Part A)
+        → p >>=ᵖ (δᵖ ∘ f) ＝ δᵖ (p >>=ᵖ f)
+bind-δᵖ     (now x)    = refl
+bind-δᵖ {f} (later p▹) =
+  ap later (▹-ext λ α → bind-δᵖ (p▹ α) ∙ ap later (▹-ext λ α₁ → ap (_>>=ᵖ f) (tick-irr p▹ α α₁)))
+
 mapᵖ : (A → B) → Part A → Part B
 mapᵖ f (now a)   = now (f a)
 mapᵖ f (later p) = later λ α → mapᵖ f (p α)

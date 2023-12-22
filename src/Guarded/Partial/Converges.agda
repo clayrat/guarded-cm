@@ -11,15 +11,25 @@ open import LaterG
 open import Guarded.Partial
 
 private variable
-  ℓ ℓ′ ℓ″ : Level
+  ℓ ℓ′ : Level
   A : 𝒰 ℓ
   B : 𝒰 ℓ′
-  C : 𝒰 ℓ″
 
 -- convergence (propositional)
 
 _⇓ᵖ_ : Part A → A → 𝒰 (level-of-type A)
 _⇓ᵖ_ {A} p x = ∃[ n ꞉ ℕ ] (p ＝ delay-by n x)
+
+_⇓ : Part A → 𝒰 (level-of-type A)
+_⇓ {A} p = Σ[ a ꞉ A ] p ⇓ᵖ a
+
+now⇓ : {x : A}
+     → now x ⇓ᵖ x
+now⇓ = ∣ 0 , refl ∣₁
+
+δ⇓ : {p : Part A} {x : A}
+   → (p ⇓ᵖ x) → δᵖ p ⇓ᵖ x
+δ⇓ = ∥-∥₁.map λ where (n , e) → suc n , ap later (▹-ext λ α → e)
 
 map⇓ : {p : Part A} {a : A}
      → (f : A → B)
