@@ -12,3 +12,4 @@ References:
 * [Jaber, Riba, [2021] "Temporal Refinements for Guarded Recursive Types"](https://hal.science/hal-02512655)
 * https://www.cs.bham.ac.uk/~mhe/TypeTopology/CoNaturals.index.html
 * https://www.schoolofhaskell.com/user/edwardk/cellular-automata/part-2
+* [Megacz, [2007] "A coinductive monad for Prop-bounded recursion"](https://homepage.cs.uiowa.edu/~astump/plpv/plpv07/plpv07-megacz.pdf)
