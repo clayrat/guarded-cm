@@ -44,7 +44,7 @@ mapᶜ f = callWith f ∘ next
 
 apᶜ : ∀ {A B : 𝒰 ℓ}
     → Comp (A → B) → Comp A → Comp B
-apᶜ cf ca = bind (λ f → next (mapᶜ f ca)) (next cf)    
+apᶜ cf ca = bind (λ f → next (mapᶜ f ca)) (next cf)
 
 _>>=ᶜ_ : ∀ {A B : 𝒰 ℓ}
        → Comp A → (A → Comp B) → Comp B
@@ -83,7 +83,7 @@ gcd = fix λ g▹ → λ where
   (suc n)  zero   → ret (suc n)
   (suc n) (suc m) → if n ≤ᵇ m
                       then call (g▹ ⊛ next (suc n) ⊛ next (m ∸ n))
-                      else call (g▹ ⊛ next (n ∸ m) ⊛ next (suc m)) 
+                      else call (g▹ ⊛ next (n ∸ m) ⊛ next (suc m))
 
 mccarthy : ℕ → Comp ℕ
 mccarthy = fix λ m▹ n →
