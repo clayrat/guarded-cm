@@ -66,13 +66,16 @@ module gComp-code where
       (fun-ext λ a → ▹-ext λ α → decode (kx a α) (ky a α) (ek a α))
       (▹-ext λ α → decode (x▹ α) (y▹ α) (ex α))
 
+retᵏ≠bindᵏ : {x : A} {ky : A → ▹ k (gComp k A)} {y▹ : ▹ k (gComp k A)}
+           → retᵏ x ≠ bindᵏ ky y▹
+retᵏ≠bindᵏ = lower ∘ gComp-code.encode
+
 retᵏ-inj : {x y : A}
          → retᵏ {k = k} x ＝ retᵏ y → x ＝ y
 retᵏ-inj = gComp-code.encode
 
-
 bindᵏ-inj : {kx ky : A → ▹ k (gComp k A)} {x▹ y▹ : ▹ k (gComp k A)}
-         → bindᵏ kx x▹ ＝ bindᵏ ky y▹ → (x▹ ＝ y▹) × (kx ＝ ky)
+          → bindᵏ kx x▹ ＝ bindᵏ ky y▹ → (x▹ ＝ y▹) × (kx ＝ ky)
 bindᵏ-inj {kx} {ky} {x▹} {y▹} e =
   let (cx , ck) = gComp-code.Code-bb⇉ (gComp-code.encode e) in
     (▹-ext λ α → gComp-code.decode (x▹ α) (y▹ α) (cx α))
@@ -98,6 +101,21 @@ ret a k = retᵏ a
 
 bind : (A → Comp A) → Comp A → Comp A
 bind f c k = bindᵏ (λ b → next (f b k)) (next (c k))
+
+ret≠bind : {x : A} {ky : A → Comp A} {y : Comp A}
+         → ret x ≠ bind ky y
+ret≠bind e = retᵏ≠bindᵏ (happly e k0)
+
+ret-inj : {x y : A}
+         → ret x ＝ ret y → x ＝ y
+ret-inj e = retᵏ-inj (happly e k0)
+
+bind-inj : {kx ky : A → Comp A} {x y : Comp A}
+         → bind kx x ＝ bind ky y
+         → (x ＝ y) × (kx ＝ ky)
+bind-inj e =
+    (fun-ext (force (λ k → ▹-ap (bindᵏ-inj (happly e k) .fst))))
+  , fun-ext λ a → fun-ext (force λ k → ▹-ap (happly (bindᵏ-inj (happly e k) .snd) a))
 
 -- examples
 
