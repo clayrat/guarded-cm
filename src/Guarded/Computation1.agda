@@ -14,7 +14,7 @@ private variable
   ℓ : Level
   A : 𝒰 ℓ
 
--- Megacz's computation monad aka trampoline (homogenous version)
+-- Megacz's computation monad aka trampoline (homogeneous version)
 
 data Comp (A : 𝒰 ℓ) : 𝒰 ℓ where
   ret  : A → Comp A
