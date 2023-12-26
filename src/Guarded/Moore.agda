@@ -18,6 +18,49 @@ private variable
 data Moore (A : 𝒰 ℓ) (B : 𝒰 ℓ′) : 𝒰 (ℓ ⊔ ℓ′) where
   Mre : B → (A → ▹ Moore A B) → Moore A B
 
+module Moore-code where
+  Code-body : ▹ (Moore A B → Moore A B → 𝒰 (level-of-type A ⊔ level-of-type B))
+            → Moore A B → Moore A B → 𝒰 (level-of-type A ⊔ level-of-type B)
+  Code-body C▹ (Mre bx kx) (Mre by ky) = (bx ＝ by) × (∀ a → ▸ (C▹ ⊛ kx a ⊛ ky a))
+
+  Code : Moore A B → Moore A B → 𝒰 (level-of-type A ⊔ level-of-type B)
+  Code = fix Code-body
+
+  Code-mm-eq : {bx by : B} {kx ky : A → ▹ Moore A B}
+             → Code (Mre bx kx) (Mre by ky) ＝ (bx ＝ by) × (∀ a → ▸ (▹map Code (kx a) ⊛ ky a))
+  Code-mm-eq {A} {bx} {by} {kx} {ky} i = (bx ＝ by) × ((a : A) → ▹[ α ] pfix Code-body i α (kx a α) (ky a α))
+
+  Code-mm⇉ : {bx by : B} {kx ky : A → ▹ Moore A B}
+            → Code (Mre bx kx) (Mre by ky)
+            → (bx ＝ by) × (∀ a → ▸ (▹map Code (kx a) ⊛ ky a))
+  Code-mm⇉ = transport Code-mm-eq
+
+  ⇉Code-mm : {bx by : B} {kx ky : A → ▹ Moore A B}
+            → (bx ＝ by) × (∀ a → ▸ (▹map Code (kx a) ⊛ ky a))
+            → Code (Mre bx kx) (Mre by ky)
+  ⇉Code-mm = transport (sym Code-mm-eq)
+
+  Code-refl-body : ▹ ((m : Moore A B) → Code m m)
+                 → (m : Moore A B) → Code m m
+  Code-refl-body C▹ (Mre b k) = ⇉Code-mm (refl , λ a → C▹ ⊛ k a)
+
+  Code-refl : (m : Moore A B) → Code m m
+  Code-refl = fix Code-refl-body
+
+  encode : {p q : Moore A B} → p ＝ q → Code p q
+  encode {p} {q} e = subst (Code p) e (Code-refl p)
+
+  decode : ∀ (p q : Moore A B) → Code p q → p ＝ q
+  decode (Mre bx kx) (Mre by ky) c =
+    let (be , ke) = Code-mm⇉ c in
+    ap² Mre be (fun-ext λ a → ▹-ext λ α → decode (kx a α) (ky a α) (ke a α))
+
+Mre-inj : {bx by : B} {kx ky : A → ▹ Moore A B}
+        → Mre bx kx ＝ Mre by ky → (bx ＝ by) × (kx ＝ ky)
+Mre-inj {kx} {ky} e =
+  let (be , ke) = Moore-code.Code-mm⇉ (Moore-code.encode e) in
+  be , fun-ext λ a → ▹-ext λ α → Moore-code.decode (kx a α) (ky a α) (ke a α)
+
 -- functor
 
 mapᵐ-body : (B → C)
@@ -95,3 +138,4 @@ catᵐ : Moore A B → Moore B C → Moore A C
 catᵐ = fix catᵐ-body
 
 -- TODO mfix ?
+
