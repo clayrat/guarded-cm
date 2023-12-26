@@ -18,6 +18,49 @@ private variable
 data Mealy (A : 𝒰 ℓ) (B : 𝒰 ℓ′) : 𝒰 (ℓ ⊔ ℓ′) where
   Mly : (A → B × ▹ Mealy A B) → Mealy A B
 
+module Mealy-code where
+  Code-body : ▹ (Mealy A B → Mealy A B → 𝒰 (level-of-type A ⊔ level-of-type B))
+            → Mealy A B → Mealy A B → 𝒰 (level-of-type A ⊔ level-of-type B)
+  Code-body C▹ (Mly kx) (Mly ky) = ∀ a → (kx a .fst ＝ ky a .fst) × ▸ (C▹ ⊛ kx a .snd ⊛ ky a .snd)
+
+  Code : Mealy A B → Mealy A B → 𝒰 (level-of-type A ⊔ level-of-type B)
+  Code = fix Code-body
+
+  Code-mm-eq : {kx ky : A → B × ▹ Mealy A B}
+             → Code (Mly kx) (Mly ky) ＝ ∀ a → (kx a .fst ＝ ky a .fst) × ▸ (▹map Code (kx a .snd) ⊛ ky a .snd)
+  Code-mm-eq {A} {kx} {ky} i = (a : A) → ((kx a .fst ＝ ky a .fst) × (▹[ α ] pfix Code-body i α (kx a .snd α) (ky a .snd α)))
+
+  Code-mm⇉ : {kx ky : A → B × ▹ Mealy A B}
+           → Code (Mly kx) (Mly ky)
+           → ∀ a → (kx a .fst ＝ ky a .fst) × ▸ (▹map Code (kx a .snd) ⊛ ky a .snd)
+  Code-mm⇉ = transport Code-mm-eq
+
+  ⇉Code-mm : {kx ky : A → B × ▹ Mealy A B}
+           → (∀ a → (kx a .fst ＝ ky a .fst) × ▸ (▹map Code (kx a .snd) ⊛ ky a .snd))
+           → Code (Mly kx) (Mly ky)
+  ⇉Code-mm = transport (sym Code-mm-eq)
+
+  Code-refl-body : ▹ ((m : Mealy A B) → Code m m)
+                 → (m : Mealy A B) → Code m m
+  Code-refl-body C▹ (Mly k) = ⇉Code-mm λ a → refl , (C▹ ⊛ k a .snd)
+
+  Code-refl : (m : Mealy A B) → Code m m
+  Code-refl = fix Code-refl-body
+
+  encode : {p q : Mealy A B} → p ＝ q → Code p q
+  encode {p} {q} e = subst (Code p) e (Code-refl p)
+
+  decode : (p q : Mealy A B) → Code p q → p ＝ q
+  decode (Mly kx) (Mly ky) c =
+    let ke = Code-mm⇉ c in
+    ap Mly (fun-ext λ a → ×-path (ke a .fst) (▹-ext λ α → decode (kx a .snd α) (ky a .snd α) (ke a .snd α)))
+
+Mly-inj : {kx ky : A → B × ▹ Mealy A B}
+        → Mly kx ＝ Mly ky → kx ＝ ky
+Mly-inj {kx} {ky} e =
+  let ke = Mealy-code.Code-mm⇉ (Mealy-code.encode e) in
+  fun-ext λ a → ×-path (ke a .fst) (▹-ext λ α → Mealy-code.decode (kx a .snd α) (ky a .snd α) (ke a .snd α))
+
 -- functor
 
 mapᵐ-body : (B → C)
