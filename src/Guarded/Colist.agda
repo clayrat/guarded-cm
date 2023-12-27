@@ -2,6 +2,8 @@
 module Guarded.Colist where
 
 open import Prelude
+open import Data.Unit
+open import Data.Empty
 open import Data.Maybe
 open import Data.Nat
 open import Data.List
@@ -9,18 +11,71 @@ open import Data.List
 open import LaterG
 
 private variable
-  A B C : 𝒰
+  ℓ : Level
+  A B C : 𝒰 ℓ
 
 -- guarded colists
 
-data Colist (A : 𝒰) : 𝒰 where
+data Colist (A : 𝒰 ℓ) : 𝒰 ℓ where
   cnil  : Colist A
   ccons : A → ▹ Colist A → Colist A
+
+module Colist-code where
+  Code-body : ▹ (Colist A → Colist A → 𝒰 (level-of-type A)) → Colist A → Colist A → 𝒰 (level-of-type A)
+  Code-body C▹  cnil          cnil         = Lift _ ⊤
+  Code-body C▹  cnil         (ccons _ _)   = Lift _ ⊥
+  Code-body C▹ (ccons _ _)    cnil         = Lift _ ⊥
+  Code-body C▹ (ccons x cx▹) (ccons y cy▹) = (x ＝ y) × (▸ (C▹ ⊛ cx▹ ⊛ cy▹))
+
+  Code : Colist A → Colist A → 𝒰 (level-of-type A)
+  Code = fix Code-body
+
+  Code-cc-eq : {x y : A} {cx▹ cy▹ : ▹ Colist A}
+             → Code (ccons x cx▹) (ccons y cy▹) ＝ (x ＝ y) × ▸ (▹map Code cx▹ ⊛ cy▹)
+  Code-cc-eq {x} {y} {cx▹} {cy▹} i = (x ＝ y) × (▹[ α ] pfix Code-body i α (cx▹ α) (cy▹ α))
+
+  Code-cc⇉ : {x y : A} {cx▹ cy▹ : ▹ Colist A}
+           → Code (ccons x cx▹) (ccons y cy▹)
+           → (x ＝ y) × ▸ (▹map Code cx▹ ⊛ cy▹)
+  Code-cc⇉ = transport Code-cc-eq
+
+  ⇉Code-cc : {x y : A} {cx▹ cy▹ : ▹ Colist A}
+           → (x ＝ y) × ▸ (▹map Code cx▹ ⊛ cy▹)
+           → Code (ccons x cx▹) (ccons y cy▹)
+  ⇉Code-cc = transport (sym Code-cc-eq)
+
+  Code-refl-body : ▹ ((c : Colist A) → Code c c) → (c : Colist A) → Code c c
+  Code-refl-body C▹  cnil        = lift tt
+  Code-refl-body C▹ (ccons x c▹) = ⇉Code-cc (refl , (C▹ ⊛ c▹))
+
+  Code-refl : (c : Colist A) → Code c c
+  Code-refl = fix Code-refl-body
+
+  encode : {c1 c2 : Colist A} → c1 ＝ c2 → Code c1 c2
+  encode {c1} {c2} e = subst (Code c1) e (Code-refl c1)
+
+  decode : (m n : Colist A) → Code m n → m ＝ n
+  decode  cnil          cnil          c = refl
+  decode (ccons x cx▹) (ccons y cy▹)  c =
+    let (ex , ec) = Code-cc⇉ c in
+    ap² ccons ex (▹-ext λ α → decode (cx▹ α) (cy▹ α) (ec α))
+
+cnil≠ccons : {x : A} {c▹ : ▹ Colist A} → cnil ≠ ccons x c▹
+cnil≠ccons = lower ∘ Colist-code.encode
+
+ccons-inj : {x y : A} {cx▹ cy▹ : ▹ Colist A}
+          → ccons x cx▹ ＝ ccons y cy▹ → (x ＝ y) × (cx▹ ＝ cy▹)
+ccons-inj {x} {y} {cx▹} {cy▹} e =
+  let (ex , ec) = Colist-code.Code-cc⇉ (Colist-code.encode e) in
+  ex , ▹-ext λ α → Colist-code.decode (cx▹ α) (cy▹ α) (ec α)
+
+prepend : A → Colist A → Colist A
+prepend a = ccons a ∘ next
 
 -- singleton
 
 singletonˡ : A → Colist A
-singletonˡ a = ccons a (next cnil)
+singletonˡ a = prepend a cnil
 
 -- repeat
 
@@ -37,7 +92,7 @@ unconsˡ (ccons a as▹) = just (a , as▹)
 
 fromList : List A → Colist A
 fromList []      = cnil
-fromList (x ∷ l) = ccons x (next (fromList l))
+fromList (x ∷ l) = prepend x (fromList l)
 
 -- append
 
@@ -72,7 +127,7 @@ zipWithˡ f = fix (zipWithˡ-body f)
 
 prepend-to-allˡ-body : A → ▹ (Colist A → Colist A) → Colist A → Colist A
 prepend-to-allˡ-body sep p▹  cnil         = cnil
-prepend-to-allˡ-body sep p▹ (ccons x xs▹) = ccons sep (next (ccons x (p▹ ⊛ xs▹)))
+prepend-to-allˡ-body sep p▹ (ccons x xs▹) = prepend sep (ccons x (p▹ ⊛ xs▹))
 
 prepend-to-allˡ : A → Colist A → Colist A
 prepend-to-allˡ sep = fix (prepend-to-allˡ-body sep)
@@ -90,4 +145,31 @@ foldrˡ-body f z f▹ (ccons x xs▹) = f x (f▹ ⊛ xs▹)
 foldrˡ : (A → ▹ B → B) → Colist A → B → B
 foldrˡ f c z = fix (foldrˡ-body f z) c
 
+-- finiteness
 
+is-finiteˡ : Colist A → 𝒰 (level-of-type A)
+is-finiteˡ {A} c = Σ[ l ꞉ List A ] (fromList l ＝ c)
+
+is-finite-uncons : (x : A) (c▹ : ▹ Colist A) → is-finiteˡ (ccons x c▹) → ▸ (▹map is-finiteˡ c▹)
+is-finite-uncons x c▹ ([]    , e) = absurd (cnil≠ccons e)
+is-finite-uncons x c▹ (y ∷ l , e) = λ α → l , (▹-ap (ccons-inj e .snd) α)
+
+is-finite-downˡ : (x : A) (c : Colist A) → is-finiteˡ (prepend x c) → ▹ (is-finiteˡ c)
+is-finite-downˡ x c = is-finite-uncons x (next c)
+
+is-finite-upˡ : (x : A) (c : Colist A) → is-finiteˡ c → is-finiteˡ (prepend x c)
+is-finite-upˡ x c (l , e) = (x ∷ l) , ap (prepend x) e
+
+-- propositional version
+
+is-finite-pˡ : Colist A → 𝒰 (level-of-type A)
+is-finite-pˡ {A} c = ∃[ l ꞉ List A ] (fromList l ＝ c)
+
+is-finite-uncons-p : (x : A) (c▹ : ▹ Colist A) → is-finite-pˡ (ccons x c▹) → ▸ (▹map is-finite-pˡ c▹)
+is-finite-uncons-p x c▹ p = ▹trunc id (map (is-finite-uncons x c▹) p)
+
+is-finite-down-pˡ : (x : A) (c : Colist A) → is-finite-pˡ (prepend x c) → ▹ (is-finite-pˡ c)
+is-finite-down-pˡ x c = is-finite-uncons-p x (next c)
+
+is-finite-up-pˡ : (x : A) (c : Colist A) → is-finite-pˡ c → is-finite-pˡ (prepend x c)
+is-finite-up-pˡ x c = map (is-finite-upˡ x c)
