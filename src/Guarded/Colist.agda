@@ -11,8 +11,10 @@ open import Data.List
 open import LaterG
 
 private variable
-  ℓ : Level
-  A B C : 𝒰 ℓ
+  ℓ ℓ′ ℓ″ : Level
+  A : 𝒰 ℓ
+  B : 𝒰 ℓ′
+  C : 𝒰 ℓ″
 
 -- guarded colists
 
@@ -94,6 +96,12 @@ fromList : List A → Colist A
 fromList []      = cnil
 fromList (x ∷ l) = prepend x (fromList l)
 
+-- catList
+
+catList : List A → Colist A → Colist A
+catList []      c = c
+catList (x ∷ l) c = prepend x (catList l c)
+
 -- append
 
 appendˡ-body : ▹ (Colist A → Colist A → Colist A) → Colist A → Colist A → Colist A
@@ -111,6 +119,12 @@ mapˡ-body f mp▹ (ccons x xs▹) = ccons (f x) (mp▹ ⊛ xs▹)
 
 mapˡ : (A → B) → Colist A → Colist B
 mapˡ f = fix (mapˡ-body f)
+
+map-catList : ∀ {A : 𝒰 ℓ} {B : 𝒰 ℓ′}
+            → (f : A → B) → (l : List A) → (c : Colist A)
+            → mapˡ f (catList l c) ＝ catList (map f l) (mapˡ f c)
+map-catList f []      c = refl
+map-catList f (x ∷ l) c = ap (ccons (f x)) (▹-ext λ α → (λ i → pfix (mapˡ-body f) i α (catList l c)) ∙ map-catList f l c)
 
 -- zipWith
 
