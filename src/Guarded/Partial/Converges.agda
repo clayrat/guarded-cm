@@ -29,14 +29,14 @@ now⇓ = ∣ 0 , refl ∣₁
 
 δ⇓ : {p : Part A} {x : A}
    → (p ⇓ᵖ x) → δᵖ p ⇓ᵖ x
-δ⇓ = ∥-∥₁.map λ where (n , e) → suc n , ap later (▹-ext λ α → e)
+δ⇓ = map λ where (n , e) → suc n , ap later (▹-ext λ α → e)
 
 map⇓ : {p : Part A} {a : A}
      → (f : A → B)
      → p ⇓ᵖ a
      → mapᵖ f p ⇓ᵖ f a
 map⇓ {a} f =
-  ∥-∥₁.map λ where (n , e) → n , ap (mapᵖ f) e ∙ delay-by-mapᵖ a n
+  map λ where (n , e) → n , ap (mapᵖ f) e ∙ delay-by-mapᵖ a n
 
 ap⇓ : {p : Part A} {g : A → B} {a : A}
     → (f : Part (A → B))
@@ -45,7 +45,7 @@ ap⇓ : {p : Part A} {g : A → B} {a : A}
     → (apᵖ f p) ⇓ᵖ g a
 ap⇓ {g} {a} f fg pa =
   ∥-∥₁.rec! (λ where
-    (n , eᶠ) → ∥-∥₁.map (λ where
+    (n , eᶠ) → map (λ where
       (m , e) → max n m , ap² apᵖ eᶠ e
                         ∙ delay-by-apᵖ g n a m) pa) fg
 
@@ -56,7 +56,7 @@ bind⇓ : {p : Part A} {a : A} {b : B}
       → (p >>=ᵖ f) ⇓ᵖ b
 bind⇓ {a} {b} f pa fab =
   ∥-∥₁.rec! (λ where
-    (n , e) → ∥-∥₁.map (λ where
+    (n , e) → map (λ where
       (m , eᶠ) → (n + m , ap (_>>=ᵖ f) e
                         ∙ delay-by-bindᵖ f a n
                         ∙ ap (iter n δᵖ) eᶠ

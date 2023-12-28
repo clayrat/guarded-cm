@@ -61,6 +61,17 @@ Mly-inj {kx} {ky} e =
   let ke = Mealy-code.Code-mm⇉ (Mealy-code.encode e) in
   fun-ext λ a → ×-path (ke a .fst) (▹-ext λ α → Mealy-code.decode (kx a .snd α) (ky a .snd α) (ke a .snd α))
 
+unfoldᵐ-body : (C → A → B × C)
+             → ▹ (C → Mealy A B)
+             → C → Mealy A B
+unfoldᵐ-body f u▹ c =
+  Mly λ a →
+    let (b , t) = f c a in
+    b , (u▹ ⊛ next t)
+
+unfoldᵐ : (C → A → B × C) → C → Mealy A B
+unfoldᵐ f = fix (unfoldᵐ-body f)
+
 -- functor
 
 mapᵐ-body : (B → C)
