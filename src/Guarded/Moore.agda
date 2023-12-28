@@ -92,6 +92,26 @@ mapᵐ : (B → C)
      → Moore A B → Moore A C
 mapᵐ f = fix (mapᵐ-body f)
 
+-- functor laws
+
+mapᵐ-id : (m : Moore A B)
+        → mapᵐ id m ＝ m
+mapᵐ-id = fix λ ih▹ → λ where
+  m@(Mre b tr) →
+      happly (fix-path (mapᵐ-body id)) m
+    ∙ ap (Mre b) (fun-ext λ a → ▹-ext (ih▹ ⊛ tr a))
+
+mapᵐ-comp : {f : B → C} {g : C → D}
+          → (m : Moore A B)
+          → mapᵐ g (mapᵐ f m) ＝ mapᵐ (g ∘ f) m
+mapᵐ-comp {f} {g} = fix λ ih▹ → λ where
+ m@(Mre b tr) →
+     ap (mapᵐ g) (happly (fix-path (mapᵐ-body f)) m)
+   ∙ happly (fix-path (mapᵐ-body g)) (mapᵐ-body f (next (mapᵐ f)) m)
+   ∙ ap (Mre (g (f b))) (fun-ext λ a → ▹-ext (ih▹ ⊛ tr a))
+   ∙ sym (happly (fix-path (mapᵐ-body (g ∘ f))) m)
+
+
 -- profunctor
 
 dimapᵐ-body : (D → A) → (B → C)
@@ -117,6 +137,53 @@ apᵐ-body a▹ (Mre f trf) (Mre b trb) = Mre (f b) λ a → a▹ ⊛ trf a ⊛ 
 
 apᵐ : Moore A (B → C) → Moore A B → Moore A C
 apᵐ = fix apᵐ-body
+
+-- applicative laws
+
+apᵐ-id : (m : Moore A B)
+       → apᵐ (pureᵐ id) m ＝ m
+apᵐ-id = fix λ ih▹ → λ where
+  m@(Mre b tr) →
+      ap (λ q → apᵐ q m) (fix-path (pureᵐ-body id))
+    ∙ ap (λ q → q (pureᵐ-body id (next (pureᵐ id))) m) (fix-path apᵐ-body)
+    ∙ ap (Mre b) (fun-ext λ a → ▹-ext (ih▹ ⊛ tr a))
+
+apᵐ-comp : (mf : Moore A (B → C))
+         → (mg : Moore A (C → D))
+         → (m : Moore A B)
+         → apᵐ (apᵐ (apᵐ (pureᵐ λ g → g ∘_) mg) mf) m ＝ apᵐ mg (apᵐ mf m)
+apᵐ-comp = fix λ ih▹ → λ where
+  mf@(Mre bf trf) mg@(Mre bg trg) m@(Mre b tr) →
+     ap (λ q → apᵐ (apᵐ (apᵐ q mg) mf) m) (fix-path (pureᵐ-body (λ g → g ∘_)))
+   ∙ ap (λ q → apᵐ (apᵐ (q (pureᵐ-body (λ g → g ∘_) (next (pureᵐ (λ g → g ∘_)))) mg) mf) m)
+        (fix-path apᵐ-body)
+   ∙ ap (λ q → apᵐ (q (apᵐ-body (next apᵐ) (pureᵐ-body (λ g → g ∘_) (next (pureᵐ (λ g → g ∘_)))) mg) mf) m)
+        (fix-path apᵐ-body)
+   ∙ ap (λ q → q (apᵐ-body (next apᵐ) (apᵐ-body (next apᵐ) (pureᵐ-body (λ g → g ∘_) (next (pureᵐ (λ g → g ∘_)))) mg) mf) m)
+        (fix-path apᵐ-body)
+   ∙ ap (Mre (bg (bf b))) (fun-ext λ a → ▹-ext (ih▹ ⊛ trf a ⊛′ trg a ⊛′ tr a))
+   ∙ ap (λ q → q mg (apᵐ-body (next apᵐ) mf m)) (sym (fix-path apᵐ-body))
+   ∙ ap (λ q → apᵐ mg (q mf m)) (sym (fix-path apᵐ-body))
+
+apᵐ-homo : {f : B → C} {x : B}
+         → apᵐ {A = A} (pureᵐ f) (pureᵐ x) ＝ pureᵐ (f x)
+apᵐ-homo {f} {x} = fix λ ih▹ →
+    ap (apᵐ (pureᵐ f)) (fix-path (pureᵐ-body x))
+  ∙ ap (λ q → apᵐ q (pureᵐ-body x (next (pureᵐ x)))) (fix-path (pureᵐ-body f))
+  ∙ ap (λ q → q (pureᵐ-body f (next (pureᵐ f))) (pureᵐ-body x (next (pureᵐ x)))) (fix-path apᵐ-body)
+  ∙ ap (Mre (f x)) (fun-ext λ a → ▹-ext ih▹)
+  ∙ sym (fix-path (pureᵐ-body (f x)))
+
+apᵐ-inter : {x : B}
+          → (mf : Moore A (B → C))
+          → apᵐ mf (pureᵐ x) ＝ apᵐ (pureᵐ (_$ x)) mf
+apᵐ-inter {x} = fix λ ih▹ → λ where
+  mf@(Mre bf trf) →
+     ap (apᵐ mf) (fix-path (pureᵐ-body x))
+   ∙ ap (λ q → q mf (pureᵐ-body x (next (pureᵐ x)))) (fix-path apᵐ-body)
+   ∙ ap (Mre (bf x)) (fun-ext (λ a → ▹-ext (ih▹ ⊛ trf a)))
+   ∙ ap (λ q → q (pureᵐ-body (_$ x) (next (pureᵐ (_$ x)))) mf) (sym $ fix-path apᵐ-body)
+   ∙ ap (λ q → apᵐ q mf) (sym $ fix-path (pureᵐ-body (_$ x)))
 
 -- comonad
 

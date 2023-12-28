@@ -86,10 +86,9 @@ _⊛′_ : ∀ {A : ▹ k (𝒰 ℓ)} {B : ▹[ α ∶ k ] (A α → 𝒰 ℓ′
 -- applicative laws
 
 ap-id : {B : 𝒰}
-      → (f : A → B)
       → (x▹ : ▹ k A)
       → (next id ⊛ x▹) ＝ x▹
-ap-id f x▹ = refl
+ap-id x▹ = refl
 
 ap-comp : {B C : 𝒰}
         → (f▹ : ▹ k (A → B))
