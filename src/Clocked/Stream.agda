@@ -2,9 +2,9 @@
 module Clocked.Stream where
 
 open import Prelude
-open import Data.Bool hiding (Code ; decode)
-open import Data.Nat hiding (Code ; decode)
-open import Data.List hiding (Code ; decode)
+open import Data.Bool
+open import Data.Nat
+open import Data.List
 open import Later
 
 private variable
@@ -57,6 +57,15 @@ headᵏ (cons x xs) = x
 
 tail▹ᵏ : gStream k A → ▹ k (gStream k A)
 tail▹ᵏ (cons x xs) = xs
+
+stream-eq-coindᵏ : (R : gStream k A → gStream k A → 𝒰 ℓ′)
+                → (∀ s1 s2 → R s1 s2 → headᵏ s1 ＝ headᵏ s2)
+                → (∀ s1 s2 → R s1 s2 → ▸ k (▹map R (tail▹ᵏ s1) ⊛ (tail▹ᵏ s2)))
+                → ∀ s1 s2 → R s1 s2 → s1 ＝ s2
+stream-eq-coindᵏ R hh ht = fix λ ih▹ → λ where
+  (cons h1 t1▹) (cons h2 t2▹) r →
+     ap² cons (hh (cons h1 t1▹) (cons h2 t2▹) r)
+              (▹-ext (ih▹ ⊛ t1▹ ⊛′ t2▹ ⊛′ (ht (cons h1 t1▹) (cons h2 t2▹) r)))
 
 uncons-eqᵏ : (s : gStream k A) → s ＝ cons (headᵏ s) (tail▹ᵏ s)
 uncons-eqᵏ (cons x xs) = refl

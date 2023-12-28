@@ -2,9 +2,10 @@
 module Guarded.Stream where
 
 open import Prelude
-open import Data.Bool hiding (Code ; decode)
-open import Data.Nat hiding (Code ; decode)
-open import Data.List hiding (Code ; decode)
+open import Data.Bool
+open import Data.Nat
+open import Data.Maybe
+open import Data.List
 open import LaterG
 
 private variable
@@ -55,6 +56,15 @@ headˢ (cons x _) = x
 
 tail▹ˢ : Stream A → ▹ Stream A
 tail▹ˢ (cons _ xs▹) = xs▹
+
+stream-eq-coind : (R : Stream A → Stream A → 𝒰 ℓ′)
+                → (∀ s1 s2 → R s1 s2 → headˢ s1 ＝ headˢ s2)
+                → (∀ s1 s2 → R s1 s2 → ▸ (▹map R (tail▹ˢ s1) ⊛ (tail▹ˢ s2)))
+                → ∀ s1 s2 → R s1 s2 → s1 ＝ s2
+stream-eq-coind R hh ht = fix λ ih▹ → λ where
+  (cons h1 t1▹) (cons h2 t2▹) r →
+     ap² cons (hh (cons h1 t1▹) (cons h2 t2▹) r)
+              (▹-ext (ih▹ ⊛ t1▹ ⊛′ t2▹ ⊛′ (ht (cons h1 t1▹) (cons h2 t2▹) r)))
 
 uncons-eq : (s : Stream A) → s ＝ cons (headˢ s) (tail▹ˢ s)
 uncons-eq (cons x xs▹) = refl
@@ -128,6 +138,9 @@ dup = fix λ d▹ s → cons (headˢ s) (next (cons (headˢ s) (d▹ ⊛ tail▹
 
 --eo : Stream A → Stream A
 --eo = fix λ e▹ s → cons (headˢ s) (e▹ ⊛ tail▹ˢ (tail▹ˢ s {!!}))
+
+eo-causal : Stream A → Stream (Maybe A)
+eo-causal = fix (λ e▹ s → cons (just (headˢ s)) λ α → cons nothing (e▹ ⊛ (tail▹ˢ (tail▹ˢ s α))))
 
 -- folding
 
