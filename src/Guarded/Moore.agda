@@ -61,6 +61,16 @@ Mre-inj {kx} {ky} e =
   let (be , ke) = Moore-code.Code-mm⇉ (Moore-code.encode e) in
   be , fun-ext λ a → ▹-ext λ α → Moore-code.decode (kx a α) (ky a α) (ke a α)
 
+unfoldᵐ-body : (C → B × (A → C))
+             → ▹ (C → Moore A B)
+             → C → Moore A B
+unfoldᵐ-body f u▹ c =
+  let (b , g) = f c in
+    Mre b λ a → u▹ ⊛ next (g a)
+
+unfoldᵐ : (C → B × (A → C)) → C → Moore A B
+unfoldᵐ f = fix (unfoldᵐ-body f)
+
 -- functor
 
 mapᵐ-body : (B → C)
