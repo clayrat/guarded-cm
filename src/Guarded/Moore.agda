@@ -2,6 +2,7 @@
 module Guarded.Moore where
 
 open import Prelude
+open import Data.List
 
 open import LaterG
 
@@ -61,6 +62,12 @@ Mre-inj {kx} {ky} e =
   let (be , ke) = Moore-code.Code-mm⇉ (Moore-code.encode e) in
   be , fun-ext λ a → ▹-ext λ α → Moore-code.decode (kx a α) (ky a α) (ke a α)
 
+ν : Moore A B → B
+ν (Mre b _) = b
+
+δ : Moore A B → A → ▹ Moore A B
+δ (Mre _ k) = k
+
 unfoldᵐ-body : (C → B × (A → C))
              → ▹ (C → Moore A B)
              → C → Moore A B
@@ -70,6 +77,13 @@ unfoldᵐ-body f u▹ c =
 
 unfoldᵐ : (C → B × (A → C)) → C → Moore A B
 unfoldᵐ f = fix (unfoldᵐ-body f)
+
+unfoldListᵐ-body : ▹ ((List A → B) → Moore A B)
+                 → (List A → B) → Moore A B
+unfoldListᵐ-body u▹ f = Mre (f []) (λ a → u▹ ⊛ next (λ as → f (a ∷ as)))
+
+unfoldListᵐ : (List A → B) → Moore A B
+unfoldListᵐ = fix unfoldListᵐ-body
 
 -- functor
 
