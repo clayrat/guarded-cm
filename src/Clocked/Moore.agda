@@ -70,11 +70,11 @@ Moore A B = ∀ k → gMoore k A B
 Mre : B → (A → Moore A B) → Moore A B
 Mre b f k = Mreᵏ b λ a → next (f a k)
 
-ν : Moore A B → B
-ν m = νᵏ (m k0)
+νᵐ : Moore A B → B
+νᵐ m = νᵏ (m k0)
 
-δ : Moore A B → A → Moore A B
-δ m a = force λ k → δᵏ (m k) a
+δᵐ : Moore A B → A → Moore A B
+δᵐ m a = force λ k → δᵏ (m k) a
 
 Mreᵏ-inj : {bx by : B} {kx ky : A → ▹ k (gMoore k A B)}
         → Mreᵏ bx kx ＝ Mreᵏ by ky → (bx ＝ by) × (kx ＝ ky)
@@ -94,18 +94,19 @@ unfoldᵏ-body f u▹ c =
   let (b , g) = f c in
     Mreᵏ b λ a → u▹ ⊛ next (g a)
 
+-- coiteration
+
 unfoldᵏ : (C → B × (A → C)) → C → gMoore k A B
 unfoldᵏ f = fix (unfoldᵏ-body f)
 
-unfoldListᵏ-body : ▹ k ((List A → B) → gMoore k A B)
-                 → (List A → B) → gMoore k A B
-unfoldListᵏ-body u▹ f = Mreᵏ (f []) (λ a → u▹ ⊛ next (λ as → f (a ∷ as)))
+unfoldᵐ : (C → B × (A → C)) → C → Moore A B
+unfoldᵐ f c k = unfoldᵏ f c
 
 unfoldListᵏ : (List A → B) → gMoore k A B
-unfoldListᵏ = fix unfoldListᵏ-body
+unfoldListᵏ = unfoldᵏ (λ f → f [] , λ a as → f (a ∷ as))
 
-unfoldList : (List A → B) → Moore A B
-unfoldList f k = unfoldListᵏ f
+unfoldListᵐ : (List A → B) → Moore A B
+unfoldListᵐ f k = unfoldListᵏ f
 
 -- functor
 
@@ -117,6 +118,10 @@ mapᵏ-body f m▹ (Mreᵏ b tr) = Mreᵏ (f b) λ a → m▹ ⊛ tr a
 mapᵏ : (B → C)
      → gMoore k A B → gMoore k A C
 mapᵏ f = fix (mapᵏ-body f)
+
+mapᵐ : (B → C)
+     → Moore A B → Moore A C
+mapᵐ f m k = mapᵏ f (m k)
 
 -- profunctor
 
@@ -137,12 +142,24 @@ pureᵏ-body b p▹ = Mreᵏ b λ _ → p▹
 pureᵏ : B → gMoore k A B
 pureᵏ b = fix (pureᵏ-body b)
 
+pureᵐ : B → Moore A B
+pureᵐ b k = pureᵏ b
+
 apᵏ-body : ▹ k (gMoore k A (B → C) → gMoore k A B → gMoore k A C)
          → gMoore k A (B → C) → gMoore k A B → gMoore k A C
 apᵏ-body a▹ (Mreᵏ f trf) (Mreᵏ b trb) = Mreᵏ (f b) λ a → a▹ ⊛ trf a ⊛ trb a
 
 apᵏ : gMoore k A (B → C) → gMoore k A B → gMoore k A C
 apᵏ = fix apᵏ-body
+
+apᵐ : Moore A (B → C) → Moore A B → Moore A C
+apᵐ mf ma k = apᵏ (mf k) (ma k)
+
+zipWithᵏ : (B → C → D) → gMoore k A B → gMoore k A C → gMoore k A D
+zipWithᵏ f mb mc = apᵏ (mapᵏ f mb) mc
+
+zipWithᵐ : (B → C → D) → Moore A B → Moore A C → Moore A D
+zipWithᵐ f mb mc = apᵐ (mapᵐ f mb) mc
 
 -- comonad
 
