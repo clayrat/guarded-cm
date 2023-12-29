@@ -184,17 +184,20 @@ apᵐ mf ma k = apᵏ (mf k) (ma k)
 
 -- applicative laws
 
-apᵏ-id : (m : gMoore k A B)
-       → apᵏ (pureᵏ id) m ＝ m
-apᵏ-id {k} = fix {k} λ ih▹ → λ where
+apᵏ-map : {f : B → C}
+        → (m : gMoore k A B)
+        → apᵏ (pureᵏ f) m ＝ mapᵏ f m
+apᵏ-map {k} {f} = fix {k} λ ih▹ → λ where
   m@(Mreᵏ b tr) →
-      ap (λ q → apᵏ q m) (fix-path (pureᵏ-body id))
-    ∙ ap (λ q → q (pureᵏ-body id (next (pureᵏ id))) m) (fix-path apᵏ-body)
-    ∙ ap (Mreᵏ b) (fun-ext λ a → ▹-ext (ih▹ ⊛ tr a))
+      ap (λ q → apᵏ q m) (fix-path (pureᵏ-body f))
+    ∙ ap (λ q → q (pureᵏ-body f (next (pureᵏ f))) m) (fix-path apᵏ-body)
+    ∙ ap (Mreᵏ (f b)) (fun-ext λ a → ▹-ext (ih▹ ⊛ tr a))
+    ∙ sym (happly (fix-path (mapᵏ-body f)) m)
 
-apᵐ-id : (m : Moore A B)
-       → apᵐ (pureᵐ id) m ＝ m
-apᵐ-id m = fun-ext (apᵏ-id ∘ m)
+apᵐ-map : {f : B → C}
+        → (m : Moore A B)
+        → apᵐ (pureᵐ f) m ＝ mapᵐ f m
+apᵐ-map m = fun-ext (apᵏ-map ∘ m)
 
 apᵏ-comp : (mf : gMoore k A (B → C))
          → (mg : gMoore k A (C → D))
@@ -256,6 +259,56 @@ zipWithᵏ f mb mc = apᵏ (mapᵏ f mb) mc
 zipWithᵐ : (B → C → D) → Moore A B → Moore A C → Moore A D
 zipWithᵐ f mb mc = apᵐ (mapᵐ f mb) mc
 
+zipWithᵏ-assoc : {f : B → B → B}
+                 {m1 m2 m3 : gMoore k A B}
+               → (∀ x y z → f (f x y) z ＝ f x (f y z))
+               → zipWithᵏ f (zipWithᵏ f m1 m2) m3 ＝ zipWithᵏ f m1 (zipWithᵏ f m2 m3)
+zipWithᵏ-assoc {f} {m1} {m2} {m3} fa =
+  zipWithᵏ f (zipWithᵏ f m1 m2) m3
+    ＝⟨⟩
+  apᵏ (mapᵏ f (apᵏ (mapᵏ f m1) m2)) m3
+    ＝⟨ ap (λ q → apᵏ q m3) (sym (apᵏ-map (apᵏ (mapᵏ f m1) m2))) ⟩
+  apᵏ (apᵏ (pureᵏ f) (apᵏ (mapᵏ f m1) m2)) m3
+    ＝⟨ ap (λ q → apᵏ q m3) (sym (apᵏ-comp (mapᵏ f m1) (pureᵏ f) m2)) ⟩
+  apᵏ (apᵏ (apᵏ (apᵏ (pureᵏ (λ g → g ∘_)) (pureᵏ f)) (mapᵏ f m1)) m2) m3
+    ＝⟨ ap (λ q → apᵏ (apᵏ (apᵏ q (mapᵏ f m1)) m2) m3) apᵏ-homo ⟩
+  apᵏ (apᵏ (apᵏ (pureᵏ (λ g → f ∘ g)) (mapᵏ f m1)) m2) m3
+    ＝⟨ ap (λ q → apᵏ (apᵏ q m2) m3) (apᵏ-map (mapᵏ f m1)) ⟩
+  apᵏ (apᵏ (mapᵏ (λ g → f ∘ g) (mapᵏ f m1)) m2) m3
+    ＝⟨ ap (λ q → apᵏ (apᵏ q m2) m3) (mapᵏ-comp m1) ⟩
+  apᵏ (apᵏ (mapᵏ (λ x y z → f (f x y) z) m1) m2) m3
+    ＝⟨ ap (λ q → apᵏ (apᵏ (mapᵏ q m1) m2) m3) (fun-ext λ x → fun-ext λ y → fun-ext λ z → fa x y z) ⟩
+  apᵏ (apᵏ (mapᵏ (λ x y z → f x (f y z)) m1) m2) m3
+    ＝⟨ ap (λ q → apᵏ (apᵏ q m2) m3) (sym (mapᵏ-comp m1)) ⟩
+  apᵏ (apᵏ (mapᵏ (_$ f) (mapᵏ (λ x g y z → f x (g y z)) m1)) m2) m3
+    ＝⟨ ap (λ q → apᵏ (apᵏ q m2) m3) (sym (apᵏ-map (mapᵏ (λ x g y z → f x (g y z)) m1))) ⟩
+  apᵏ (apᵏ (apᵏ (pureᵏ (_$ f)) (mapᵏ (λ x g y z → f x (g y z)) m1)) m2) m3
+    ＝⟨ ap (λ q → apᵏ (apᵏ q m2) m3) (sym (apᵏ-inter (mapᵏ (λ x g y z → f x (g y z)) m1))) ⟩
+  apᵏ (apᵏ (apᵏ (mapᵏ (λ x g y z → f x (g y z)) m1) (pureᵏ f)) m2) m3
+    ＝⟨ ap (λ q → apᵏ (apᵏ (apᵏ q (pureᵏ f)) m2) m3) (sym (mapᵏ-comp m1)) ⟩
+  apᵏ (apᵏ (apᵏ (mapᵏ (λ g h → g ∘ h) (mapᵏ (λ x g y → f x (g y)) m1)) (pureᵏ f)) m2) m3
+    ＝⟨ ap (λ q → apᵏ (apᵏ (apᵏ q (pureᵏ f)) m2) m3) (sym (apᵏ-map (mapᵏ (λ x g y → f x (g y)) m1))) ⟩
+  apᵏ (apᵏ (apᵏ (apᵏ (pureᵏ (λ g → _∘_ g)) (mapᵏ (λ x g y → f x (g y)) m1)) (pureᵏ f)) m2) m3
+    ＝⟨ ap (λ q → apᵏ q m3) (apᵏ-comp (pureᵏ f) (mapᵏ (λ x g y → f x (g y)) m1) m2) ⟩
+  apᵏ (apᵏ (mapᵏ (λ x g y → f x (g y)) m1) (apᵏ (pureᵏ f) m2)) m3
+    ＝⟨ ap (λ q → apᵏ (apᵏ (mapᵏ (λ x g y → f x (g y)) m1) q) m3) (apᵏ-map m2) ⟩
+  apᵏ (apᵏ (mapᵏ (λ x g y → f x (g y)) m1) (mapᵏ f m2)) m3
+    ＝⟨ ap (λ q → apᵏ (apᵏ q (mapᵏ f m2)) m3) (sym (mapᵏ-comp m1)) ⟩
+  apᵏ (apᵏ (mapᵏ (λ g h → g ∘ h) (mapᵏ f m1)) (mapᵏ f m2)) m3
+    ＝⟨ ap (λ q → apᵏ (apᵏ q (mapᵏ f m2)) m3) (sym (apᵏ-map (mapᵏ f m1))) ⟩
+  apᵏ (apᵏ (apᵏ (pureᵏ (λ g → g ∘_ )) (mapᵏ f m1)) (mapᵏ f m2)) m3
+    ＝⟨ apᵏ-comp (mapᵏ f m2) (mapᵏ f m1) m3 ⟩
+  apᵏ (mapᵏ f m1) (apᵏ (mapᵏ f m2) m3)
+    ＝⟨⟩
+  zipWithᵏ f m1 (zipWithᵏ f m2 m3)
+    ∎
+
+zipWithᵐ-assoc : {f : B → B → B}
+                 {m1 m2 m3 : Moore A B}
+               → (∀ x y z → f (f x y) z ＝ f x (f y z))
+               → zipWithᵐ f (zipWithᵐ f m1 m2) m3 ＝ zipWithᵐ f m1 (zipWithᵐ f m2 m3)
+zipWithᵐ-assoc fa = fun-ext λ k → zipWithᵏ-assoc fa
+
 -- comonad
 
 extractᵏ : gMoore k A B → B
@@ -296,4 +349,3 @@ catᵏ : gMoore k A B → gMoore k B C → gMoore k A C
 catᵏ = fix catᵏ-body
 
 -- TODO mfix ?
-

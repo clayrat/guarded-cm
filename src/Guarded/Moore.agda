@@ -111,7 +111,6 @@ mapᵐ-comp {f} {g} = fix λ ih▹ → λ where
    ∙ ap (Mre (g (f b))) (fun-ext λ a → ▹-ext (ih▹ ⊛ tr a))
    ∙ sym (happly (fix-path (mapᵐ-body (g ∘ f))) m)
 
-
 -- profunctor
 
 dimapᵐ-body : (D → A) → (B → C)
@@ -140,13 +139,15 @@ apᵐ = fix apᵐ-body
 
 -- applicative laws
 
-apᵐ-id : (m : Moore A B)
-       → apᵐ (pureᵐ id) m ＝ m
-apᵐ-id = fix λ ih▹ → λ where
+apᵐ-map : {f : B → C}
+        → (m : Moore A B)
+        → apᵐ (pureᵐ f) m ＝ mapᵐ f m
+apᵐ-map {f} = fix λ ih▹ → λ where
   m@(Mre b tr) →
-      ap (λ q → apᵐ q m) (fix-path (pureᵐ-body id))
-    ∙ ap (λ q → q (pureᵐ-body id (next (pureᵐ id))) m) (fix-path apᵐ-body)
-    ∙ ap (Mre b) (fun-ext λ a → ▹-ext (ih▹ ⊛ tr a))
+      ap (λ q → apᵐ q m) (fix-path (pureᵐ-body f))
+    ∙ ap (λ q → q (pureᵐ-body f (next (pureᵐ f))) m) (fix-path apᵐ-body)
+    ∙ ap (Mre (f b)) (fun-ext λ a → ▹-ext (ih▹ ⊛ tr a))
+    ∙ sym (happly (fix-path (mapᵐ-body f)) m)
 
 apᵐ-comp : (mf : Moore A (B → C))
          → (mg : Moore A (C → D))
@@ -185,16 +186,65 @@ apᵐ-inter {x} = fix λ ih▹ → λ where
    ∙ ap (λ q → q (pureᵐ-body (_$ x) (next (pureᵐ (_$ x)))) mf) (sym $ fix-path apᵐ-body)
    ∙ ap (λ q → apᵐ q mf) (sym $ fix-path (pureᵐ-body (_$ x)))
 
+-- zipWith
+
+zipWithᵐ : (B → C → D) → Moore A B → Moore A C → Moore A D
+zipWithᵐ f mb mc = apᵐ (mapᵐ f mb) mc
+
+zipWithᵐ-assoc : {f : B → B → B}
+                 {m1 m2 m3 : Moore A B}
+               → (∀ x y z → f (f x y) z ＝ f x (f y z))
+               → zipWithᵐ f (zipWithᵐ f m1 m2) m3 ＝ zipWithᵐ f m1 (zipWithᵐ f m2 m3)
+zipWithᵐ-assoc {f} {m1} {m2} {m3} fa =
+  zipWithᵐ f (zipWithᵐ f m1 m2) m3
+    ＝⟨⟩
+  apᵐ (mapᵐ f (apᵐ (mapᵐ f m1) m2)) m3
+    ＝⟨ ap (λ q → apᵐ q m3) (sym (apᵐ-map (apᵐ (mapᵐ f m1) m2))) ⟩
+  apᵐ (apᵐ (pureᵐ f) (apᵐ (mapᵐ f m1) m2)) m3
+    ＝⟨ ap (λ q → apᵐ q m3) (sym (apᵐ-comp (mapᵐ f m1) (pureᵐ f) m2)) ⟩
+  apᵐ (apᵐ (apᵐ (apᵐ (pureᵐ (λ g → g ∘_)) (pureᵐ f)) (mapᵐ f m1)) m2) m3
+    ＝⟨ ap (λ q → apᵐ (apᵐ (apᵐ q (mapᵐ f m1)) m2) m3) apᵐ-homo ⟩
+  apᵐ (apᵐ (apᵐ (pureᵐ (λ g → f ∘ g)) (mapᵐ f m1)) m2) m3
+    ＝⟨ ap (λ q → apᵐ (apᵐ q m2) m3) (apᵐ-map (mapᵐ f m1)) ⟩
+  apᵐ (apᵐ (mapᵐ (λ g → f ∘ g) (mapᵐ f m1)) m2) m3
+    ＝⟨ ap (λ q → apᵐ (apᵐ q m2) m3) (mapᵐ-comp m1) ⟩
+  apᵐ (apᵐ (mapᵐ (λ x y z → f (f x y) z) m1) m2) m3
+    ＝⟨ ap (λ q → apᵐ (apᵐ (mapᵐ q m1) m2) m3) (fun-ext λ x → fun-ext λ y → fun-ext λ z → fa x y z) ⟩
+  apᵐ (apᵐ (mapᵐ (λ x y z → f x (f y z)) m1) m2) m3
+    ＝⟨ ap (λ q → apᵐ (apᵐ q m2) m3) (sym (mapᵐ-comp m1)) ⟩
+  apᵐ (apᵐ (mapᵐ (_$ f) (mapᵐ (λ x g y z → f x (g y z)) m1)) m2) m3
+    ＝⟨ ap (λ q → apᵐ (apᵐ q m2) m3) (sym (apᵐ-map (mapᵐ (λ x g y z → f x (g y z)) m1))) ⟩
+  apᵐ (apᵐ (apᵐ (pureᵐ (_$ f)) (mapᵐ (λ x g y z → f x (g y z)) m1)) m2) m3
+    ＝⟨ ap (λ q → apᵐ (apᵐ q m2) m3) (sym (apᵐ-inter (mapᵐ (λ x g y z → f x (g y z)) m1))) ⟩
+  apᵐ (apᵐ (apᵐ (mapᵐ (λ x g y z → f x (g y z)) m1) (pureᵐ f)) m2) m3
+    ＝⟨ ap (λ q → apᵐ (apᵐ (apᵐ q (pureᵐ f)) m2) m3) (sym (mapᵐ-comp m1)) ⟩
+  apᵐ (apᵐ (apᵐ (mapᵐ (λ g h → g ∘ h) (mapᵐ (λ x g y → f x (g y)) m1)) (pureᵐ f)) m2) m3
+    ＝⟨ ap (λ q → apᵐ (apᵐ (apᵐ q (pureᵐ f)) m2) m3) (sym (apᵐ-map (mapᵐ (λ x g y → f x (g y)) m1))) ⟩
+  apᵐ (apᵐ (apᵐ (apᵐ (pureᵐ (λ g → _∘_ g)) (mapᵐ (λ x g y → f x (g y)) m1)) (pureᵐ f)) m2) m3
+    ＝⟨ ap (λ q → apᵐ q m3) (apᵐ-comp (pureᵐ f) (mapᵐ (λ x g y → f x (g y)) m1) m2) ⟩
+  apᵐ (apᵐ (mapᵐ (λ x g y → f x (g y)) m1) (apᵐ (pureᵐ f) m2)) m3
+    ＝⟨ ap (λ q → apᵐ (apᵐ (mapᵐ (λ x g y → f x (g y)) m1) q) m3) (apᵐ-map m2) ⟩
+  apᵐ (apᵐ (mapᵐ (λ x g y → f x (g y)) m1) (mapᵐ f m2)) m3
+    ＝⟨ ap (λ q → apᵐ (apᵐ q (mapᵐ f m2)) m3) (sym (mapᵐ-comp m1)) ⟩
+  apᵐ (apᵐ (mapᵐ (λ g h → g ∘ h) (mapᵐ f m1)) (mapᵐ f m2)) m3
+    ＝⟨ ap (λ q → apᵐ (apᵐ q (mapᵐ f m2)) m3) (sym (apᵐ-map (mapᵐ f m1))) ⟩
+  apᵐ (apᵐ (apᵐ (pureᵐ (λ g → g ∘_ )) (mapᵐ f m1)) (mapᵐ f m2)) m3
+    ＝⟨ apᵐ-comp (mapᵐ f m2) (mapᵐ f m1) m3 ⟩
+  apᵐ (mapᵐ f m1) (apᵐ (mapᵐ f m2) m3)
+    ＝⟨⟩
+  zipWithᵐ f m1 (zipWithᵐ f m2 m3)
+    ∎
+
 -- comonad
 
 extractᵐ : Moore A B → B
 extractᵐ (Mre b _) = b
 
-duplicateᵐ-body : ▹ (Moore A B -> Moore A (Moore A B))
-                →  Moore A B -> Moore A (Moore A B)
+duplicateᵐ-body : ▹ (Moore A B → Moore A (Moore A B))
+                →  Moore A B → Moore A (Moore A B)
 duplicateᵐ-body d▹ m@(Mre _ tr) = Mre m λ a → d▹ ⊛ tr a
 
-duplicateᵐ : Moore A B -> Moore A (Moore A B)
+duplicateᵐ : Moore A B → Moore A (Moore A B)
 duplicateᵐ = fix duplicateᵐ-body
 
 extendᵐ-body : (Moore A B → C)
@@ -202,7 +252,7 @@ extendᵐ-body : (Moore A B → C)
              → Moore A B → Moore A C
 extendᵐ-body f e▹ m@(Mre b tr) = Mre (f m) λ a → e▹ ⊛ tr a
 
-extendᵐ : (Moore A B → C) -> Moore A B -> Moore A C
+extendᵐ : (Moore A B → C) → Moore A B → Moore A C
 extendᵐ f = fix (extendᵐ-body f)
 
 -- left fold
