@@ -86,14 +86,14 @@ Mre-inj : {bx by : B} {kx ky : A → Moore A B}
 Mre-inj e = Mreᵏ-inj (happly e k0) .fst
           , fun-ext λ a → fun-ext (force (λ k → ▹-ap (happly (Mreᵏ-inj (happly e k) .snd) a)))
 
+-- coiteration
+
 unfoldᵏ-body : (C → B × (A → C))
              → ▹ k (C → gMoore k A B)
              → C → gMoore k A B
 unfoldᵏ-body f u▹ c =
   let (b , g) = f c in
     Mreᵏ b λ a → u▹ ⊛ next (g a)
-
--- coiteration
 
 unfoldᵏ : (C → B × (A → C)) → C → gMoore k A B
 unfoldᵏ f = fix (unfoldᵏ-body f)
@@ -256,6 +256,11 @@ apᵐ-inter mf = fun-ext (apᵏ-inter ∘ mf)
 zipWithᵏ : (B → C → D) → gMoore k A B → gMoore k A C → gMoore k A D
 zipWithᵏ f mb mc = apᵏ (mapᵏ f mb) mc
 
+zipWithᵏ-eq : {f : B → C → D} {b : gMoore k A B} {c : gMoore k A C}
+            → zipWithᵏ f b c ＝ apᵏ-body (next apᵏ) (mapᵏ-body f (next (mapᵏ f)) b) c
+zipWithᵏ-eq {f} {b} {c} = ap (λ q → apᵏ (q b) c) (fix-path (mapᵏ-body f))
+                        ∙ ap (λ q → q (mapᵏ-body f (next (fix (mapᵏ-body f))) b) c) (fix-path apᵏ-body)
+
 zipWithᵐ : (B → C → D) → Moore A B → Moore A C → Moore A D
 zipWithᵐ f mb mc = apᵐ (mapᵐ f mb) mc
 
@@ -344,19 +349,11 @@ zipWithᵏ-comm : {f : B → B → C}
 zipWithᵏ-comm {k} {f} fc = fix {k} λ ih▹ → λ where
   m1@(Mreᵏ b1 tr1) m2@(Mreᵏ b2 tr2) →
     zipWithᵏ f m1 m2
-      ＝⟨⟩
-    apᵏ (mapᵏ f m1) m2
-      ＝⟨ ap (λ q → apᵏ (q m1) m2) (fix-path (mapᵏ-body f)) ⟩
-    apᵏ (mapᵏ-body f (next (mapᵏ f)) m1) m2
-      ＝⟨ ap (λ q → q (mapᵏ-body f (next (mapᵏ f)) m1) m2) (fix-path apᵏ-body) ⟩
+      ＝⟨ zipWithᵏ-eq ⟩
     apᵏ-body (next apᵏ) (mapᵏ-body f (next (mapᵏ f)) m1) m2
-      ＝⟨ ap² Mreᵏ (fc b1 b2) (fun-ext λ a → ▹-ext (ih▹ ⊛ tr1 a ⊛′ tr2 a))  ⟩
+      ＝⟨ ap² Mreᵏ (fc b1 b2) (fun-ext λ a → ▹-ext (ih▹ ⊛ tr1 a ⊛′ tr2 a)) ⟩
     apᵏ-body (next apᵏ) (mapᵏ-body f (next (mapᵏ f)) m2) m1
-      ＝⟨ ap (λ q → q (mapᵏ-body f (next (mapᵏ f)) m2) m1) (sym $ fix-path apᵏ-body) ⟩
-    apᵏ (mapᵏ-body f (next (mapᵏ f)) m2) m1
-      ＝⟨ ap (λ q → apᵏ (q m2) m1) (sym $ fix-path (mapᵏ-body f)) ⟩
-    apᵏ (mapᵏ f m2) m1
-      ＝⟨⟩
+      ＝⟨ sym zipWithᵏ-eq ⟩
     zipWithᵏ f m2 m1
       ∎
 
@@ -373,11 +370,7 @@ zipWithᵏ-idem : {f : B → B → B}
 zipWithᵏ-idem {k} {f} fi = fix {k} λ ih▹ → λ where
   m@(Mreᵏ b tr) →
     zipWithᵏ f m m
-      ＝⟨⟩
-    apᵏ (mapᵏ f m) m
-      ＝⟨ ap (λ q → apᵏ (q m) m) (fix-path (mapᵏ-body f)) ⟩
-    apᵏ (mapᵏ-body f (next (mapᵏ f)) m) m
-      ＝⟨ ap (λ q → q (mapᵏ-body f (next (mapᵏ f)) m) m) (fix-path apᵏ-body) ⟩
+      ＝⟨ zipWithᵏ-eq ⟩
     apᵏ-body (next apᵏ) (mapᵏ-body f (next (mapᵏ f)) m) m
       ＝⟨ ap² Mreᵏ (fi b) (fun-ext λ a → ▹-ext (ih▹ ⊛ tr a)) ⟩
     m
@@ -429,3 +422,4 @@ catᵏ : gMoore k A B → gMoore k B C → gMoore k A C
 catᵏ = fix catᵏ-body
 
 -- TODO mfix ?
+
