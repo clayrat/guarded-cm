@@ -30,14 +30,14 @@ infty-stream : to-streamᶜ infty ＝ repeatˢ true
 infty-stream = fix λ prf▹ →
   to-streamᶜ infty
     ＝⟨ ap (_$ infty) (fix-path to-streamᶜ-body) ⟩
-  to-streamᶜ-body (next to-streamᶜ) infty
-    ＝⟨ ap (to-streamᶜ-body (next to-streamᶜ)) (fix-path cosu) ⟩
+  to-streamᶜ-body (next to-streamᶜ) ⌜ infty ⌝
+    ＝⟨ ap! (fix-path cosu) ⟩
   to-streamᶜ-body (next to-streamᶜ) (cosu (next infty))
     ＝⟨⟩
-  cons true (next (to-streamᶜ infty))
-    ＝⟨ ap (cons true) (▹-ext prf▹) ⟩
+  cons true ⌜ next (to-streamᶜ infty) ⌝
+    ＝⟨ ap! (▹-ext prf▹) ⟩
   cons true (next (repeatˢ true))
-    ＝⟨ sym $ fix-path (cons true) ⟩
+    ＝˘⟨ fix-path (cons true) ⟩
   repeatˢ true
     ∎
 

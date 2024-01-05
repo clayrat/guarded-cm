@@ -91,8 +91,8 @@ inc-inftyᶜ : incᶜ infty ＝ infty
 inc-inftyᶜ = ap cosu (sym (pfix cosu))
 
 infty-unique : ∀ {n : ℕ∞}
-                → n ＝ incᶜ n
-                → n ＝ infty
+             → n ＝ incᶜ n
+             → n ＝ infty
 infty-unique = fix-unique {f▹ = cosu}
 
 -- doesn't seem to scale to coinductive definition
@@ -146,7 +146,7 @@ fromℕᶜ  zero   = coze
 fromℕᶜ (suc n) = incᶜ (fromℕᶜ n)
 
 is-finiteᶜ : ℕ∞ → 𝒰
-is-finiteᶜ c = Σ[ n ꞉ ℕ ] (fromℕᶜ n ＝ c)
+is-finiteᶜ = fibre fromℕᶜ
 
 finite-size : {x : ℕ∞} → is-finiteᶜ x → ℕ
 finite-size (n , _) = n
@@ -164,7 +164,7 @@ is-finite-upᶜ x (n , e) = suc n , ap cosu (▹-ext (next e))
 -- propositional version
 
 is-finite-pᶜ : ℕ∞ → 𝒰
-is-finite-pᶜ c = ∃[ n ꞉ ℕ ] (fromℕᶜ n ＝ c)
+is-finite-pᶜ = ∥_∥₁ ∘ is-finiteᶜ
 
 is-finite-down-pᶜ′ : (x▹ : ▹ ℕ∞) → is-finite-pᶜ (cosu x▹) → ▸ (▹map is-finite-pᶜ x▹)
 is-finite-down-pᶜ′ x▹ p = ▹trunc id (map (is-finite-downᶜ′ x▹) p)

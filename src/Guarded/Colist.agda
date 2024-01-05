@@ -124,7 +124,8 @@ map-catList : ∀ {A : 𝒰 ℓ} {B : 𝒰 ℓ′}
             → (f : A → B) → (l : List A) → (c : Colist A)
             → mapˡ f (catList l c) ＝ catList (map f l) (mapˡ f c)
 map-catList f []      c = refl
-map-catList f (x ∷ l) c = ap (ccons (f x)) (▹-ext λ α → (λ i → pfix (mapˡ-body f) i α (catList l c)) ∙ map-catList f l c)
+map-catList f (x ∷ l) c = ap (ccons (f x)) (▹-ext λ α → (λ i → pfix (mapˡ-body f) i α (catList l c))
+                                                             ∙ map-catList f l c)
 
 -- zipWith
 
@@ -162,7 +163,7 @@ foldrˡ f c z = fix (foldrˡ-body f z) c
 -- finiteness
 
 is-finiteˡ : Colist A → 𝒰 (level-of-type A)
-is-finiteˡ {A} c = Σ[ l ꞉ List A ] (fromList l ＝ c)
+is-finiteˡ = fibre fromList
 
 is-finite-uncons : (x : A) (c▹ : ▹ Colist A) → is-finiteˡ (ccons x c▹) → ▸ (▹map is-finiteˡ c▹)
 is-finite-uncons x c▹ ([]    , e) = absurd (cnil≠ccons e)
@@ -177,7 +178,7 @@ is-finite-upˡ x c (l , e) = (x ∷ l) , ap (prepend x) e
 -- propositional version
 
 is-finite-pˡ : Colist A → 𝒰 (level-of-type A)
-is-finite-pˡ {A} c = ∃[ l ꞉ List A ] (fromList l ＝ c)
+is-finite-pˡ = ∥_∥₁ ∘ is-finiteˡ
 
 is-finite-uncons-p : (x : A) (c▹ : ▹ Colist A) → is-finite-pˡ (ccons x c▹) → ▸ (▹map is-finite-pˡ c▹)
 is-finite-uncons-p x c▹ p = ▹trunc id (map (is-finite-uncons x c▹) p)

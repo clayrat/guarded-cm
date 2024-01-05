@@ -52,7 +52,7 @@ Allˢ-map {Q} {f} pq =
   fix λ prf▹ → λ where
     .(cons a s▹) (All-cons {a} {s▹} pa ps▹) →
        subst (Allˢ Q) (sym $ mapˢ-eq f a s▹) $
-       All-cons (pq pa) (λ α → prf▹ α (s▹ α) (ps▹ α))
+       All-cons (pq pa) (prf▹ ⊛ s▹ ⊛′ ps▹)
 
 Allˢ-zipWith : {P : A → 𝒰 ℓ′} {Q : B → 𝒰 ℓ″} {R : C → 𝒰 ℓ‴} {f : A → B → C}
              → (∀ {x y} → P x → Q y → R (f x y))
@@ -61,7 +61,7 @@ Allˢ-zipWith : {P : A → 𝒰 ℓ′} {Q : B → 𝒰 ℓ″} {R : C → 𝒰 
 Allˢ-zipWith {R} {f} pqr = fix λ prf▹ → λ where
   .(cons a s▹) .(cons b t▹) (All-cons {a} {s▹} pa as▹) (All-cons {a = b} {s▹ = t▹} qb at▹) →
      subst (Allˢ R) (sym $ zipWithˢ-eq f a s▹ b t▹) $
-     All-cons (pqr pa qb) λ α → prf▹ α (s▹ α) (t▹ α) (as▹ α) (at▹ α)
+     All-cons (pqr pa qb) (prf▹ ⊛ s▹ ⊛′ t▹ ⊛′ as▹ ⊛′ at▹)
 
 ¬Any→All¬ : ∀ {P : A → 𝒰 ℓ′}
           → (s : Stream A)
@@ -109,7 +109,7 @@ All≤ˢ-zipWith {R} {f} pqr = fix λ prf▹ → λ where
      All≤-nil (pqr pa qb)
   .(suc n) .(cons _ _) .(cons _ _) (All≤-cons {a} {s▹} {n} pa as▹) (All≤-cons {a = b} {s▹ = t▹} qb at▹) →
      subst (All≤ˢ R (suc n)) (sym $ zipWithˢ-eq f a s▹ b t▹) $
-     All≤-cons (pqr pa qb) (λ α → prf▹ α n (s▹ α) (t▹ α) (as▹ α) (at▹ α))
+     All≤-cons (pqr pa qb) (prf▹ ⊛ next n ⊛ s▹ ⊛′ t▹ ⊛′ as▹ ⊛′ at▹)
 
 -- adjacent elements
 
