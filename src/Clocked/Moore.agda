@@ -189,10 +189,16 @@ apᵏ-map : {f : B → C}
         → apᵏ (pureᵏ f) m ＝ mapᵏ f m
 apᵏ-map {k} {f} = fix {k} λ ih▹ → λ where
   m@(Mreᵏ b tr) →
-      ap (λ q → apᵏ q m) (fix-path (pureᵏ-body f))
-    ∙ ap (λ q → q (pureᵏ-body f (next (pureᵏ f))) m) (fix-path apᵏ-body)
-    ∙ ap (Mreᵏ (f b)) (fun-ext λ a → ▹-ext (ih▹ ⊛ tr a))
-    ∙ sym (happly (fix-path (mapᵏ-body f)) m)
+    apᵏ ⌜ pureᵏ f ⌝ m
+      ＝⟨ ap! (fix-path (pureᵏ-body f))  ⟩
+    ⌜ apᵏ ⌝ (pureᵏ-body f (next (pureᵏ f))) m
+      ＝⟨ ap (λ q → q (pureᵏ-body f (next (pureᵏ f))) m) (fix-path apᵏ-body) ⟩
+    apᵏ-body (next apᵏ) (pureᵏ-body f (next (pureᵏ f))) m
+      ＝⟨ ap (Mreᵏ (f b)) (fun-ext λ a → ▹-ext (ih▹ ⊛ tr a)) ⟩
+    mapᵏ-body f (next (mapᵏ f)) m
+      ＝˘⟨ ap (_$ m) (fix-path (mapᵏ-body f)) ⟩
+    ⌜ mapᵏ f ⌝ m
+      ∎
 
 apᵐ-map : {f : B → C}
         → (m : Moore A B)
@@ -254,7 +260,7 @@ apᵐ-inter mf = fun-ext (apᵏ-inter ∘ mf)
 -- zipWith
 
 zipWithᵏ : (B → C → D) → gMoore k A B → gMoore k A C → gMoore k A D
-zipWithᵏ f mb mc = apᵏ (mapᵏ f mb) mc
+zipWithᵏ f = apᵏ ∘ mapᵏ f
 
 zipWithᵏ-eq : {f : B → C → D} {b : gMoore k A B} {c : gMoore k A C}
             → zipWithᵏ f b c ＝ apᵏ-body (next apᵏ) (mapᵏ-body f (next (mapᵏ f)) b) c
@@ -262,7 +268,7 @@ zipWithᵏ-eq {f} {b} {c} = ap (λ q → apᵏ (q b) c) (fix-path (mapᵏ-body f
                         ∙ ap (λ q → q (mapᵏ-body f (next (fix (mapᵏ-body f))) b) c) (fix-path apᵏ-body)
 
 zipWithᵐ : (B → C → D) → Moore A B → Moore A C → Moore A D
-zipWithᵐ f mb mc = apᵐ (mapᵐ f mb) mc
+zipWithᵐ f = apᵐ ∘ mapᵐ f
 
 zipWithᵏ-assoc : {f : B → B → B}
                  {m1 m2 m3 : gMoore k A B}
@@ -271,36 +277,36 @@ zipWithᵏ-assoc : {f : B → B → B}
 zipWithᵏ-assoc {f} {m1} {m2} {m3} fa =
   zipWithᵏ f (zipWithᵏ f m1 m2) m3
     ＝⟨⟩
-  apᵏ (mapᵏ f (apᵏ (mapᵏ f m1) m2)) m3
-    ＝⟨ ap (λ q → apᵏ q m3) (sym (apᵏ-map (apᵏ (mapᵏ f m1) m2))) ⟩
-  apᵏ (apᵏ (pureᵏ f) (apᵏ (mapᵏ f m1) m2)) m3
-    ＝⟨ ap (λ q → apᵏ q m3) (sym (apᵏ-comp (mapᵏ f m1) (pureᵏ f) m2)) ⟩
-  apᵏ (apᵏ (apᵏ (apᵏ (pureᵏ (λ g → g ∘_)) (pureᵏ f)) (mapᵏ f m1)) m2) m3
-    ＝⟨ ap (λ q → apᵏ (apᵏ (apᵏ q (mapᵏ f m1)) m2) m3) apᵏ-homo ⟩
-  apᵏ (apᵏ (apᵏ (pureᵏ (λ g → f ∘ g)) (mapᵏ f m1)) m2) m3
-    ＝⟨ ap (λ q → apᵏ (apᵏ q m2) m3) (apᵏ-map (mapᵏ f m1)) ⟩
-  apᵏ (apᵏ (mapᵏ (λ g → f ∘ g) (mapᵏ f m1)) m2) m3
-    ＝⟨ ap (λ q → apᵏ (apᵏ q m2) m3) (mapᵏ-comp m1) ⟩
-  apᵏ (apᵏ (mapᵏ (λ x y z → f (f x y) z) m1) m2) m3
-    ＝⟨ ap (λ q → apᵏ (apᵏ (mapᵏ q m1) m2) m3) (fun-ext λ x → fun-ext λ y → fun-ext λ z → fa x y z) ⟩
-  apᵏ (apᵏ (mapᵏ (λ x y z → f x (f y z)) m1) m2) m3
-    ＝⟨ ap (λ q → apᵏ (apᵏ q m2) m3) (sym (mapᵏ-comp m1)) ⟩
-  apᵏ (apᵏ (mapᵏ (_$ f) (mapᵏ (λ x g y z → f x (g y z)) m1)) m2) m3
-    ＝⟨ ap (λ q → apᵏ (apᵏ q m2) m3) (sym (apᵏ-map (mapᵏ (λ x g y z → f x (g y z)) m1))) ⟩
-  apᵏ (apᵏ (apᵏ (pureᵏ (_$ f)) (mapᵏ (λ x g y z → f x (g y z)) m1)) m2) m3
-    ＝⟨ ap (λ q → apᵏ (apᵏ q m2) m3) (sym (apᵏ-inter (mapᵏ (λ x g y z → f x (g y z)) m1))) ⟩
-  apᵏ (apᵏ (apᵏ (mapᵏ (λ x g y z → f x (g y z)) m1) (pureᵏ f)) m2) m3
-    ＝⟨ ap (λ q → apᵏ (apᵏ (apᵏ q (pureᵏ f)) m2) m3) (sym (mapᵏ-comp m1)) ⟩
-  apᵏ (apᵏ (apᵏ (mapᵏ (λ g h → g ∘ h) (mapᵏ (λ x g y → f x (g y)) m1)) (pureᵏ f)) m2) m3
-    ＝⟨ ap (λ q → apᵏ (apᵏ (apᵏ q (pureᵏ f)) m2) m3) (sym (apᵏ-map (mapᵏ (λ x g y → f x (g y)) m1))) ⟩
-  apᵏ (apᵏ (apᵏ (apᵏ (pureᵏ (λ g → _∘_ g)) (mapᵏ (λ x g y → f x (g y)) m1)) (pureᵏ f)) m2) m3
-    ＝⟨ ap (λ q → apᵏ q m3) (apᵏ-comp (pureᵏ f) (mapᵏ (λ x g y → f x (g y)) m1) m2) ⟩
-  apᵏ (apᵏ (mapᵏ (λ x g y → f x (g y)) m1) (apᵏ (pureᵏ f) m2)) m3
-    ＝⟨ ap (λ q → apᵏ (apᵏ (mapᵏ (λ x g y → f x (g y)) m1) q) m3) (apᵏ-map m2) ⟩
-  apᵏ (apᵏ (mapᵏ (λ x g y → f x (g y)) m1) (mapᵏ f m2)) m3
-    ＝⟨ ap (λ q → apᵏ (apᵏ q (mapᵏ f m2)) m3) (sym (mapᵏ-comp m1)) ⟩
-  apᵏ (apᵏ (mapᵏ (λ g h → g ∘ h) (mapᵏ f m1)) (mapᵏ f m2)) m3
-    ＝⟨ ap (λ q → apᵏ (apᵏ q (mapᵏ f m2)) m3) (sym (apᵏ-map (mapᵏ f m1))) ⟩
+  apᵏ ⌜ mapᵏ f (apᵏ (mapᵏ f m1) m2) ⌝ m3
+    ＝⟨ ap! (sym (apᵏ-map (apᵏ (mapᵏ f m1) m2))) ⟩
+  apᵏ ⌜ apᵏ (pureᵏ f) (apᵏ (mapᵏ f m1) m2) ⌝ m3
+    ＝⟨ ap! (sym (apᵏ-comp (mapᵏ f m1) (pureᵏ f) m2)) ⟩
+  apᵏ (apᵏ (apᵏ ⌜ apᵏ (pureᵏ (λ g → g ∘_)) (pureᵏ f) ⌝ (mapᵏ f m1)) m2) m3
+    ＝⟨ ap! apᵏ-homo ⟩
+  apᵏ (apᵏ ⌜ apᵏ (pureᵏ (λ g → f ∘ g)) (mapᵏ f m1) ⌝ m2) m3
+    ＝⟨ ap! (apᵏ-map (mapᵏ f m1)) ⟩
+  apᵏ (apᵏ ⌜ mapᵏ (λ g → f ∘ g) (mapᵏ f m1) ⌝ m2) m3
+    ＝⟨ ap! (mapᵏ-comp m1) ⟩
+  apᵏ (apᵏ (mapᵏ ⌜ (λ x y z → f (f x y) z) ⌝ m1) m2) m3
+    ＝⟨ ap! (fun-ext λ x → fun-ext λ y → fun-ext λ z → fa x y z) ⟩
+  apᵏ (apᵏ ⌜ mapᵏ (λ x y z → f x (f y z)) m1 ⌝ m2) m3
+    ＝˘⟨ ap¡ (mapᵏ-comp m1) ⟩
+  apᵏ (apᵏ ⌜ mapᵏ (_$ f) (mapᵏ (λ x g y z → f x (g y z)) m1) ⌝ m2) m3
+    ＝˘⟨ ap (λ q → apᵏ (apᵏ q m2) m3) (apᵏ-map (mapᵏ (λ x g y z → f x (g y z)) m1)) ⟩
+  apᵏ (apᵏ ⌜ apᵏ (pureᵏ (_$ f)) (mapᵏ (λ x g y z → f x (g y z)) m1) ⌝ m2) m3
+    ＝˘⟨ ap (λ q → apᵏ (apᵏ q m2) m3) (apᵏ-inter (mapᵏ (λ x g y z → f x (g y z)) m1)) ⟩
+  apᵏ (apᵏ (apᵏ ⌜ mapᵏ (λ x g y z → f x (g y z)) m1 ⌝ (pureᵏ f)) m2) m3
+    ＝˘⟨ ap¡ (mapᵏ-comp m1) ⟩
+  apᵏ (apᵏ (apᵏ ⌜ mapᵏ (λ g h → g ∘ h) (mapᵏ (λ x g y → f x (g y)) m1) ⌝ (pureᵏ f)) m2) m3
+    ＝˘⟨ ap¡ (apᵏ-map (mapᵏ (λ x g y → f x (g y)) m1)) ⟩
+  apᵏ ⌜ apᵏ (apᵏ (apᵏ (pureᵏ (λ g → _∘_ g)) (mapᵏ (λ x g y → f x (g y)) m1)) (pureᵏ f)) m2 ⌝ m3
+    ＝⟨ ap! (apᵏ-comp (pureᵏ f) (mapᵏ (λ x g y → f x (g y)) m1) m2) ⟩
+  apᵏ (apᵏ (mapᵏ (λ x g y → f x (g y)) m1) ⌜ apᵏ (pureᵏ f) m2 ⌝) m3
+    ＝⟨ ap! (apᵏ-map m2) ⟩
+  apᵏ (apᵏ ⌜ mapᵏ (λ x g y → f x (g y)) m1 ⌝ (mapᵏ f m2)) m3
+    ＝˘⟨ ap¡ (mapᵏ-comp m1) ⟩
+  apᵏ (apᵏ ⌜ mapᵏ (λ g h → g ∘ h) (mapᵏ f m1) ⌝ (mapᵏ f m2)) m3
+    ＝˘⟨ ap¡ (apᵏ-map (mapᵏ f m1)) ⟩
   apᵏ (apᵏ (apᵏ (pureᵏ (λ g → g ∘_ )) (mapᵏ f m1)) (mapᵏ f m2)) m3
     ＝⟨ apᵏ-comp (mapᵏ f m2) (mapᵏ f m1) m3 ⟩
   apᵏ (mapᵏ f m1) (apᵏ (mapᵏ f m2) m3)
@@ -321,14 +327,14 @@ zipWithᵏ-id-l : {f : B → C → C}
 zipWithᵏ-id-l {f} {x} {m} fi =
   zipWithᵏ f (pureᵏ x) m
     ＝⟨⟩
-  apᵏ (mapᵏ f (pureᵏ x)) m
-    ＝⟨ ap (λ q → apᵏ q m) (sym $ apᵏ-map (pureᵏ x)) ⟩
-  apᵏ (apᵏ (pureᵏ f) (pureᵏ x)) m
-    ＝⟨ ap (λ q → apᵏ q m) apᵏ-homo ⟩
+  apᵏ ⌜ mapᵏ f (pureᵏ x) ⌝ m
+    ＝˘⟨ ap¡ (apᵏ-map (pureᵏ x)) ⟩
+  apᵏ ⌜ apᵏ (pureᵏ f) (pureᵏ x) ⌝ m
+    ＝⟨ ap! apᵏ-homo ⟩
   apᵏ (pureᵏ (f x)) m
     ＝⟨ apᵏ-map m ⟩
-  mapᵏ (f x) m
-    ＝⟨ ap (λ q → mapᵏ q m) (fun-ext fi) ⟩
+  mapᵏ ⌜ f x ⌝ m
+    ＝⟨ ap! (fun-ext fi) ⟩
   mapᵏ id m
     ＝⟨ mapᵏ-id m ⟩
   m
@@ -340,7 +346,7 @@ zipWithᵐ-id-l : {f : B → C → C}
               → zipWithᵐ f (pureᵐ x) m ＝ m
 zipWithᵐ-id-l fi = fun-ext λ k → zipWithᵏ-id-l fi
 
--- are these provable just with applicative laws?
+-- are any of these provable just with applicative laws?
 
 zipWithᵏ-comm : {f : B → B → C}
               → (∀ x y → f x y ＝ f y x)
@@ -353,7 +359,7 @@ zipWithᵏ-comm {k} {f} fc = fix {k} λ ih▹ → λ where
     apᵏ-body (next apᵏ) (mapᵏ-body f (next (mapᵏ f)) m1) m2
       ＝⟨ ap² Mreᵏ (fc b1 b2) (fun-ext λ a → ▹-ext (ih▹ ⊛ tr1 a ⊛′ tr2 a)) ⟩
     apᵏ-body (next apᵏ) (mapᵏ-body f (next (mapᵏ f)) m2) m1
-      ＝⟨ sym zipWithᵏ-eq ⟩
+      ＝˘⟨ zipWithᵏ-eq ⟩
     zipWithᵏ f m2 m1
       ∎
 
@@ -422,4 +428,3 @@ catᵏ : gMoore k A B → gMoore k B C → gMoore k A C
 catᵏ = fix catᵏ-body
 
 -- TODO mfix ?
-
