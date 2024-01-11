@@ -2,11 +2,12 @@
 module Clocked.Partial where
 
 open import Prelude
+open import Data.Empty
 open import Data.Bool
 open import Data.Maybe
 open import Data.Sum
+open import Data.Nat
 open import Later
-open import Clocked.Stream using (gStream ; cons ; repeatᵏ ; Stream ; mapˢ ; nthˢ)
 
 private variable
   A B : 𝒰
@@ -18,11 +19,68 @@ data gPart (k : Cl) (A : 𝒰) : 𝒰 where
   now   : A → gPart k A
   later : ▹ k (gPart k A) → gPart k A
 
+module gPart-code where
+  Code-body : ▹ k (gPart k A → gPart k A → 𝒰 (level-of-type A))
+            → gPart k A → gPart k A → 𝒰 (level-of-type A)
+  Code-body     C▹ (now a)    (now b)    = a ＝ b
+  Code-body     C▹ (now _)    (later _)  = Lift _ ⊥
+  Code-body     C▹ (later _)  (now _)    = Lift _ ⊥
+  Code-body {k} C▹ (later a▹) (later b▹) = ▸ k (C▹ ⊛ a▹ ⊛ b▹)
+
+  Code : gPart k A → gPart k A → 𝒰 (level-of-type A)
+  Code = fix Code-body
+
+  Code-ll-eq : {a▹ b▹ : ▹ k (gPart k A)} → Code (later a▹) (later b▹) ＝ ▸ k (Code ⍉ a▹ ⊛ b▹)
+  Code-ll-eq {k} {a▹} {b▹} i = ▹[ α ∶ k ] (pfix Code-body i α (a▹ α) (b▹ α))
+
+  Code-ll⇉ : {a▹ b▹ : ▹ k (gPart k A)} → Code (later a▹) (later b▹) → ▸ k (Code ⍉ a▹ ⊛ b▹)
+  Code-ll⇉ = transport Code-ll-eq
+
+  ⇉Code-ll : {a▹ b▹ : ▹ k (gPart k A)} → ▸ k (Code ⍉ a▹ ⊛ b▹) → Code (later a▹) (later b▹)
+  ⇉Code-ll = transport (sym Code-ll-eq)
+
+  ⇉Code-ll⇉ : {a▹ b▹ : ▹ k (gPart k A)} {c : Code (later a▹) (later b▹)}
+            → ⇉Code-ll (Code-ll⇉ c) ＝ c
+  ⇉Code-ll⇉ {c} = transport⁻-transport Code-ll-eq c
+
+  Code-refl-body : ▹ k ((p : gPart k A) → Code p p) → (p : gPart k A) → Code p p
+  Code-refl-body C▹ (now a)    = refl
+  Code-refl-body C▹ (later p▹) = ⇉Code-ll (C▹ ⊛ p▹)
+
+  Code-refl : (p : gPart k A) → Code p p
+  Code-refl = fix Code-refl-body
+
+  encode : {p q : gPart k A} → p ＝ q → Code p q
+  encode {p} {q} e = subst (Code p) e (Code-refl p)
+
+  decode : ∀ (p q : gPart k A) → Code p q → p ＝ q
+  decode (now a)    (now b)    c = ap now c
+  decode (later a▹) (later b▹) c = ap later (▹-ext λ α → decode (a▹ α) (b▹ α) (Code-ll⇉ c α))
+
+now-inj : ∀ {a b : A}
+        → now {k} a ＝ now b → a ＝ b
+now-inj = gPart-code.encode
+
+later-inj : ∀ {a▹ b▹ : ▹ k (gPart k A)}
+          → later a▹ ＝ later b▹ → a▹ ＝ b▹
+later-inj {a▹} {b▹} e =
+  ▹-ext λ α → gPart-code.decode (a▹ α) (b▹ α) (gPart-code.Code-ll⇉ (gPart-code.encode e) α)
+
+now≠later : ∀ {a : A} {p▹ : ▹ k (gPart k A)}
+          → now a ≠ later p▹
+now≠later = lower ∘ gPart-code.encode
+
 neverᵏ : gPart k A
 neverᵏ = fix later
 
 δᵏ : gPart k A → gPart k A
 δᵏ = later ∘ next
+
+spinᵏ : ℕ → gPart k A → gPart k A
+spinᵏ k = iter k δᵏ
+
+delay-byᵏ : ℕ → A → gPart k A
+delay-byᵏ k a = spinᵏ k (now a)
 
 _>>=ᵏ_ : gPart k A → (A → gPart k B) → gPart k B
 now x   >>=ᵏ f = f x
@@ -49,8 +107,14 @@ neverᵖ k = neverᵏ
 δᵖ : Part A → Part A
 δᵖ p k = δᵏ (p k)
 
+spin : ℕ → Part A → Part A
+spin k = iter k δᵖ
+
 pureᵖ : A → Part A
 pureᵖ a k = now a
+
+delay-by : ℕ → A → Part A
+delay-by k a = spin k (pureᵖ a)
 
 _>>=ᵖ_ : Part A → (A → Part B) → Part B
 _>>=ᵖ_ p f k = p k >>=ᵏ λ a → f a k
@@ -99,6 +163,9 @@ minimizeᵏ test = try-moreᵏ (λ n → if test n then just n else nothing)
 minimizeᵖ : (ℕ → Bool) → Part ℕ
 minimizeᵖ test k = minimizeᵏ test
 
+bothᵏ : gPart k A → gPart k B → gPart k (A × B)
+bothᵏ pa pb = apᵏ (mapᵏ (_,_) pa) pb
+
 raceᵏ-body : ▹ k (gPart k A → gPart k A → gPart k A) → gPart k A → gPart k A → gPart k A
 raceᵏ-body r▹ (now a)     _         = now a
 raceᵏ-body r▹ (later _)  (now a)    = now a
@@ -107,17 +174,14 @@ raceᵏ-body r▹ (later p1) (later p2) = later (r▹ ⊛ p1 ⊛ p2)
 raceᵏ : gPart k A → gPart k A → gPart k A
 raceᵏ = fix raceᵏ-body
 
+raceᵖ : Part A → Part A → Part A
+raceᵖ p1 p2 k = raceᵏ (p1 k) (p2 k)
+
 raceωᵏ-body : ▹ k (gStream k (gPart k A) → gPart k A) → gStream k (gPart k A) → gPart k A
 raceωᵏ-body r▹ (cons p ps) = raceᵏ p (later (r▹ ⊛ ps))
 
 raceωᵏ : gStream k (gPart k A) → gPart k A
 raceωᵏ = fix raceωᵏ-body
-
-bothᵏ : gPart k A → gPart k B → gPart k (A × B)
-bothᵏ pa pb = apᵏ (mapᵏ (_,_) pa) pb
-
-raceᵖ : Part A → Part A → Part A
-raceᵖ p1 p2 k = raceᵏ (p1 k) (p2 k)
 
 raceωᵖ : Stream (Part A) → Part A
 raceωᵖ s k = raceωᵏ (mapˢ (λ p → p k) s k)

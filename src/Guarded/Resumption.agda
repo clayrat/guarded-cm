@@ -28,16 +28,16 @@ module Res-code where
   Code = fix Code-body
 
   Code-cc-eq : {kx ky : ℐ → 𝒪 × ▹ Res ℐ 𝒪 A}
-             → Code (cont kx) (cont ky) ＝ ∀ a → (kx a .fst ＝ ky a .fst) × ▸ (▹map Code (kx a .snd) ⊛ ky a .snd)
+             → Code (cont kx) (cont ky) ＝ ∀ a → (kx a .fst ＝ ky a .fst) × ▸ (Code ⍉ (kx a .snd) ⊛ ky a .snd)
   Code-cc-eq {ℐ} {kx} {ky} i = (𝒾 : ℐ) → ((kx 𝒾 .fst ＝ ky 𝒾 .fst) × (▹[ α ] pfix Code-body i α (kx 𝒾 .snd α) (ky 𝒾 .snd α)))
 
   Code-cc⇉ : {kx ky : ℐ → 𝒪 × ▹ Res ℐ 𝒪 A}
            → Code (cont kx) (cont ky)
-           → ∀ a → (kx a .fst ＝ ky a .fst) × ▸ (▹map Code (kx a .snd) ⊛ ky a .snd)
+           → ∀ a → (kx a .fst ＝ ky a .fst) × ▸ (Code ⍉ (kx a .snd) ⊛ ky a .snd)
   Code-cc⇉ = transport Code-cc-eq
 
   ⇉Code-cc : {kx ky : ℐ → 𝒪 × ▹ Res ℐ 𝒪 A}
-           → (∀ a → (kx a .fst ＝ ky a .fst) × ▸ (▹map Code (kx a .snd) ⊛ ky a .snd))
+           → (∀ a → (kx a .fst ＝ ky a .fst) × ▸ (Code ⍉ (kx a .snd) ⊛ ky a .snd))
            → Code (cont kx) (cont ky)
   ⇉Code-cc = transport (sym Code-cc-eq)
 

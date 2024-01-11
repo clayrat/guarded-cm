@@ -7,6 +7,7 @@ open import Prelude
 open import Foundations.Cubes
 open import Prim
 
+infixl 5 _⍉_
 infixl 4 _⊛_
 infixl 4 _⊛′_
 infixr -2 ▹-syntax
@@ -69,18 +70,19 @@ _⊛′_ : ∀ {A : ▹ k (𝒰 ℓ)} {B : ▹[ α ∶ k ] (A α → 𝒰 ℓ′
      → ▹[ α ∶ k ] B α (a α)
 (f ⊛′ x) α = f α (x α)
 
-▹map : ((a : A) → B a)
-  → (a : ▹ k A) → ▹[ α ∶ k ] B (a α)
-▹map f x α = f (x α)
+-- map
+_⍉_ : ((a : A) → B a)
+     → (a : ▹ k A) → ▹[ α ∶ k ] B (a α)
+_⍉_ f x α = f (x α)
 
 -- functor laws
 
 ▹map-id : {x : ▹ k A}
-        → ▹map id x ＝ x
+        → id ⍉ x ＝ x
 ▹map-id = refl
 
 ▹map-comp : {B C : 𝒰 ℓ} {f : A → B} {g : B -> C} {x : ▹ k A}
-          → ▹map g (▹map f x) ＝ ▹map (g ∘ f) x
+          → g ⍉ (f ⍉ x) ＝ (g ∘ f) ⍉ x
 ▹map-comp = refl
 
 -- applicative laws
@@ -199,7 +201,7 @@ delay a k _ = a k
   (force (λ k → ▹x=▹y k i) k )
 
 ▹-is-faithful : {A B : 𝒰 ℓ} → (f g : A → B)
-  → (∀ k → Path (▹ k A → ▹ k B) (▹map f) (▹map g))
+  → (∀ k → Path (▹ k A → ▹ k B) (f ⍉_) (g ⍉_))
   → ∀ k → f ＝ g
 ▹-is-faithful {A} {B} f g p k i x = primComp (λ _ → B) sq (force (λ k α → p k i (next x) α) k)
   where
@@ -210,14 +212,14 @@ delay a k _ = a k
 -- feedback combinator
 
 feedback : (▹ k A → B k × A) → B k
-feedback f = fst (fix (f ∘ ▹map snd))
+feedback f = fst (fix (f ∘ (snd ⍉_)))
 
 -- fixed point uniqueness
 
 dfix-unique : ∀ {f▹ : ▹ k A → A} {x : ▹ k A}
             → x ＝ next (f▹ x)
             → x ＝ dfix f▹
-dfix-unique {f▹} e = fix λ ih▹ → e ∙ ▹-ext (▹map (ap f▹) ih▹) ∙ sym (pfix f▹)
+dfix-unique {f▹} e = fix λ ih▹ → e ∙ ▹-ext ((ap f▹) ⍉ ih▹) ∙ sym (pfix f▹)
 
 fix-unique : ∀ {f▹ : ▹ k A → A} {x : A}
            → x ＝ f▹ (next x)

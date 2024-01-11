@@ -1,19 +1,26 @@
 {-# OPTIONS --guarded #-}
-module Guarded.Partial.Converges where
+module Clocked.Partial.Converges where
 
 open import Prelude
 open import Data.Empty
 open import Data.Nat
 
-open import LaterG
-open import Guarded.Partial
+open import Later
+open import Clocked.Partial
 
 private variable
   ℓ ℓ′ : Level
   A : 𝒰 ℓ
   B : 𝒰 ℓ′
+  κ : Cl
 
 -- convergence (propositional)
+
+_⇓ᵏᵖ_ : gPart κ A → A → 𝒰 (level-of-type A)
+_⇓ᵏᵖ_ {A} p x = ∃[ n ꞉ ℕ ] (p ＝ delay-byᵏ n x)
+
+_⇓ᵏ : gPart κ A → 𝒰 (level-of-type A)
+_⇓ᵏ {A} p = Σ[ a ꞉ A ] p ⇓ᵏᵖ a
 
 _⇓ᵖ_ : Part A → A → 𝒰 (level-of-type A)
 _⇓ᵖ_ {A} p x = ∃[ n ꞉ ℕ ] (p ＝ delay-by n x)
@@ -21,21 +28,27 @@ _⇓ᵖ_ {A} p x = ∃[ n ꞉ ℕ ] (p ＝ delay-by n x)
 _⇓ : Part A → 𝒰 (level-of-type A)
 _⇓ {A} p = Σ[ a ꞉ A ] p ⇓ᵖ a
 
-now⇓ : {x : A}
-     → now x ⇓ᵖ x
-now⇓ = ∣ 0 , refl ∣₁
+pure⇓ : {x : A}
+     → pureᵖ x ⇓ᵖ x
+pure⇓ = ∣ 0 , refl ∣₁
 
 δ⇓ : {p : Part A} {x : A}
    → p ⇓ᵖ x → δᵖ p ⇓ᵖ x
-δ⇓ = map λ where (n , e) → suc n , ap later (▹-ext λ α → e)
+δ⇓ = map λ where (n , e) → suc n , fun-ext λ k → ap later (▹-ext (next (happly e k)))
 
 spin⇓ : {p : Part A} {x : A}
       → ∀ n → p ⇓ᵖ x → spin n p ⇓ᵖ x
 spin⇓  zero   = id
 spin⇓ (suc n) = δ⇓ ∘ spin⇓ n
 
--- we cannot go in the other direction however
+unδ⇓ : {p : Part A} {x : A}
+   → δᵖ p ⇓ᵖ x → p ⇓ᵖ x
+unδ⇓ = map λ where
+               (zero  , e) → absurd (now≠later (sym $ happly e k0))
+               (suc n , e) → n , fun-ext (force (λ k₁ → ▹-ap (later-inj (happly e k₁))))
 
+-- TODO
+{-
 map⇓ : {p : Part A} {a : A}
      → (f : A → B)
      → p ⇓ᵖ a
@@ -66,20 +79,29 @@ bind⇓ {a} {b} f pa fab =
                         ∙ delay-by-bindᵖ f a n
                         ∙ ap (iter n δᵖ) eᶠ
                         ∙ sym (iter-add n m δᵖ (now b)))) fab) pa
+-}
 
--- weak bisimilarity
+-- weak bisimilarity (both converge to same value modulo the number of steps)
 
 _＝⇓_ : Part A → Part A → 𝒰 (level-of-type A)
-_＝⇓_ p q = ∀ x → (p ⇓ᵖ x → q ⇓ᵖ x) × (q ⇓ᵖ x → p ⇓ᵖ x)
+p ＝⇓ q = ∀ x → (p ⇓ᵖ x → q ⇓ᵖ x) × (q ⇓ᵖ x → p ⇓ᵖ x)
 
 ＝⇓-refl : {p : Part A}
          → p ＝⇓ p
 ＝⇓-refl x = id , id
 
+＝→＝⇓ : {p q : Part A}
+      → p ＝ q → p ＝⇓ q
+＝→＝⇓ {p} e = subst (p ＝⇓_) e ＝⇓-refl
+
 ＝⇓-sym : {p q : Part A}
          → p ＝⇓ q → q ＝⇓ p
-＝⇓-sym pq x = (pq x .snd) , (pq x .fst)
+＝⇓-sym pq x = pq x .snd , pq x .fst
 
 ＝⇓-trans : {p q r : Part A}
           → p ＝⇓ q → q ＝⇓ r → p ＝⇓ r
 ＝⇓-trans pq qr x = qr x .fst ∘ pq x .fst , pq x .snd ∘ qr x .snd
+
+＝⇓-δ : {p : Part A}
+     → p ＝⇓ δᵖ p
+＝⇓-δ x = δ⇓ , unδ⇓

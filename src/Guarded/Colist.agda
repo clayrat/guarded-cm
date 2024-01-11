@@ -33,16 +33,16 @@ module Colist-code where
   Code = fix Code-body
 
   Code-cc-eq : {x y : A} {cx▹ cy▹ : ▹ Colist A}
-             → Code (ccons x cx▹) (ccons y cy▹) ＝ (x ＝ y) × ▸ (▹map Code cx▹ ⊛ cy▹)
+             → Code (ccons x cx▹) (ccons y cy▹) ＝ (x ＝ y) × ▸ (Code ⍉ cx▹ ⊛ cy▹)
   Code-cc-eq {x} {y} {cx▹} {cy▹} i = (x ＝ y) × (▹[ α ] pfix Code-body i α (cx▹ α) (cy▹ α))
 
   Code-cc⇉ : {x y : A} {cx▹ cy▹ : ▹ Colist A}
            → Code (ccons x cx▹) (ccons y cy▹)
-           → (x ＝ y) × ▸ (▹map Code cx▹ ⊛ cy▹)
+           → (x ＝ y) × ▸ (Code ⍉ cx▹ ⊛ cy▹)
   Code-cc⇉ = transport Code-cc-eq
 
   ⇉Code-cc : {x y : A} {cx▹ cy▹ : ▹ Colist A}
-           → (x ＝ y) × ▸ (▹map Code cx▹ ⊛ cy▹)
+           → (x ＝ y) × ▸ (Code ⍉ cx▹ ⊛ cy▹)
            → Code (ccons x cx▹) (ccons y cy▹)
   ⇉Code-cc = transport (sym Code-cc-eq)
 
@@ -69,7 +69,7 @@ ccons-inj : {x y : A} {cx▹ cy▹ : ▹ Colist A}
           → ccons x cx▹ ＝ ccons y cy▹ → (x ＝ y) × (cx▹ ＝ cy▹)
 ccons-inj {x} {y} {cx▹} {cy▹} e =
   let (ex , ec) = Colist-code.Code-cc⇉ (Colist-code.encode e) in
-  ex , ▹-ext λ α → Colist-code.decode (cx▹ α) (cy▹ α) (ec α)
+  ex , ▹-ext (Colist-code.decode ⍉ cx▹ ⊛▹ cy▹ ⊛▹ ec)
 
 prepend : A → Colist A → Colist A
 prepend a = ccons a ∘ next
@@ -149,7 +149,7 @@ prepend-to-allˡ sep = fix (prepend-to-allˡ-body sep)
 
 intersperseˡ : A → Colist A → Colist A
 intersperseˡ sep  cnil         = cnil
-intersperseˡ sep (ccons x xs▹) = ccons x (▹map (prepend-to-allˡ sep) xs▹)
+intersperseˡ sep (ccons x xs▹) = ccons x ((prepend-to-allˡ sep) ⍉ xs▹)
 
 -- foldr
 
@@ -165,7 +165,7 @@ foldrˡ f c z = fix (foldrˡ-body f z) c
 is-finiteˡ : Colist A → 𝒰 (level-of-type A)
 is-finiteˡ = fibre fromList
 
-is-finite-uncons : (x : A) (c▹ : ▹ Colist A) → is-finiteˡ (ccons x c▹) → ▸ (▹map is-finiteˡ c▹)
+is-finite-uncons : (x : A) (c▹ : ▹ Colist A) → is-finiteˡ (ccons x c▹) → ▸ (is-finiteˡ ⍉ c▹)
 is-finite-uncons x c▹ ([]    , e) = absurd (cnil≠ccons e)
 is-finite-uncons x c▹ (y ∷ l , e) = λ α → l , (▹-ap (ccons-inj e .snd) α)
 
@@ -180,7 +180,7 @@ is-finite-upˡ x c (l , e) = (x ∷ l) , ap (prepend x) e
 is-finite-pˡ : Colist A → 𝒰 (level-of-type A)
 is-finite-pˡ = ∥_∥₁ ∘ is-finiteˡ
 
-is-finite-uncons-p : (x : A) (c▹ : ▹ Colist A) → is-finite-pˡ (ccons x c▹) → ▸ (▹map is-finite-pˡ c▹)
+is-finite-uncons-p : (x : A) (c▹ : ▹ Colist A) → is-finite-pˡ (ccons x c▹) → ▸ (is-finite-pˡ ⍉ c▹)
 is-finite-uncons-p x c▹ p = ▹trunc id (map (is-finite-uncons x c▹) p)
 
 is-finite-down-pˡ : (x : A) (c : Colist A) → is-finite-pˡ (prepend x c) → ▹ (is-finite-pˡ c)

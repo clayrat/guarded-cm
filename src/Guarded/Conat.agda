@@ -32,16 +32,16 @@ module Conat-code where
   Code = fix Code-body
 
   Code-cc-eq : {x▹ y▹ : ▹ ℕ∞}
-             → Code (cosu x▹) (cosu y▹) ＝ ▸ (▹map Code x▹ ⊛ y▹)
+             → Code (cosu x▹) (cosu y▹) ＝ ▸ (Code ⍉ x▹ ⊛ y▹)
   Code-cc-eq {x▹} {y▹} i = ▹[ α ] pfix Code-body i α (x▹ α) (y▹ α)
 
   Code-cc⇉ : {x▹ y▹ : ▹ ℕ∞}
            → Code (cosu x▹) (cosu y▹)
-           → ▸ (▹map Code x▹ ⊛ y▹)
+           → ▸ (Code ⍉ x▹ ⊛ y▹)
   Code-cc⇉ = transport Code-cc-eq
 
   ⇉Code-cc : {x▹ y▹ : ▹ ℕ∞}
-           → ▸ (▹map Code x▹ ⊛ y▹)
+           → ▸ (Code ⍉ x▹ ⊛ y▹)
            → Code (cosu x▹) (cosu y▹)
   ⇉Code-cc = transport (sym Code-cc-eq)
 
@@ -151,7 +151,7 @@ is-finiteᶜ = fibre fromℕᶜ
 finite-size : {x : ℕ∞} → is-finiteᶜ x → ℕ
 finite-size (n , _) = n
 
-is-finite-downᶜ′ : (x▹ : ▹ ℕ∞) → is-finiteᶜ (cosu x▹) → ▸ (▹map is-finiteᶜ x▹)
+is-finite-downᶜ′ : (x▹ : ▹ ℕ∞) → is-finiteᶜ (cosu x▹) → ▸ (is-finiteᶜ ⍉ x▹)
 is-finite-downᶜ′ x▹ (zero  , e) = λ _ → absurd (cosu≠coze (sym e))
 is-finite-downᶜ′ x▹ (suc n , e) = λ α → n , ▹-ap (cosu-inj e) α
 
@@ -166,7 +166,7 @@ is-finite-upᶜ x (n , e) = suc n , ap cosu (▹-ext (next e))
 is-finite-pᶜ : ℕ∞ → 𝒰
 is-finite-pᶜ = ∥_∥₁ ∘ is-finiteᶜ
 
-is-finite-down-pᶜ′ : (x▹ : ▹ ℕ∞) → is-finite-pᶜ (cosu x▹) → ▸ (▹map is-finite-pᶜ x▹)
+is-finite-down-pᶜ′ : (x▹ : ▹ ℕ∞) → is-finite-pᶜ (cosu x▹) → ▸ (is-finite-pᶜ ⍉ x▹)
 is-finite-down-pᶜ′ x▹ p = ▹trunc id (map (is-finite-downᶜ′ x▹) p)
 
 is-finite-down-pᶜ : (x : ℕ∞) → is-finite-pᶜ (incᶜ x) → ▹ (is-finite-pᶜ x)

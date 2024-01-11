@@ -23,6 +23,22 @@ data Rou (A : 𝒰) : 𝒰 where
   nextR : ((▹ Rou A → ▹ Colist A) → Colist A) → Rou A
 -}
 
+data RouF (A : 𝒰) (R▹ : ▹ 𝒰) : 𝒰 where
+  overRF : RouF A R▹
+  nextRF : ((▸ R▹ → ▹ Colist A) → Colist A) → RouF A R▹
+
+Rou : 𝒰 → 𝒰
+Rou A = fix (RouF A)
+
+Rou⇉ : Rou A
+     → RouF A (next (Rou A))
+Rou⇉ {A} = transport (fix-path (RouF A))
+
+⇉Rou : RouF A (next (Rou A))
+     → Rou A
+⇉Rou {A} = transport (sym $ fix-path (RouF A))
+
+{-
 Rou-next : 𝒰 → ▹ 𝒰 → 𝒰
 Rou-next A rou▹ = (▸ rou▹ → ▹ Colist A) → Colist A
 
@@ -39,19 +55,20 @@ nextR⇉ {A} = subst (Rou-next A) (pfix (Rou-body A))
 ⇉nextR : ((▹ Rou A → ▹ Colist A) → Colist A)
        → Rou-next A (dfix (Rou-body A))
 ⇉nextR {A} = subst (Rou-next A) (sym $ pfix (Rou-body A))
-
+-}
 -- constructors & recursor
 
 overR : Rou A
-overR = inl tt
+overR = ⇉Rou overRF
 
 nextR : ((▹ Rou A → ▹ Colist A) → Colist A) → Rou A
-nextR = inr ∘ ⇉nextR
+nextR = ⇉Rou ∘ nextRF
 
 rec : B → (((▹ Rou A → ▹ Colist A) → Colist A) → B)
     → Rou A → B
-rec o _  (inl tt) = o
-rec _ nf (inr f)  = nf (nextR⇉ f)
+rec b nf r with Rou⇉ r
+... | overRF   = b
+... | nextRF f = nf f
 
 -- the algorithm
 
@@ -62,7 +79,7 @@ unfold kf =
 
 br : Tree A → Rou A → Rou A
 br (Leaf a)   c = nextR (λ kf → ccons a (unfold kf c))
-br (Br l a r) c = nextR (λ kf → ccons a (unfold (kf ∘ ▹map (br l ∘ br r)) c))
+br (Br l a r) c = nextR (λ kf → ccons a (unfold (kf ∘ ((br l ∘ br r) ⍉_)) c))
 
 ex : Rou A → Colist A
 ex {A} = fix λ ex▹ →

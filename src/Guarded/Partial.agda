@@ -34,13 +34,13 @@ module Part-code where
   Code : Part A → Part A → 𝒰 (level-of-type A)
   Code = fix Code-body
 
-  Code-ll-eq : {a▹ b▹ : ▹ Part A} → Code (later a▹) (later b▹) ＝ ▸ (▹map Code a▹ ⊛ b▹)
+  Code-ll-eq : {a▹ b▹ : ▹ Part A} → Code (later a▹) (later b▹) ＝ ▸ (Code ⍉ a▹ ⊛ b▹)
   Code-ll-eq {a▹} {b▹} i = ▹[ α ] (pfix Code-body i α (a▹ α) (b▹ α))
 
-  Code-ll⇉ : {a▹ b▹ : ▹ Part A} → Code (later a▹) (later b▹) → ▸ (▹map Code a▹ ⊛ b▹)
+  Code-ll⇉ : {a▹ b▹ : ▹ Part A} → Code (later a▹) (later b▹) → ▸ (Code ⍉ a▹ ⊛ b▹)
   Code-ll⇉ = transport Code-ll-eq
 
-  ⇉Code-ll : {a▹ b▹ : ▹ Part A} → ▸ (▹map Code a▹ ⊛ b▹) → Code (later a▹) (later b▹)
+  ⇉Code-ll : {a▹ b▹ : ▹ Part A} → ▸ (Code ⍉ a▹ ⊛ b▹) → Code (later a▹) (later b▹)
   ⇉Code-ll = transport (sym Code-ll-eq)
 
   ⇉Code-ll⇉ : {a▹ b▹ : ▹ Part A} {c : Code (later a▹) (later b▹)}
@@ -61,14 +61,14 @@ module Part-code where
   decode (now a)    (now b)    c = ap now c
   decode (later a▹) (later b▹) c = ap later (▹-ext λ α → decode (a▹ α) (b▹ α) (Code-ll⇉ c α))
 
-  Code-refl-l-eq : {a▹ : ▹ Part A} → Code-refl (later a▹) ＝ ⇉Code-ll (▹map Code-refl a▹)
+  Code-refl-l-eq : {a▹ : ▹ Part A} → Code-refl (later a▹) ＝ ⇉Code-ll (Code-refl ⍉ a▹)
   Code-refl-l-eq {a▹} i = ⇉Code-ll λ α → pfix Code-refl-body i α (a▹ α)
 
   Code-refl-pathP : (p q : Part A) → (c : Code p q) → ＜ Code-refl p ／ (λ i → Code p (decode p q c i)) ＼ c ＞
   Code-refl-pathP = fix λ ih▹ → λ where
     (now x)    (now y)    c → λ i j → c (i ∧ j)
     (later p▹) (later q▹) c →
-       let ihP : ＜ (▹map Code-refl p▹) ／ (λ i → ▹[ α ] Code (p▹ α) (decode (p▹ α) (q▹ α) (Code-ll⇉ c α) i)) ＼ (Code-ll⇉ c) ＞
+       let ihP : ＜ (Code-refl ⍉ p▹) ／ (λ i → ▹[ α ] Code (p▹ α) (decode (p▹ α) (q▹ α) (Code-ll⇉ c α) i)) ＼ (Code-ll⇉ c) ＞
            ihP = ▹-extP λ α → ih▹ α (p▹ α) (q▹ α) (Code-ll⇉ c α)
          in
         to-pathP⁻ (Code-refl-l-eq ∙ transport-flip {A = λ i → Code-ll-eq {a▹ = p▹} (~ i)} (from-pathP⁻ ihP ∙ go))
@@ -130,8 +130,11 @@ never = fix later
        → δᵖ a ＝ δᵖ b → ▹ (a ＝ b)
 δᵖ-inj = ▹-ap ∘ later-inj
 
+spin : ℕ → Part A → Part A
+spin k = iter k δᵖ
+
 delay-by : ℕ → A → Part A
-delay-by k a = iter k δᵖ (now a)
+delay-by k a = spin k (now a)
 
 _>>=ᵖ_ : Part A → (A → Part B) → Part B
 now x   >>=ᵖ f = f x
@@ -269,12 +272,12 @@ bothᵖ : Part A → Part B → Part (A × B)
 bothᵖ = map²ᵖ _,_
 
 Part▹-body : (A → ▹ B) → ▹ (Part A  → ▹ Part B) → Part A → ▹ Part B
-Part▹-body f P▹ (now a)    = ▹map now (f a)
-Part▹-body f P▹ (later p▹) = ▹map later (P▹ ⊛ p▹)
+Part▹-body f P▹ (now a)    = now ⍉ (f a)
+Part▹-body f P▹ (later p▹) = later ⍉ (P▹ ⊛ p▹)
 
 Part▹ : (A → ▹ B) → Part A → ▹ Part B
 Part▹ f = fix (Part▹-body f)
 
 -- adds an extra step
 ▹Part+ : ▹ Part A → Part (▹ A)
-▹Part+ = later ∘ ▹map (mapᵖ next)
+▹Part+ = later ∘ (mapᵖ next ⍉_)

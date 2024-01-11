@@ -25,16 +25,25 @@ Code-body C▹ (cons h₁ t▹₁) (cons h₂ t▹₂) = (h₁ ＝ h₂) × ▸ 
 Code : Stream A → Stream A → 𝒰 (level-of-type A)
 Code = fix Code-body
 
+Code-cc-eq : {h₁ h₂ : A} {t▹₁ t▹₂ : ▹ Stream A} → Code (cons h₁ t▹₁) (cons h₂ t▹₂) ＝ (h₁ ＝ h₂) × ▸ (Code ⍉ t▹₁ ⊛ t▹₂)
+Code-cc-eq {h₁} {h₂} {t▹₁} {t▹₂} i = (h₁ ＝ h₂) × (▹[ α ] (pfix Code-body i α (t▹₁ α) (t▹₂ α)))
+
+Code-cc⇉ : {h₁ h₂ : A} {t▹₁ t▹₂ : ▹ Stream A} → Code (cons h₁ t▹₁) (cons h₂ t▹₂) → (h₁ ＝ h₂) × ▸ (Code ⍉ t▹₁ ⊛ t▹₂)
+Code-cc⇉ = transport Code-cc-eq
+
+⇉Code-cc : {h₁ h₂ : A} {t▹₁ t▹₂ : ▹ Stream A} → (h₁ ＝ h₂) × ▸ (Code ⍉ t▹₁ ⊛ t▹₂) → Code (cons h₁ t▹₁) (cons h₂ t▹₂)
+⇉Code-cc = transport (sym Code-cc-eq)
+
 Code-refl-body : ▹ ((s : Stream A) → Code s s) → (s : Stream A) → Code s s
-Code-refl-body C▹ (cons h t▹) =
-  refl , λ α → transport (λ i → pfix Code-body (~ i) α (t▹ α) (t▹ α)) ((C▹ ⊛ t▹) α)
+Code-refl-body C▹ (cons h t▹) = ⇉Code-cc (refl , (C▹ ⊛ t▹))
 
 Code-refl : (s : Stream A) → Code s s
 Code-refl = fix Code-refl-body
 
 decode : (s t : Stream A) → Code s t → s ＝ t
-decode (cons h₁ t▹₁) (cons h₂ t▹₂) (e , c) =
-  ap² cons e (▹-ext λ α → decode (t▹₁ α) (t▹₂ α) (transport (λ i → pfix Code-body i α (t▹₁ α) (t▹₂ α)) (c α)))
+decode (cons h₁ t▹₁) (cons h₂ t▹₂) c =
+  let (eh , et) = Code-cc⇉ c in
+  ap² cons eh (▹-ext λ α → decode (t▹₁ α) (t▹₂ α) (et α))
 
 encode : {c1 c2 : Stream A} → c1 ＝ c2 → Code c1 c2
 encode {c1} {c2} e = subst (Code c1) e (Code-refl c1)
@@ -45,8 +54,8 @@ cons-inj : {h₁ h₂ : A} {t▹₁ t▹₂ : ▹ Stream A}
          → cons h₁ t▹₁ ＝ cons h₂ t▹₂
          → (h₁ ＝ h₂) × (t▹₁ ＝ t▹₂)
 cons-inj {t▹₁} {t▹₂} e =
-  let (e1 , e2) = encode e in
-  e1 , ▹-ext λ α → decode (t▹₁ α) (t▹₂ α) (transport (λ i → pfix Code-body i α (t▹₁ α) (t▹₂ α)) (e2 α))
+  let (e1 , e2) = Code-cc⇉ (encode e) in
+  e1 , ▹-ext (decode ⍉ t▹₁ ⊛▹ t▹₂ ⊛▹ e2)
 
 cons-δ : A → Stream A → Stream A
 cons-δ a s = cons a (next s)
@@ -59,12 +68,12 @@ tail▹ˢ (cons _ xs▹) = xs▹
 
 stream-eq-coind : (R : Stream A → Stream A → 𝒰 ℓ′)
                 → (∀ s1 s2 → R s1 s2 → headˢ s1 ＝ headˢ s2)
-                → (∀ s1 s2 → R s1 s2 → ▸ (▹map R (tail▹ˢ s1) ⊛ (tail▹ˢ s2)))
+                → (∀ s1 s2 → R s1 s2 → ▸ (R ⍉ (tail▹ˢ s1) ⊛ (tail▹ˢ s2)))
                 → ∀ s1 s2 → R s1 s2 → s1 ＝ s2
 stream-eq-coind R hh ht = fix λ ih▹ → λ where
   (cons h1 t1▹) (cons h2 t2▹) r →
      ap² cons (hh (cons h1 t1▹) (cons h2 t2▹) r)
-              (▹-ext (ih▹ ⊛ t1▹ ⊛′ t2▹ ⊛′ (ht (cons h1 t1▹) (cons h2 t2▹) r)))
+              (▹-ext (ih▹ ⊛ t1▹ ⊛▹ t2▹ ⊛▹ (ht (cons h1 t1▹) (cons h2 t2▹) r)))
 
 uncons-eq : (s : Stream A) → s ＝ cons (headˢ s) (tail▹ˢ s)
 uncons-eq (cons x xs▹) = refl
@@ -87,7 +96,7 @@ mapˢ f = fix (mapˢ-body f)
 
 mapˢ-eq : (f : A → B)
         → ∀ a as▹
-        → mapˢ f (cons a as▹) ＝ cons (f a) (▹map (mapˢ f) as▹)
+        → mapˢ f (cons a as▹) ＝ cons (f a) ((mapˢ f) ⍉ as▹)
 mapˢ-eq f a as▹ = happly (fix-path (mapˢ-body f)) (cons a as▹)
 
 mapˢ-head : (f : A → B) → (s : Stream A)
@@ -95,7 +104,7 @@ mapˢ-head : (f : A → B) → (s : Stream A)
 mapˢ-head f s = refl
 
 mapˢ-tail : (f : A → B) → (s : Stream A)
-          → tail▹ˢ (mapˢ f s) ＝ ▹map (mapˢ f) (tail▹ˢ s)
+          → tail▹ˢ (mapˢ f s) ＝ (mapˢ f) ⍉ (tail▹ˢ s)
 mapˢ-tail f (cons a as▹) = ap tail▹ˢ (mapˢ-eq f a as▹)
 
 mapˢ-fusion : (f : A → B) → (g : B → C) → (s : Stream A)
@@ -105,11 +114,11 @@ mapˢ-fusion f g =
     s@(cons a as▹) →
       mapˢ g ⌜ mapˢ f s ⌝
         ＝⟨ ap! (mapˢ-eq f a as▹) ⟩
-      mapˢ g (cons (f a) (▹map (mapˢ f) as▹))
-        ＝⟨ mapˢ-eq g (f a) (▹map (mapˢ f) as▹) ⟩
-      cons (g (f a)) ⌜ ▹map (mapˢ g) (▹map (mapˢ f) as▹) ⌝
+      mapˢ g (cons (f a) ((mapˢ f) ⍉ as▹))
+        ＝⟨ mapˢ-eq g (f a) ((mapˢ f) ⍉ as▹) ⟩
+      cons (g (f a)) ⌜ (mapˢ g) ⍉ ((mapˢ f) ⍉ as▹) ⌝
         ＝⟨ ap! (▹-ext (ih▹ ⊛ as▹)) ⟩
-      cons (g (f a)) (▹map (mapˢ (g ∘ f)) as▹)
+      cons (g (f a)) ((mapˢ (g ∘ f)) ⍉ as▹)
         ＝˘⟨ mapˢ-eq (g ∘ f) a as▹ ⟩
       mapˢ (g ∘ f) s
         ∎
@@ -149,7 +158,7 @@ foldrˢ : (A → ▹ B → B) → Stream A → B
 foldrˢ f = fix (foldrˢ-body f)
 
 scanl1ˢ : (A → A → A) → Stream A → Stream A
-scanl1ˢ f = fix λ sc▹ s → cons (headˢ s) (▹map (mapˢ (f (headˢ s))) (sc▹ ⊛ tail▹ˢ s))
+scanl1ˢ f = fix λ sc▹ s → cons (headˢ s) ((mapˢ (f (headˢ s))) ⍉ (sc▹ ⊛ tail▹ˢ s))
 
 -- iterate
 
@@ -160,7 +169,7 @@ iterateˢ : ▹ (A → A) → A → Stream A
 iterateˢ f = fix (iterateˢ-body f)
 
 tail-iterateˢ : (f▹ : ▹ (A → A)) → (x : A)
-              → tail▹ˢ (iterateˢ f▹ x) ＝ ▹map (iterateˢ f▹) (f▹ ⊛ next x)
+              → tail▹ˢ (iterateˢ f▹ x) ＝ (iterateˢ f▹) ⍉ (f▹ ⊛ next x)
 tail-iterateˢ f x = ap (_⊛ (f ⊛ next x)) (pfix (iterateˢ-body f))
 
 -- interleave
@@ -180,7 +189,7 @@ zipWithˢ f = fix (zipWithˢ-body f)
 
 zipWithˢ-eq : (f : A → B → C)
             → ∀ a as▹ b bs▹
-            → zipWithˢ f (cons a as▹) (cons b bs▹) ＝ cons (f a b) (▹map (zipWithˢ f) as▹ ⊛ bs▹)
+            → zipWithˢ f (cons a as▹) (cons b bs▹) ＝ cons (f a b) ((zipWithˢ f) ⍉ as▹ ⊛ bs▹)
 zipWithˢ-eq f a as▹ b bs▹ =
   happly (happly (fix-path (zipWithˢ-body f)) (cons a as▹)) (cons b bs▹)
 
@@ -189,7 +198,7 @@ zipWithˢ-comm : (f : A → A → B)
               → ∀ s t → zipWithˢ f s t ＝ zipWithˢ f t s
 zipWithˢ-comm f fc = fix λ ih▹ → λ where
   (cons x s▹) (cons y t▹) → zipWithˢ-eq f x s▹ y t▹
-                          ∙ ap² cons (fc x y) (▹-ext (ih▹ ⊛ s▹ ⊛′ t▹))
+                          ∙ ap² cons (fc x y) (▹-ext (ih▹ ⊛ s▹ ⊛▹ t▹))
                           ∙ sym (zipWithˢ-eq f y t▹ x s▹)
 
 zipˢ : Stream A → Stream B → Stream (A × B)
@@ -198,7 +207,7 @@ zipˢ = zipWithˢ (_,_)
 -- natural numbers
 
 natsˢ-body : ▹ Stream ℕ → Stream ℕ
-natsˢ-body = cons 0 ∘ ▹map (mapˢ suc)
+natsˢ-body = cons 0 ∘ (mapˢ suc ⍉_)
 
 natsˢ : Stream ℕ
 natsˢ = fix natsˢ-body
@@ -209,7 +218,7 @@ natsˢ-tail = ap tail▹ˢ (fix-path natsˢ-body)
 -- Fibonacci numbers
 
 fibˢ-body : ▹ Stream ℕ → Stream ℕ
-fibˢ-body = cons 0 ∘ ▹map (λ s → cons 1 $ ▹map (zipWithˢ _+_ s) (tail▹ˢ s))
+fibˢ-body = cons 0 ∘ ((λ s → cons 1 $ (zipWithˢ _+_ s) ⍉ (tail▹ˢ s)) ⍉_)
 
 fibˢ : Stream ℕ
 fibˢ = fix fibˢ-body
@@ -218,7 +227,7 @@ fibˢ = fix fibˢ-body
 
 -- TODO fuse
 primesˢ-body : ▹ Stream ℕ → Stream ℕ
-primesˢ-body = cons 2 ∘ ▹map (mapˢ suc ∘ scanl1ˢ _·_)
+primesˢ-body = cons 2 ∘ ((mapˢ suc ∘ scanl1ˢ _·_) ⍉_)
 
 primesˢ : Stream ℕ
 primesˢ = fix primesˢ-body
@@ -245,12 +254,12 @@ hˢ : Stream Bool → Stream Bool
 hˢ = fix hˢ-body
 
 thuemorseˢ : Stream Bool
-thuemorseˢ = fix $ cons false ∘ ▹map (λ tm → cons true (▹map hˢ (tail▹ˢ (hˢ tm))))
+thuemorseˢ = fix $ cons false ∘ ((λ tm → cons true (hˢ ⍉ (tail▹ˢ (hˢ tm)))) ⍉_)
 
 -- Pascal coefficients
 
 pascal-nextˢ : Stream ℕ → Stream ℕ
-pascal-nextˢ xs = fix λ p▹ → cons 1 (▹map (zipWithˢ _+_) (tail▹ˢ xs) ⊛ p▹)
+pascal-nextˢ xs = fix λ p▹ → cons 1 ((zipWithˢ _+_) ⍉ (tail▹ˢ xs) ⊛ p▹)
 
 pascalˢ : Stream (Stream ℕ)
-pascalˢ = fix $ cons (repeatˢ 1) ∘ ▹map (mapˢ pascal-nextˢ)
+pascalˢ = fix $ cons (repeatˢ 1) ∘ ((mapˢ pascal-nextˢ) ⍉_)

@@ -11,8 +11,9 @@ private variable
   A : 𝒰 ℓ
   B : 𝒰 ℓ′
 
--- guarded partial streams (after Basold)
--- indexed by a conat length
+-- guarded partial streams
+-- see Basold, [2018] "Mixed Inductive-Coinductive Reasoning" (ch 6.2)
+-- indexed by a ℕ∞ length
 
 data PStream (A : 𝒰 ℓ) : ℕ∞ → 𝒰 ℓ where
   pcons : ∀ {n▹ : ▹ ℕ∞}
@@ -23,7 +24,7 @@ repeatᵖ {A} a = fix λ s▹ → pcons a (transport (λ i → ▹[ α ] (PStrea
 
 mapᵖ-body : (A → B) → ▹ ((n : ℕ∞) → PStream A n → PStream B n)
                     → (n : ℕ∞) → PStream A n → PStream B n
-mapᵖ-body f m▹ .(cosu n▹) (pcons {n▹} a s▹) = pcons (f a) (m▹ ⊛ n▹ ⊛′ s▹)
+mapᵖ-body f m▹ .(cosu n▹) (pcons {n▹} a s▹) = pcons (f a) (m▹ ⊛ n▹ ⊛▹ s▹)
 
 mapᵖ : ∀ {n} → (A → B) → PStream A n → PStream B n
 mapᵖ {n} f = fix (mapᵖ-body f) n

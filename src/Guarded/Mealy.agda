@@ -27,16 +27,16 @@ module Mealy-code where
   Code = fix Code-body
 
   Code-mm-eq : {kx ky : A → B × ▹ Mealy A B}
-             → Code (Mly kx) (Mly ky) ＝ ∀ a → (kx a .fst ＝ ky a .fst) × ▸ (▹map Code (kx a .snd) ⊛ ky a .snd)
+             → Code (Mly kx) (Mly ky) ＝ ∀ a → (kx a .fst ＝ ky a .fst) × ▸ (Code ⍉ (kx a .snd) ⊛ ky a .snd)
   Code-mm-eq {A} {kx} {ky} i = (a : A) → ((kx a .fst ＝ ky a .fst) × (▹[ α ] pfix Code-body i α (kx a .snd α) (ky a .snd α)))
 
   Code-mm⇉ : {kx ky : A → B × ▹ Mealy A B}
            → Code (Mly kx) (Mly ky)
-           → ∀ a → (kx a .fst ＝ ky a .fst) × ▸ (▹map Code (kx a .snd) ⊛ ky a .snd)
+           → ∀ a → (kx a .fst ＝ ky a .fst) × ▸ (Code ⍉ (kx a .snd) ⊛ ky a .snd)
   Code-mm⇉ = transport Code-mm-eq
 
   ⇉Code-mm : {kx ky : A → B × ▹ Mealy A B}
-           → (∀ a → (kx a .fst ＝ ky a .fst) × ▸ (▹map Code (kx a .snd) ⊛ ky a .snd))
+           → (∀ a → (kx a .fst ＝ ky a .fst) × ▸ (Code ⍉ (kx a .snd) ⊛ ky a .snd))
            → Code (Mly kx) (Mly ky)
   ⇉Code-mm = transport (sym Code-mm-eq)
 

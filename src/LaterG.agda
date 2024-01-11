@@ -11,8 +11,9 @@ private variable
   A : 𝒰 ℓ
   B : A → 𝒰 ℓ′
 
+infixl 5 _⍉_
 infixl 4 _⊛_
-infixl 4 _⊛′_
+infixl 4 _⊛▹_
 infixr -2 ▹-syntax
 
 -- We postulate Tick as it is supposed to be an abstract sort.
@@ -39,20 +40,21 @@ _⊛_ : ▹ ((a : A) → B a)
      → ▹[ α ] B (a α)
 (f ⊛ x) α = f α (x α)
 
-_⊛′_ : ∀ {A : ▹ 𝒰 ℓ} {B : ▹[ α ] (A α → 𝒰 ℓ′)}
+_⊛▹_ : ∀ {A : ▹ 𝒰 ℓ} {B : ▹[ α ] (A α → 𝒰 ℓ′)}
      → ▹[ α ] ((a : A α) → B α a)
      → (a : ▹[ α ] A α)
      → ▹[ α ] B α (a α)
-(f ⊛′ x) α = f α (x α)
+(f ⊛▹ x) α = f α (x α)
 
 -- not allowed!
 
 --flatten : ▹ ▹ A → ▹ A
 --flatten a▹▹ α = (a▹▹ α) α
 
-▹map : ((a : A) → B a)
+-- map
+_⍉_ : ((a : A) → B a)
      → (a : ▹ A) → ▹[ α ] B (a α)
-▹map f x α = f (x α)
+_⍉_ f x α = f (x α)
 
 -- definitional properties
 
@@ -62,20 +64,20 @@ _⊛′_ : ∀ {A : ▹ 𝒰 ℓ} {B : ▹[ α ] (A α → 𝒰 ℓ′)}
 -- functor laws
 
 ▹map-id : {x▹ : ▹ A}
-        → ▹map id x▹ ＝ x▹
+        → id ⍉ x▹ ＝ x▹
 ▹map-id = refl
 
 ▹map-comp : {B C : 𝒰 ℓ} {f : A → B} {g : B -> C} {x▹ : ▹ A}
-          → ▹map g (▹map f x▹) ＝ ▹map (g ∘ f) x▹
+          → g ⍉ (f ⍉ x▹) ＝ (g ∘ f) ⍉ x▹
 ▹map-comp = refl
 
 -- applicative laws
 
-ap-id : {B : 𝒰}
-      → (f : A → B)
-      → (x▹ : ▹ A)
-      → (next id ⊛ x▹) ＝ x▹
-ap-id f x▹ = refl
+ap-map : {B : 𝒰}
+       → (f : A → B)
+       → (x▹ : ▹ A)
+       → (next f ⊛ x▹) ＝ f ⍉ x▹
+ap-map f x▹ = refl
 
 ap-comp : {B C : 𝒰}
         → (f▹ : ▹ (A → B))
@@ -102,6 +104,9 @@ ap-inter f▹ x = refl
 
 transport▹ : (A : I → ▹ 𝒰 ℓ) → ▸ A i0 → ▸ A i1
 transport▹ A = transp (λ i → ▸ A i) i0
+
+hcomp▹ : ∀ (A : ▹ 𝒰 ℓ) φ (u : I → Partial φ (▸ A)) → (u0 : (▸ A) [ φ ↦ u i0 ]) → ▸ A
+hcomp▹ A φ u u0 = primHComp (λ { i (φ = i1) → u i 1=1 }) (outS u0)
 
 ▹-ext : {A : I → 𝒰 ℓ} {x▹ : ▹ (A i0)} {y▹ : ▹ (A i1)}
       → ▹[ α ] ＜ (x▹ α) ／ (λ i → A i) ＼ (y▹ α) ＞
@@ -144,7 +149,7 @@ fix-path f i = f (pfix f i)
 dfix-unique : ∀ {f▹ : ▹ A → A} {x : ▹ A}
             → x ＝ next (f▹ x)
             → x ＝ dfix f▹
-dfix-unique {f▹} e = fix λ ih▹ → e ∙ ▹-ext (▹map (ap f▹) ih▹) ∙ sym (pfix f▹)
+dfix-unique {f▹} e = fix λ ih▹ → e ∙ ▹-ext (ap f▹ ⍉ ih▹) ∙ sym (pfix f▹)
 
 fix-unique : ∀ {f▹ : ▹ A → A} {x : A}
            → x ＝ f▹ (next x)

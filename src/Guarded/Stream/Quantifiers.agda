@@ -19,7 +19,7 @@ data Atˢ (P : A → 𝒰 ℓ′) : ℕ → Stream A → 𝒰 (level-of-type A �
   At-here  : ∀ {a s▹}
            → P a → Atˢ P 0 (cons a s▹)
   At-there : ∀ {a s▹ n}
-           → ▹[ α ] (Atˢ P n (s▹ α))
+           → ▸ (Atˢ P n ⍉ s▹)
            → Atˢ P (suc n) (cons a s▹)
 
 Atˢ-map : {P : A → 𝒰} {Q : B → 𝒰} {f : A → B}
@@ -31,11 +31,11 @@ Atˢ-map {Q} {f} pq =
     .zero    .(cons a s▹) (At-here {a} {s▹} p)   → At-here (pq p)
     .(suc n) .(cons a s▹) (At-there {a} {s▹} {n} a▹) →
        subst (Atˢ Q (suc n)) (sym $ mapˢ-eq f a s▹) $
-       At-there {a = f a} (prf▹ ⊛ next n ⊛′ s▹ ⊛′ a▹)
+       At-there {a = f a} (prf▹ ⊛ next n ⊛▹ s▹ ⊛▹ a▹)
 
 data Allˢ (P : A → 𝒰 ℓ′) : Stream A → 𝒰 (level-of-type A ⊔ ℓ′) where
   All-cons : ∀ {a s▹}
-           → P a → ▹[ α ] (Allˢ P (s▹ α))
+           → P a → ▸ (Allˢ P ⍉ s▹)
            → Allˢ P (cons a s▹)
 
 Allˢ-repeat : {P : A → 𝒰 ℓ′}
@@ -52,7 +52,7 @@ Allˢ-map {Q} {f} pq =
   fix λ prf▹ → λ where
     .(cons a s▹) (All-cons {a} {s▹} pa ps▹) →
        subst (Allˢ Q) (sym $ mapˢ-eq f a s▹) $
-       All-cons (pq pa) (prf▹ ⊛ s▹ ⊛′ ps▹)
+       All-cons (pq pa) (prf▹ ⊛ s▹ ⊛▹ ps▹)
 
 Allˢ-zipWith : {P : A → 𝒰 ℓ′} {Q : B → 𝒰 ℓ″} {R : C → 𝒰 ℓ‴} {f : A → B → C}
              → (∀ {x y} → P x → Q y → R (f x y))
@@ -61,7 +61,7 @@ Allˢ-zipWith : {P : A → 𝒰 ℓ′} {Q : B → 𝒰 ℓ″} {R : C → 𝒰 
 Allˢ-zipWith {R} {f} pqr = fix λ prf▹ → λ where
   .(cons a s▹) .(cons b t▹) (All-cons {a} {s▹} pa as▹) (All-cons {a = b} {s▹ = t▹} qb at▹) →
      subst (Allˢ R) (sym $ zipWithˢ-eq f a s▹ b t▹) $
-     All-cons (pqr pa qb) (prf▹ ⊛ s▹ ⊛′ t▹ ⊛′ as▹ ⊛′ at▹)
+     All-cons (pqr pa qb) (prf▹ ⊛ s▹ ⊛▹ t▹ ⊛▹ as▹ ⊛▹ at▹)
 
 ¬Any→All¬ : ∀ {P : A → 𝒰 ℓ′}
           → (s : Stream A)
@@ -69,7 +69,7 @@ Allˢ-zipWith {R} {f} pqr = fix λ prf▹ → λ where
 ¬Any→All¬ {P} = fix λ prf▹ → λ where
   (cons h t▹) na →
     All-cons (λ ph → na (0 , At-here ph))
-             (prf▹ ⊛′ t▹ ⊛′ λ α → λ where
+             (prf▹ ⊛▹ t▹ ⊛▹ λ α → λ where
                 (n , a) → na (suc n , At-there λ β → subst (Atˢ P n) (tick-irr t▹ α β) a))
 
 -- prefix versions
@@ -78,7 +78,7 @@ data Any≤ˢ (P : A → 𝒰 ℓ′) : ℕ → Stream A → 𝒰 (level-of-type
   Any≤-here  : ∀ {a s▹ n}
             → P a → Any≤ˢ P n (cons a s▹)
   Any≤-there : ∀ {a s▹ n}
-            → ▹[ α ] (Any≤ˢ P n (s▹ α))
+            → ▸ (Any≤ˢ P n ⍉ s▹)
             → Any≤ˢ P (suc n) (cons a s▹)
 
 Any≤ˢ-map : {P : A → 𝒰} {Q : B → 𝒰} {f : A → B}
@@ -90,14 +90,14 @@ Any≤ˢ-map {Q} {f} pq =
     n        .(cons a s▹) (Any≤-here {a} {s▹} pa)      → Any≤-here (pq pa)
     .(suc n) .(cons a s▹) (Any≤-there {a} {s▹} {n} a▹) →
        subst (Any≤ˢ Q (suc n)) (sym $ mapˢ-eq f a s▹) $
-       Any≤-there (prf▹ ⊛ next n ⊛′ s▹ ⊛′ a▹)
+       Any≤-there (prf▹ ⊛ next n ⊛▹ s▹ ⊛▹ a▹)
 
 data All≤ˢ (P : A → 𝒰 ℓ′) : ℕ → Stream A → 𝒰 (level-of-type A ⊔ ℓ′) where
   All≤-nil  : ∀ {a s▹}
              → P a
              → All≤ˢ P zero (cons a s▹)
   All≤-cons : ∀ {a s▹ n}
-             → P a → ▹[ α ] (All≤ˢ P n (s▹ α))
+             → P a → ▸ (All≤ˢ P n ⍉ s▹)
              → All≤ˢ P (suc n) (cons a s▹)
 
 All≤ˢ-zipWith : {P : A → 𝒰 ℓ′} {Q : B → 𝒰 ℓ″} {R : C → 𝒰 ℓ‴} {f : A → B → C}
@@ -109,13 +109,14 @@ All≤ˢ-zipWith {R} {f} pqr = fix λ prf▹ → λ where
      All≤-nil (pqr pa qb)
   .(suc n) .(cons _ _) .(cons _ _) (All≤-cons {a} {s▹} {n} pa as▹) (All≤-cons {a = b} {s▹ = t▹} qb at▹) →
      subst (All≤ˢ R (suc n)) (sym $ zipWithˢ-eq f a s▹ b t▹) $
-     All≤-cons (pqr pa qb) (prf▹ ⊛ next n ⊛ s▹ ⊛′ t▹ ⊛′ as▹ ⊛′ at▹)
+     All≤-cons (pqr pa qb) (prf▹ ⊛ next n ⊛ s▹ ⊛▹ t▹ ⊛▹ as▹ ⊛▹ at▹)
 
 -- adjacent elements
 
 data Adjˢ (P : A → A → 𝒰 ℓ′) : Stream A → 𝒰 (level-of-type A ⊔ ℓ′) where
   Adj-cons : ∀ {a s▹}
-           → ▹[ α ] P a (headˢ (s▹ α)) → ▹[ α ] (Adjˢ P (s▹ α))
+           → ▸ ((P a ∘ headˢ) ⍉ s▹)
+           → ▸ (Adjˢ P ⍉ s▹)
            → Adjˢ P (cons a s▹)
 
 repeat-adj : {P : A → A → 𝒰 ℓ′}

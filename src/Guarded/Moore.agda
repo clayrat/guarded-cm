@@ -28,16 +28,16 @@ module Moore-code where
   Code = fix Code-body
 
   Code-mm-eq : {bx by : B} {kx ky : A → ▹ Moore A B}
-             → Code (Mre bx kx) (Mre by ky) ＝ (bx ＝ by) × (∀ a → ▸ (▹map Code (kx a) ⊛ ky a))
+             → Code (Mre bx kx) (Mre by ky) ＝ (bx ＝ by) × (∀ a → ▸ (Code ⍉ kx a ⊛ ky a))
   Code-mm-eq {A} {bx} {by} {kx} {ky} i = (bx ＝ by) × ((a : A) → ▹[ α ] pfix Code-body i α (kx a α) (ky a α))
 
   Code-mm⇉ : {bx by : B} {kx ky : A → ▹ Moore A B}
             → Code (Mre bx kx) (Mre by ky)
-            → (bx ＝ by) × (∀ a → ▸ (▹map Code (kx a) ⊛ ky a))
+            → (bx ＝ by) × (∀ a → ▸ (Code ⍉ kx a ⊛ ky a))
   Code-mm⇉ = transport Code-mm-eq
 
   ⇉Code-mm : {bx by : B} {kx ky : A → ▹ Moore A B}
-            → (bx ＝ by) × (∀ a → ▸ (▹map Code (kx a) ⊛ ky a))
+            → (bx ＝ by) × (∀ a → ▸ (Code ⍉ kx a ⊛ ky a))
             → Code (Mre bx kx) (Mre by ky)
   ⇉Code-mm = transport (sym Code-mm-eq)
 
@@ -162,7 +162,7 @@ apᵐ-comp = fix λ ih▹ → λ where
         (fix-path apᵐ-body)
    ∙ ap (λ q → q (apᵐ-body (next apᵐ) (apᵐ-body (next apᵐ) (pureᵐ-body (λ g → g ∘_) (next (pureᵐ (λ g → g ∘_)))) mg) mf) m)
         (fix-path apᵐ-body)
-   ∙ ap (Mre (bg (bf b))) (fun-ext λ a → ▹-ext (ih▹ ⊛ trf a ⊛′ trg a ⊛′ tr a))
+   ∙ ap (Mre (bg (bf b))) (fun-ext λ a → ▹-ext (ih▹ ⊛ trf a ⊛▹ trg a ⊛▹ tr a))
    ∙ ap (λ q → q mg (apᵐ-body (next apᵐ) mf m)) (sym (fix-path apᵐ-body))
    ∙ ap (λ q → apᵐ mg (q mf m)) (sym (fix-path apᵐ-body))
 
