@@ -59,13 +59,13 @@ tail▹ᵏ : gStream k A → ▹ k (gStream k A)
 tail▹ᵏ (cons x xs) = xs
 
 stream-eq-coindᵏ : (R : gStream k A → gStream k A → 𝒰 ℓ′)
-                → (∀ s1 s2 → R s1 s2 → headᵏ s1 ＝ headᵏ s2)
-                → (∀ s1 s2 → R s1 s2 → ▸ k (▹map R (tail▹ᵏ s1) ⊛ (tail▹ᵏ s2)))
-                → ∀ s1 s2 → R s1 s2 → s1 ＝ s2
+                 → (∀ s1 s2 → R s1 s2 → headᵏ s1 ＝ headᵏ s2)
+                 → (∀ s1 s2 → R s1 s2 → ▸ k (R ⍉ (tail▹ᵏ s1) ⊛ (tail▹ᵏ s2)))
+                 → ∀ s1 s2 → R s1 s2 → s1 ＝ s2
 stream-eq-coindᵏ R hh ht = fix λ ih▹ → λ where
   (cons h1 t1▹) (cons h2 t2▹) r →
      ap² cons (hh (cons h1 t1▹) (cons h2 t2▹) r)
-              (▹-ext (ih▹ ⊛ t1▹ ⊛′ t2▹ ⊛′ (ht (cons h1 t1▹) (cons h2 t2▹) r)))
+              (▹-ext (ih▹ ⊛ t1▹ ⊛▹ t2▹ ⊛▹ (ht (cons h1 t1▹) (cons h2 t2▹) r)))
 
 uncons-eqᵏ : (s : gStream k A) → s ＝ cons (headᵏ s) (tail▹ᵏ s)
 uncons-eqᵏ (cons x xs) = refl
@@ -124,7 +124,7 @@ mapᵏ : (A → B) → gStream k A → gStream k B
 mapᵏ f = fix (mapᵏ-body f)
 
 mapᵏ-eq : (f : A → B) → (a : A) → (as▹ : ▹ k (gStream k A))
-        → mapᵏ {k = k} f (cons a as▹) ＝ cons (f a) (▹map (mapᵏ f) as▹)
+        → mapᵏ {k = k} f (cons a as▹) ＝ cons (f a) ((mapᵏ f) ⍉ as▹)
 mapᵏ-eq f a as▹ =
   ap (cons (f a))
      (▹-ext (λ α → happly (pfix-ext (mapᵏ-body f) α) (as▹ α)))
@@ -134,7 +134,7 @@ mapᵏ-head : (f : A → B) → (s : gStream k A)
 mapᵏ-head f s = refl
 
 mapᵏ-tail : (f : A → B) → (s : gStream k A)
-          → tail▹ᵏ (mapᵏ {k = k} f s) ＝ ▹map (mapᵏ f) (tail▹ᵏ s)
+          → tail▹ᵏ (mapᵏ {k = k} f s) ＝ (mapᵏ f) ⍉ (tail▹ᵏ s)
 mapᵏ-tail f (cons a as▹) = ap tail▹ᵏ (mapᵏ-eq f a as▹)
 
 mapᵏ-fusion : (f : A → B) → (g : B → C) → (s : gStream k A)
@@ -144,11 +144,11 @@ mapᵏ-fusion f g =
     (cons a as▹) →
       mapᵏ g (mapᵏ f (cons a as▹))
         ＝⟨ ap (mapᵏ g) (mapᵏ-eq f a as▹) ⟩
-      mapᵏ g (cons (f a) (▹map (mapᵏ f) as▹))
-        ＝⟨ mapᵏ-eq g (f a) (▹map (mapᵏ f) as▹) ⟩
-      cons (g (f a)) (▹map (mapᵏ g) (▹map (mapᵏ f) as▹))
+      mapᵏ g (cons (f a) ((mapᵏ f) ⍉ as▹))
+        ＝⟨ mapᵏ-eq g (f a) ((mapᵏ f) ⍉ as▹) ⟩
+      cons (g (f a)) ((mapᵏ g) ⍉ ((mapᵏ f) ⍉ as▹))
         ＝⟨ ap (cons (g (f a))) (▹-ext (prf▹ ⊛ as▹)) ⟩
-      cons (g (f a)) (▹map (mapᵏ (g ∘ f)) as▹)
+      cons (g (f a)) ((mapᵏ (g ∘ f)) ⍉ as▹)
         ＝⟨ sym (mapᵏ-eq (g ∘ f) a as▹) ⟩
       mapᵏ (g ∘ f) (cons a as▹)
         ∎
@@ -196,7 +196,7 @@ foldrᵏ : (A → ▹ k B → B) → gStream k A → B
 foldrᵏ f = fix (foldrᵏ-body f)
 
 scanl1ᵏ : (A → A → A) → gStream k A → gStream k A
-scanl1ᵏ f = fix λ sc▹ s → cons (headᵏ s) (▹map (mapᵏ (f (headᵏ s))) (sc▹ ⊛ tail▹ᵏ s))
+scanl1ᵏ f = fix λ sc▹ s → cons (headᵏ s) ((mapᵏ (f (headᵏ s))) ⍉ (sc▹ ⊛ tail▹ᵏ s))
 
 -- iterate
 
@@ -207,7 +207,7 @@ iterateᵏ : ▹ k (A → A) → A → gStream k A
 iterateᵏ f = fix (iterateᵏ-body f)
 
 tail-iterateᵏ : (f▹ : ▹ k (A → A)) → (x : A)
-             → tail▹ᵏ (iterateᵏ f▹ x) ＝ ▹map (iterateᵏ f▹) (f▹ ⊛ next x)
+             → tail▹ᵏ (iterateᵏ f▹ x) ＝ (iterateᵏ f▹) ⍉ (f▹ ⊛ next x)
 tail-iterateᵏ f x = ap (_⊛ (f ⊛ next x)) (pfix (iterateᵏ-body f))
 
 iterateˢ : (A → A) → A → Stream A
@@ -240,7 +240,7 @@ interleaveˢ : Stream A → Stream A → Stream A
 interleaveˢ s t k = interleaveᵏ (s k) (next (t k))
 
 tail-interleaveᵏ : (s1 : gStream k A) → (s2▹ : ▹ k (gStream k A))
-                 → tail▹ᵏ (interleaveᵏ s1 s2▹) ＝ (▹map interleaveᵏ s2▹ ⊛ next (tail▹ᵏ s1))
+                 → tail▹ᵏ (interleaveᵏ s1 s2▹) ＝ (interleaveᵏ ⍉ s2▹ ⊛ next (tail▹ᵏ s1))
 tail-interleaveᵏ s1 s2▹ = ap (λ q → q ⊛ s2▹ ⊛ next (tail▹ᵏ s1)) (pfix interleaveᵏ-body)
 
 tail-interleaveˢ : (s1 s2 : Stream A)
@@ -272,7 +272,7 @@ zipWithᵏ f = fix (zipWithᵏ-body f)
 
 zipWithᵏ-eq : (f : A → B → C)
             → ∀ a as▹ b bs▹
-            → zipWithᵏ {k = k} f (cons a as▹) (cons b bs▹) ＝ cons (f a b) (▹map (zipWithᵏ f) as▹ ⊛ bs▹)
+            → zipWithᵏ {k = k} f (cons a as▹) (cons b bs▹) ＝ cons (f a b) ((zipWithᵏ f) ⍉ as▹ ⊛ bs▹)
 zipWithᵏ-eq f a as▹ b bs▹ =
   happly (happly (fix-path (zipWithᵏ-body f)) (cons a as▹)) (cons b bs▹)
 
@@ -399,7 +399,7 @@ diag x k = diagᵏ (x k)
 -- natural numbers
 
 natsᵏ-body : ▹ k (gStream k ℕ) → gStream k ℕ
-natsᵏ-body nats▹ = cons 0 (▹map (mapᵏ suc) nats▹)
+natsᵏ-body nats▹ = cons 0 ((mapᵏ suc) ⍉ nats▹)
 
 natsᵏ : gStream k ℕ
 natsᵏ = fix natsᵏ-body
@@ -429,7 +429,7 @@ nats-1 = ap headˢ nats-tail
 -- Fibonacci numbers
 
 fibᵏ : gStream k ℕ
-fibᵏ = fix λ fib▹ → cons 0 (▹map (λ s → cons 1 (▹map (zipWithᵏ _+_ s) (tail▹ᵏ s))) fib▹)
+fibᵏ = fix λ fib▹ → cons 0 ((λ s → cons 1 ((zipWithᵏ _+_ s) ⍉ (tail▹ᵏ s))) ⍉ fib▹)
 
 fibˢ : Stream ℕ
 fibˢ k = fibᵏ
@@ -437,7 +437,7 @@ fibˢ k = fibᵏ
 -- prime numbers
 
 primesᵏ : gStream k ℕ
-primesᵏ = fix λ pr▹ → cons 2 (▹map (mapᵏ suc ∘ scanl1ᵏ _·_) pr▹)
+primesᵏ = fix λ pr▹ → cons 2 ((mapᵏ suc ∘ scanl1ᵏ _·_) ⍉ pr▹)
 
 primesˢ : Stream ℕ
 primesˢ k = primesᵏ
@@ -467,7 +467,7 @@ hᵏ : gStream k Bool → gStream k Bool
 hᵏ = fix hᵏ-body
 
 thuemorseᵏ : gStream k Bool
-thuemorseᵏ = fix λ t▹ → cons false (▹map (λ tm → cons true (▹map hᵏ (tail▹ᵏ (hᵏ tm)))) t▹)
+thuemorseᵏ = fix λ t▹ → cons false ((λ tm → cons true (hᵏ ⍉ (tail▹ᵏ (hᵏ tm)))) ⍉ t▹)
 
 thuemorseˢ : Stream Bool
 thuemorseˢ k = thuemorseᵏ
@@ -475,13 +475,13 @@ thuemorseˢ k = thuemorseᵏ
 -- Pascal coefficients
 
 pascal-nextᵏ : gStream k ℕ → gStream k ℕ
-pascal-nextᵏ xs = fix λ p▹ → cons 1 (▹map (zipWithᵏ _+_) (tail▹ᵏ xs) ⊛ p▹)
+pascal-nextᵏ xs = fix λ p▹ → cons 1 ((zipWithᵏ _+_) ⍉ (tail▹ᵏ xs) ⊛ p▹)
 
 pascal-nextˢ : Stream ℕ → Stream ℕ
 pascal-nextˢ s k = pascal-nextᵏ (s k)
 
 pascalᵏ : gStream k (Stream ℕ)
-pascalᵏ = fix λ p▹ → cons (repeatˢ 1) (▹map (mapᵏ pascal-nextˢ) p▹)
+pascalᵏ = fix λ p▹ → cons (repeatˢ 1) ((mapᵏ pascal-nextˢ) ⍉ p▹)
 
 pascalˢ : Stream (Stream ℕ)
 pascalˢ k = pascalᵏ

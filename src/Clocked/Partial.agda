@@ -98,8 +98,22 @@ apᵏ (later pf▹) (now a)     = later λ α → apᵏ (pf▹ α) (now a)
 apᵏ (later pf▹) (later pa▹) = later λ α → apᵏ (pf▹ α) (pa▹ α)
 -- apᵏ pf pa = pf >>=ᵏ λ f → pa >>=ᵏ (now ∘ f)
 
+delay-by-mapᵏ : {f : A → B}
+              → (x : A) (n : ℕ)
+              → mapᵏ {k = k} f (delay-byᵏ n x) ＝ delay-byᵏ n (f x)
+delay-by-mapᵏ x  zero   = refl
+delay-by-mapᵏ x (suc n) = ap later (▹-ext λ _ → delay-by-mapᵏ x n)
+
+delay-by-bindᵏ : (f : A → gPart k B) (x : A) (n : ℕ)
+               → (delay-byᵏ n x) >>=ᵏ f ＝ iter n δᵏ (f x)
+delay-by-bindᵏ f x  zero   = refl
+delay-by-bindᵏ f x (suc n) = ap δᵏ (delay-by-bindᵏ f x n)
+
 Part : 𝒰 → 𝒰
 Part A = ∀ k → gPart k A
+
+pureᵖ : A → Part A
+pureᵖ a k = now a
 
 neverᵖ : Part A
 neverᵖ k = neverᵏ
@@ -108,13 +122,10 @@ neverᵖ k = neverᵏ
 δᵖ p k = δᵏ (p k)
 
 spin : ℕ → Part A → Part A
-spin k = iter k δᵖ
-
-pureᵖ : A → Part A
-pureᵖ a k = now a
+spin n p k = spinᵏ n (p k)
 
 delay-by : ℕ → A → Part A
-delay-by k a = spin k (pureᵖ a)
+delay-by n a k = delay-byᵏ n a
 
 _>>=ᵖ_ : Part A → (A → Part B) → Part B
 _>>=ᵖ_ p f k = p k >>=ᵏ λ a → f a k
@@ -136,19 +147,6 @@ unfoldᵏ f = fix (unfoldᵏ-body f)
 unfoldᵖ : (B → A ⊎ B) → B → Part A
 unfoldᵖ f b k = unfoldᵏ f b
 
-to-streamᵏ-body : ▹ k (gPart k A → gStream k (Maybe A)) → gPart k A → gStream k (Maybe A)
-to-streamᵏ-body ts▹ (now a)    = repeatᵏ (just a)
-to-streamᵏ-body ts▹ (later p▹) = cons nothing (ts▹ ⊛ p▹)
-
-to-streamᵏ : gPart k A → gStream k (Maybe A)
-to-streamᵏ = fix to-streamᵏ-body
-
-to-streamᵖ : Part A → Stream (Maybe A)
-to-streamᵖ c k = to-streamᵏ (c k)
-
-timeout : Part A → ℕ → Maybe A
-timeout p n = nthˢ n (to-streamᵖ p)
-
 try-moreᵏ : (ℕ → Maybe A) → gPart k A
 try-moreᵏ {A} f = unfoldᵏ try 0
   where
@@ -163,9 +161,6 @@ minimizeᵏ test = try-moreᵏ (λ n → if test n then just n else nothing)
 minimizeᵖ : (ℕ → Bool) → Part ℕ
 minimizeᵖ test k = minimizeᵏ test
 
-bothᵏ : gPart k A → gPart k B → gPart k (A × B)
-bothᵏ pa pb = apᵏ (mapᵏ (_,_) pa) pb
-
 raceᵏ-body : ▹ k (gPart k A → gPart k A → gPart k A) → gPart k A → gPart k A → gPart k A
 raceᵏ-body r▹ (now a)     _         = now a
 raceᵏ-body r▹ (later _)  (now a)    = now a
@@ -174,17 +169,11 @@ raceᵏ-body r▹ (later p1) (later p2) = later (r▹ ⊛ p1 ⊛ p2)
 raceᵏ : gPart k A → gPart k A → gPart k A
 raceᵏ = fix raceᵏ-body
 
+bothᵏ : gPart k A → gPart k B → gPart k (A × B)
+bothᵏ pa pb = apᵏ (mapᵏ (_,_) pa) pb
+
 raceᵖ : Part A → Part A → Part A
 raceᵖ p1 p2 k = raceᵏ (p1 k) (p2 k)
-
-raceωᵏ-body : ▹ k (gStream k (gPart k A) → gPart k A) → gStream k (gPart k A) → gPart k A
-raceωᵏ-body r▹ (cons p ps) = raceᵏ p (later (r▹ ⊛ ps))
-
-raceωᵏ : gStream k (gPart k A) → gPart k A
-raceωᵏ = fix raceωᵏ-body
-
-raceωᵖ : Stream (Part A) → Part A
-raceωᵖ s k = raceωᵏ (mapˢ (λ p → p k) s k)
 
 bothᵖ : Part A → Part B → Part (A × B)
 bothᵖ pa pb k = bothᵏ (pa k) (pb k)
