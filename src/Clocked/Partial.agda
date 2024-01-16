@@ -104,6 +104,23 @@ delay-by-mapᵏ : {f : A → B}
 delay-by-mapᵏ x  zero   = refl
 delay-by-mapᵏ x (suc n) = ap later (▹-ext λ _ → delay-by-mapᵏ x n)
 
+apᵏ-nowf : (f : A → B) (p : gPart k A)
+         → apᵏ (now f) p ＝ mapᵏ f p
+apᵏ-nowf f (now x)    = refl
+apᵏ-nowf f (later p▹) = ap later (▹-ext λ α → apᵏ-nowf f (p▹ α))
+
+apᵏ-nowx : (f : gPart k (A → B)) (x : A)
+         → apᵏ f (now x) ＝ mapᵏ (_$ x) f
+apᵏ-nowx (now f)    x = refl
+apᵏ-nowx (later f▹) x = ap later (▹-ext λ α → apᵏ-nowx (f▹ α) x)
+
+delay-by-apᵏ : (f : A → B) (nf : ℕ) (x : A) (nx : ℕ)
+             → apᵏ {k = k} (delay-byᵏ nf f) (delay-byᵏ nx x) ＝ delay-byᵏ (max nf nx) (f x)
+delay-by-apᵏ f  zero    x  zero    = refl
+delay-by-apᵏ f  zero    x (suc nx) = ap later (▹-ext λ α → apᵏ-nowf f (delay-byᵏ nx x) ∙ delay-by-mapᵏ x nx)
+delay-by-apᵏ f (suc nf) x  zero    = ap later (▹-ext λ α → apᵏ-nowx (delay-byᵏ nf f) x ∙ delay-by-mapᵏ f nf)
+delay-by-apᵏ f (suc nf) x (suc nx) = ap later (▹-ext λ α → delay-by-apᵏ f nf x nx)
+
 delay-by-bindᵏ : (f : A → gPart k B) (x : A) (n : ℕ)
                → (delay-byᵏ n x) >>=ᵏ f ＝ iter n δᵏ (f x)
 delay-by-bindᵏ f x  zero   = refl
@@ -178,6 +195,10 @@ raceᵖ p1 p2 k = raceᵏ (p1 k) (p2 k)
 bothᵖ : Part A → Part B → Part (A × B)
 bothᵖ pa pb k = bothᵏ (pa k) (pb k)
 
--- TODO needs modulus
--- collatz : ℕ → Part ⊤
--- collatz n k = ?
+gPart▹-body : (A → ▹ k B) → ▹ k (gPart k A → ▹ k (gPart k B)) → gPart k A → ▹ k (gPart k B)
+gPart▹-body f P▹ (now a)    = now ⍉ (f a)
+gPart▹-body f P▹ (later p▹) = later ⍉ (P▹ ⊛ p▹)
+
+gPart▹ : (A → ▹ k B) → gPart k A → ▹ k (gPart k B)
+gPart▹ f = fix (gPart▹-body f)
+
