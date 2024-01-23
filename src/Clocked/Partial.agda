@@ -10,12 +10,15 @@ open import Data.Nat
 open import Later
 
 private variable
-  A B : 𝒰
+  ℓ ℓ′ ℓ″ : Level
+  A : 𝒰 ℓ
+  B : 𝒰 ℓ′
+  C : 𝒰 ℓ″
   k : Cl
 
 -- clocked partiality monad aka Lift aka Event
 
-data gPart (k : Cl) (A : 𝒰) : 𝒰 where
+data gPart (k : Cl) (A : 𝒰 ℓ) : 𝒰 ℓ where
   now   : A → gPart k A
   later : ▹ k (gPart k A) → gPart k A
 
@@ -58,7 +61,7 @@ module gPart-code where
   decode (later a▹) (later b▹) c = ap later (▹-ext λ α → decode (a▹ α) (b▹ α) (Code-ll⇉ c α))
 
 now-inj : ∀ {a b : A}
-        → now {k} a ＝ now b → a ＝ b
+        → now {k = k} a ＝ now b → a ＝ b
 now-inj = gPart-code.encode
 
 later-inj : ∀ {a▹ b▹ : ▹ k (gPart k A)}
@@ -122,7 +125,7 @@ delay-by-apᵏ f (suc nf) x  zero    = ap later (▹-ext λ α → apᵏ-nowx (d
 delay-by-apᵏ f (suc nf) x (suc nx) = ap later (▹-ext λ α → delay-by-apᵏ f nf x nx)
 
 delay-by-bindᵏ : (f : A → gPart k B) (x : A) (n : ℕ)
-               → (delay-byᵏ n x) >>=ᵏ f ＝ iter n δᵏ (f x)
+               → (delay-byᵏ n x) >>=ᵏ f ＝ spinᵏ n (f x)
 delay-by-bindᵏ f x  zero   = refl
 delay-by-bindᵏ f x (suc n) = ap δᵏ (delay-by-bindᵏ f x n)
 
@@ -152,6 +155,19 @@ mapᵖ f p k = mapᵏ f (p k)
 
 apᵖ : Part (A → B) → Part A → Part B
 apᵖ pf p k = apᵏ (pf k) (p k)
+
+delay-by-mapᵖ : {f : A → B}
+              → (x : A) (n : ℕ)
+              → mapᵖ f (delay-by n x) ＝ delay-by n (f x)
+delay-by-mapᵖ x n = fun-ext λ k → delay-by-mapᵏ x n
+
+delay-by-apᵖ : (f : A → B) (nf : ℕ) (x : A) (nx : ℕ)
+             → apᵖ (delay-by nf f) (delay-by nx x) ＝ delay-by (max nf nx) (f x)
+delay-by-apᵖ f nf x nx = fun-ext λ k → delay-by-apᵏ f nf x nx
+
+delay-by-bindᵖ : (f : A → Part B) (x : A) (n : ℕ)
+               → (delay-by n x) >>=ᵖ f ＝ spin n (f x)
+delay-by-bindᵖ f x n = fun-ext λ k → delay-by-bindᵏ (λ a → f a k) x n
 
 unfoldᵏ-body : (B → A ⊎ B) → ▹ k (B → gPart k A) → B → gPart k A
 unfoldᵏ-body f u▹ b with (f b)
@@ -186,11 +202,17 @@ raceᵏ-body r▹ (later p1) (later p2) = later (r▹ ⊛ p1 ⊛ p2)
 raceᵏ : gPart k A → gPart k A → gPart k A
 raceᵏ = fix raceᵏ-body
 
+map²ᵏ : (A → B → C) → gPart k A → gPart k B → gPart k C
+map²ᵏ f = apᵏ ∘ mapᵏ f
+
 bothᵏ : gPart k A → gPart k B → gPart k (A × B)
-bothᵏ pa pb = apᵏ (mapᵏ (_,_) pa) pb
+bothᵏ = map²ᵏ (_,_)
 
 raceᵖ : Part A → Part A → Part A
 raceᵖ p1 p2 k = raceᵏ (p1 k) (p2 k)
+
+map²ᵖ : (A → B → C) → Part A → Part B → Part C
+map²ᵖ f pa pb k = map²ᵏ f (pa k) (pb k)
 
 bothᵖ : Part A → Part B → Part (A × B)
 bothᵖ pa pb k = bothᵏ (pa k) (pb k)
@@ -201,4 +223,3 @@ gPart▹-body f P▹ (later p▹) = later ⍉ (P▹ ⊛ p▹)
 
 gPart▹ : (A → ▹ k B) → gPart k A → ▹ k (gPart k B)
 gPart▹ f = fix (gPart▹-body f)
-

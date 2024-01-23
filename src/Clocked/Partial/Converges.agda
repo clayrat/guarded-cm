@@ -9,9 +9,10 @@ open import Later
 open import Clocked.Partial
 
 private variable
-  ℓ ℓ′ : Level
+  ℓ ℓ′ ℓ″ : Level
   A : 𝒰 ℓ
   B : 𝒰 ℓ′
+  C : 𝒰 ℓ″
   κ : Cl
 
 -- convergence (propositional)
@@ -47,8 +48,6 @@ unδ⇓ = map λ where
                (zero  , e) → absurd (now≠later (sym $ happly e k0))
                (suc n , e) → n , fun-ext (force (λ k₁ → ▹-ap (later-inj (happly e k₁))))
 
--- TODO
-{-
 map⇓ : {p : Part A} {a : A}
      → (f : A → B)
      → p ⇓ᵖ a
@@ -67,6 +66,13 @@ ap⇓ {g} {a} f fg pa =
       (m , e) → max n m , ap² apᵖ eᶠ e
                         ∙ delay-by-apᵖ g n a m) pa) fg
 
+map²⇓ : {p : Part A} {a : A} {q : Part B} {b : B}
+      → (f : A → B → C)
+      → p ⇓ᵖ a
+      → q ⇓ᵖ b
+      → map²ᵖ f p q ⇓ᵖ f a b
+map²⇓ {p} f = ap⇓ (mapᵏ f ∘ p) ∘ map⇓ f
+
 bind⇓ : {p : Part A} {a : A} {b : B}
       → (f : A → Part B)
       → p ⇓ᵖ a
@@ -77,9 +83,9 @@ bind⇓ {a} {b} f pa fab =
     (n , e) → map (λ where
       (m , eᶠ) → (n + m , ap (_>>=ᵖ f) e
                         ∙ delay-by-bindᵖ f a n
-                        ∙ ap (iter n δᵖ) eᶠ
-                        ∙ sym (iter-add n m δᵖ (now b)))) fab) pa
--}
+                        ∙ ap (spin n) eᶠ
+                        ∙ fun-ext (λ k → sym (iter-add n m δᵏ (now b)))))
+                 fab) pa
 
 -- weak bisimilarity (both converge to same value modulo the number of steps)
 
