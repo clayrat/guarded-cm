@@ -35,13 +35,24 @@ gAt-map {k} {Q} {f} pq =
     .zero    .(cons a s▹) (gAt-here {a} {s▹} p)   → gAt-here (pq p)
     .(suc n) .(cons a s▹) (gAt-there {a} {s▹} {n} a▹) →
        subst (gAt k Q (suc n)) (sym $ mapᵏ-eq f a s▹) $
-       gAt-there {a = f a} (prf▹ ⊛ next n ⊛′ s▹ ⊛′ a▹)
+       gAt-there {a = f a} (prf▹ ⊛ next n ⊛▹ s▹ ⊛▹ a▹)
 
 At-map : {P : A → 𝒰} {Q : B → 𝒰} {f : A → B}
        → (∀ {x} → P x → Q (f x))
        → (n : ℕ) → (s : Stream A)
        → At P n s → At Q n (mapˢ f s)
 At-map pq n s a k = gAt-map pq n (s k) (a k)
+
+At-tail : {P : A → 𝒰}
+        → (n : ℕ) → (s : Stream A)
+        → At P (suc n) s → At P n (tailˢ s)
+At-tail {P} n s a =
+  force {A = λ κ → gAt κ P n (tailˢ s κ)} go
+  where
+  go : ∀ κ → ▹ κ (gAt κ P n (tailˢ s κ))
+  go κ with s κ | recall s κ | a κ
+  ... | cons h t▹ | ⟪ e ⟫ | gAt-there a▹ =
+    λ α → subst (gAt κ P n) (sym ((force-delay (tail▹ᵏ ∘ s) κ α) ∙ λ i → tail▹ᵏ (e i) α)) (a▹ α)
 
 data gAll (k : Cl) (P : A → 𝒰 ℓ′) : gStream k A → 𝒰 (level-of-type A ⊔ ℓ′) where
   gAll-cons : ∀ {a s▹}
@@ -98,7 +109,7 @@ gAny≤-map {k} {Q} {f} pq =
     n        .(cons a s▹) (gAny≤-here {a} {s▹} pa)      → gAny≤-here (pq pa)
     .(suc n) .(cons a s▹) (gAny≤-there {a} {s▹} {n} a▹) →
        subst (gAny≤ k Q (suc n)) (sym $ mapᵏ-eq f a s▹) $
-       gAny≤-there (prf▹ ⊛ (next n) ⊛′ s▹ ⊛′ a▹)
+       gAny≤-there (prf▹ ⊛ (next n) ⊛▹ s▹ ⊛▹ a▹)
 
 Any≤ : (A → 𝒰 ℓ′) → ℕ → Stream A → 𝒰 (level-of-type A ⊔ ℓ′)
 Any≤ P n s = ∀ k → gAny≤ k P n (s k)
