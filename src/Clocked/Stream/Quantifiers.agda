@@ -16,6 +16,8 @@ private variable
 
 -- predicates on a stream
 
+-- indexed existential
+
 data gAt (k : Cl) (P : A → 𝒰 ℓ′) : ℕ → gStream k A → 𝒰 (level-of-type A ⊔ ℓ′) where
   gAt-here  : ∀ {a s▹}
             → P a → gAt k P 0 (cons a s▹)
@@ -25,6 +27,24 @@ data gAt (k : Cl) (P : A → 𝒰 ℓ′) : ℕ → gStream k A → 𝒰 (level-
 
 At : (A → 𝒰 ℓ′) → ℕ → Stream A → 𝒰 (level-of-type A ⊔ ℓ′)
 At P n s = ∀ k → gAt k P n (s k)
+
+At-here : {P : A → 𝒰} {a : A} {s : Stream A}
+        → P a → At P 0 (consˢ a s)
+At-here pa k = gAt-here pa
+
+At-there : {P : A → 𝒰} {n : ℕ} {a : A} {s : Stream A}
+         → At P n s → At P (suc n) (consˢ a s)
+At-there at k = gAt-there (next (at k))
+
+At-tail : {P : A → 𝒰} {n : ℕ} {s : Stream A}
+        → At P (suc n) s → At P n (tailˢ s)
+At-tail {P} {n} {s} a = force go
+  where
+  go : ∀ κ → ▹ κ (gAt κ P n (tailˢ s κ))
+  go κ with s κ | recall s κ | a κ
+  ... | cons h t▹ | ⟪ e ⟫ | gAt-there a▹ =
+    λ α → subst (gAt κ P n) (sym ((force-delay (tail▹ᵏ ∘ s) κ α) ∙ λ i → tail▹ᵏ (e i) α)) (a▹ α)
+
 
 gAt-map : {P : A → 𝒰} {Q : B → 𝒰} {f : A → B}
         → (∀ {x} → P x → Q (f x))
@@ -43,21 +63,18 @@ At-map : {P : A → 𝒰} {Q : B → 𝒰} {f : A → B}
        → At P n s → At Q n (mapˢ f s)
 At-map pq n s a k = gAt-map pq n (s k) (a k)
 
-At-tail : {P : A → 𝒰}
-        → (n : ℕ) → (s : Stream A)
-        → At P (suc n) s → At P n (tailˢ s)
-At-tail {P} n s a =
-  force {A = λ κ → gAt κ P n (tailˢ s κ)} go
-  where
-  go : ∀ κ → ▹ κ (gAt κ P n (tailˢ s κ))
-  go κ with s κ | recall s κ | a κ
-  ... | cons h t▹ | ⟪ e ⟫ | gAt-there a▹ =
-    λ α → subst (gAt κ P n) (sym ((force-delay (tail▹ᵏ ∘ s) κ α) ∙ λ i → tail▹ᵏ (e i) α)) (a▹ α)
+-- universal
 
 data gAll (k : Cl) (P : A → 𝒰 ℓ′) : gStream k A → 𝒰 (level-of-type A ⊔ ℓ′) where
   gAll-cons : ∀ {a s▹}
             → P a → ▹[ α ∶ k ] (gAll k P (s▹ α))
             → gAll k P (cons a s▹)
+
+gAll-repeat : {P : A → 𝒰 ℓ′}
+            → ∀ a → P a → gAll k P (repeatᵏ a)
+gAll-repeat {k} {P} a Pa =
+  fix {k = k} λ ih▹ →
+    gAll-cons Pa λ α → transport (λ i → gAll k P (pfix (cons a) (~ i) α)) (ih▹ α)
 
 gAll-map : {P : A → 𝒰 ℓ′} {Q : B → 𝒰 ℓ″} {f : A → B}
           → ({x : A} → P x → Q (f x))
@@ -79,6 +96,10 @@ gAll-zipWith {k} {R} {f} pqr = fix λ prf▹ → λ where
 
 All : (A → 𝒰 ℓ′) → Stream A → 𝒰 (level-of-type A ⊔ ℓ′)
 All P s = ∀ k → gAll k P (s k)
+
+All-repeat : {P : A → 𝒰 ℓ′}
+           → ∀ a → P a → All P (repeatˢ a)
+All-repeat a Pa k = gAll-repeat a Pa
 
 All-map : {P : A → 𝒰 ℓ′} {Q : B → 𝒰 ℓ″} {f : A → B}
          → ({x : A} → P x → Q (f x))
@@ -149,16 +170,14 @@ data gAdj (k : Cl) (P : A → A → 𝒰 ℓ′) : gStream k A → 𝒰 (level-o
             → gAdj k P (cons a s▹)
 
 repeat-gadj : {P : A → A → 𝒰 ℓ′}
-           → (∀ a → P a a)
-           → ∀ a → gAdj k P (repeatᵏ a)
-repeat-gadj {k} {P} Pr a =
-  fix λ ih▹ → gAdj-cons (λ α → transport (λ i → P a (headᵏ (pfix (cons a) (~ i) α))) (Pr a))
+            → ∀ a → P a a → gAdj k P (repeatᵏ a)
+repeat-gadj {k} {P} a Pr =
+  fix λ ih▹ → gAdj-cons (λ α → transport (λ i → P a (headᵏ (pfix (cons a) (~ i) α))) Pr)
                         (λ α → transport (λ i → gAdj k P (pfix (cons a) (~ i) α)) (ih▹ α))
 
 Adj : (A → A → 𝒰 ℓ′) → Stream A → 𝒰 (level-of-type A ⊔ ℓ′)
 Adj P s = ∀ k → gAdj k P (s k)
 
 repeat-adj : {P : A → A → 𝒰 ℓ′}
-           → (∀ a → P a a)
-           → ∀ a → Adj P (repeatˢ a)
-repeat-adj Pr a k = repeat-gadj Pr a
+           → ∀ a → P a a → Adj P (repeatˢ a)
+repeat-adj a Pr k = repeat-gadj a Pr
