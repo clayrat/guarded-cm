@@ -27,14 +27,14 @@ data _≤ᶜ_ : ℕ∞ → ℕ∞ → 𝒰 where
   .coze       y          z          z≤ᶜn                           _                             →
     z≤ᶜn
   .(cosu x▹) .(cosu y▹) .(cosu z▹) (s≤ᶜs {m▹ = x▹} {n▹ = y▹} xy▹) (s≤ᶜs {m▹ = y▹} {n▹ = z▹} yz▹) →
-    s≤ᶜs (prf▹ ⊛ x▹ ⊛′ y▹ ⊛′ z▹ ⊛′ xy▹ ⊛′ yz▹)
+    s≤ᶜs (prf▹ ⊛ x▹ ⊛▹ y▹ ⊛▹ z▹ ⊛▹ xy▹ ⊛▹ yz▹)
 
 ≤ᶜ-antisym : (x y : ℕ∞) → x ≤ᶜ y → y ≤ᶜ x → x ＝ y
 ≤ᶜ-antisym = fix λ prf▹ → λ where
   .coze      .coze       z≤ᶜn                           z≤ᶜn                          →
     refl
   .(cosu x▹) .(cosu y▹) (s≤ᶜs {m▹ = x▹} {n▹ = y▹} xy▹) (s≤ᶜs {m▹ = y▹} {n▹ = x▹} yx▹) →
-    ap cosu (▹-ext (prf▹ ⊛ x▹ ⊛′ y▹ ⊛′ xy▹ ⊛′ yx▹))
+    ap cosu (▹-ext (prf▹ ⊛ x▹ ⊛▹ y▹ ⊛▹ xy▹ ⊛▹ yx▹))
 
 ≤ᶜ-inc : (x : ℕ∞) → x ≤ᶜ incᶜ x
 ≤ᶜ-inc = fix λ prf▹ → λ where
@@ -125,7 +125,7 @@ minᶜ-comm = fix λ prf▹ → λ where
   coze       y        → sym (minᶜ-zeror y)
   (cosu x▹)  coze     → refl
   (cosu x▹) (cosu y▹) → ap (λ q → cosu (q ⊛ x▹ ⊛ y▹)) (pfix minᶜ-body)
-                      ∙ ap cosu (▹-ext (prf▹ ⊛ x▹ ⊛′ y▹))
+                      ∙ ap cosu (▹-ext (prf▹ ⊛ x▹ ⊛▹ y▹))
                       ∙ ap (λ q → cosu (q ⊛ y▹ ⊛ x▹)) (sym $ pfix minᶜ-body)
 
 minᶜ-assoc : (x y z : ℕ∞) → minᶜ x (minᶜ y z) ＝ minᶜ (minᶜ x y) z
@@ -136,7 +136,7 @@ minᶜ-assoc = fix λ prf▹ → λ where
   (cosu x▹) (cosu y▹) (cosu z▹) →
       ap (λ q → cosu ((dfix minᶜ-body) ⊛ x▹ ⊛ (q ⊛ y▹ ⊛ z▹))) (pfix minᶜ-body)
     ∙ ap (λ q → cosu (q ⊛ x▹ ⊛ ((next minᶜ) ⊛ y▹ ⊛ z▹))) (pfix minᶜ-body)
-    ∙ ap cosu (▹-ext (prf▹ ⊛ x▹ ⊛′ y▹ ⊛′ z▹))
+    ∙ ap cosu (▹-ext (prf▹ ⊛ x▹ ⊛▹ y▹ ⊛▹ z▹))
     ∙ ap (λ q → cosu (q ⊛ ((next minᶜ) ⊛ x▹ ⊛ y▹) ⊛ z▹)) (sym $ pfix minᶜ-body)
     ∙ ap (λ q → cosu ((dfix minᶜ-body) ⊛ (q ⊛ x▹ ⊛ y▹) ⊛ z▹)) (sym $ pfix minᶜ-body)
 
@@ -156,7 +156,7 @@ minᶜ-inftyr x = minᶜ-comm x infty ∙ minᶜ-inftyl x
   (cosu x▹) coze      → z≤ᶜn
   (cosu x▹) (cosu y▹) → s≤ᶜs (subst (λ q → ▹[ α ] ((q ⊛ x▹ ⊛ y▹) α ≤ᶜ x▹ α))
                                     (sym $ pfix minᶜ-body)
-                                    (prf▹ ⊛ x▹ ⊛′ y▹))
+                                    (prf▹ ⊛ x▹ ⊛▹ y▹))
 
 ≤ᶜ-min-r : (x y : ℕ∞) → minᶜ x y ≤ᶜ y
 ≤ᶜ-min-r x y = subst (_≤ᶜ y) (minᶜ-comm y x) (≤ᶜ-min-l y x)
@@ -189,7 +189,7 @@ maxᶜ-comm = fix λ prf▹ → λ where
   coze       y        → sym (maxᶜ-zeror y)
   (cosu x▹)  coze     → refl
   (cosu x▹) (cosu y▹) → ap (λ q → cosu (q ⊛ x▹ ⊛ y▹)) (pfix maxᶜ-body)
-                      ∙ ap cosu (▹-ext (prf▹ ⊛ x▹ ⊛′ y▹))
+                      ∙ ap cosu (▹-ext (prf▹ ⊛ x▹ ⊛▹ y▹))
                       ∙ ap (λ q → cosu (q ⊛ y▹ ⊛ x▹)) (sym $ pfix maxᶜ-body)
 
 maxᶜ-assoc : (x y z : ℕ∞) → maxᶜ x (maxᶜ y z) ＝ maxᶜ (maxᶜ x y) z
@@ -200,7 +200,7 @@ maxᶜ-assoc = fix λ prf▹ → λ where
   (cosu x▹) (cosu y▹) (cosu z▹) →
       ap (λ q → cosu ((dfix maxᶜ-body) ⊛ x▹ ⊛ (q ⊛ y▹ ⊛ z▹))) (pfix maxᶜ-body)
     ∙ ap (λ q → cosu (q ⊛ x▹ ⊛ ((next maxᶜ) ⊛ y▹ ⊛ z▹))) (pfix maxᶜ-body)
-    ∙ ap cosu (▹-ext (prf▹ ⊛ x▹ ⊛′ y▹ ⊛′ z▹))
+    ∙ ap cosu (▹-ext (prf▹ ⊛ x▹ ⊛▹ y▹ ⊛▹ z▹))
     ∙ ap (λ q → cosu (q ⊛ ((next maxᶜ) ⊛ x▹ ⊛ y▹) ⊛ z▹)) (sym $ pfix maxᶜ-body)
     ∙ ap (λ q → cosu ((dfix maxᶜ-body) ⊛ (q ⊛ x▹ ⊛ y▹) ⊛ z▹)) (sym $ pfix maxᶜ-body)
 
@@ -221,7 +221,7 @@ maxᶜ-inftyr x = maxᶜ-comm x infty ∙ maxᶜ-inftyl x
   (cosu x▹) coze      → ≤ᶜ-refl (cosu x▹)
   (cosu x▹) (cosu y▹) → s≤ᶜs (subst (λ q → ▹[ α ] (x▹ α ≤ᶜ (q ⊛ x▹ ⊛ y▹) α))
                                     (sym $ pfix maxᶜ-body)
-                                    (prf▹ ⊛ x▹ ⊛′ y▹))
+                                    (prf▹ ⊛ x▹ ⊛▹ y▹))
 
 ≤ᶜ-max-r : (x y : ℕ∞) → y ≤ᶜ maxᶜ x y
 ≤ᶜ-max-r x y = subst (y ≤ᶜ_) (maxᶜ-comm y x) (≤ᶜ-max-l y x)
@@ -312,7 +312,7 @@ _+ᶜ_ = fix +ᶜ-body
     cosu (next (cosu (dfix +ᶜ-body ⊛ x▹ ⊛ y▹)))
       ＝⟨ ap (λ q → cosu (next (cosu (q ⊛ x▹ ⊛ y▹)))) (pfix +ᶜ-body) ⟩
     cosu (next (cosu ((next _+ᶜ_) ⊛ x▹ ⊛ y▹)))
-      ＝⟨ ap cosu (▹-ext (next (ap cosu (▹-ext (prf▹ ⊛ x▹ ⊛′ y▹))))) ⟩
+      ＝⟨ ap cosu (▹-ext (next (ap cosu (▹-ext (prf▹ ⊛ x▹ ⊛▹ y▹))))) ⟩
     cosu (next (cosu ((next _+ᶜ_) ⊛ y▹ ⊛ x▹)))
       ＝˘⟨ ap (λ q → cosu (next (cosu (q ⊛ y▹ ⊛ x▹)))) (pfix +ᶜ-body) ⟩
     cosu (next (cosu (dfix +ᶜ-body ⊛ y▹ ⊛ x▹)))
@@ -353,7 +353,7 @@ _+:ᶜ_ x = fix (+:ᶜ-body x)
   coze     → refl
   (cosu x) → cosu (dfix (+:ᶜ-body coze) ⊛ x)
                ＝⟨ ap (λ q → cosu (q ⊛ x)) (pfix (+:ᶜ-body coze) ) ⟩
-             cosu (▹map (coze +:ᶜ_) x)
+             cosu ((coze +:ᶜ_) ⍉ x)
                ＝⟨ ap cosu (▹-ext (prf▹ ⊛ x)) ⟩
              cosu x
                ∎
@@ -365,7 +365,7 @@ _+:ᶜ_ x = fix (+:ᶜ-body x)
 -- +ᶜ-sucl doesn't seem to be provable easily
 
 +:ᶜ-sucr : (x : ℕ∞) → (y▹ : ▹ ℕ∞)
-        → x +:ᶜ (cosu y▹) ＝ cosu (▹map (x +:ᶜ_) y▹)
+        → x +:ᶜ (cosu y▹) ＝ cosu ((x +:ᶜ_) ⍉ y▹)
 +:ᶜ-sucr x y▹ = ap (_$ (cosu y▹)) (fix-path (+:ᶜ-body x))
 
 -- TODO https://proofassistants.stackexchange.com/questions/1545/how-to-prove-that-addition-is-commutative-for-conatural-numbers-in-coq
