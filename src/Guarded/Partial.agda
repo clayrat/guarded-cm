@@ -120,7 +120,7 @@ now≠later : ∀ {a : A} {p▹ : ▹ Part A}
           → now a ≠ later p▹
 now≠later = lower ∘ Part-code.encode
 
-never : Part A
+never : Part ⊥
 never = fix later
 
 δᵖ : Part A → Part A
