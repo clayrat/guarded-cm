@@ -265,7 +265,7 @@ zipWithᵏ f = apᵏ ∘ mapᵏ f
 zipWithᵏ-eq : {f : B → C → D} {b : gMoore k A B} {c : gMoore k A C}
             → zipWithᵏ f b c ＝ apᵏ-body (next apᵏ) (mapᵏ-body f (next (mapᵏ f)) b) c
 zipWithᵏ-eq {f} {b} {c} = ap (λ q → apᵏ (q b) c) (fix-path (mapᵏ-body f))
-                        ∙ ap (λ q → q (mapᵏ-body f (next (fix (mapᵏ-body f))) b) c) (fix-path apᵏ-body)
+                        ∙ ap (λ q → q (mapᵏ-body f (next (mapᵏ f)) b) c) (fix-path apᵏ-body)
 
 zipWithᵐ : (B → C → D) → Moore A B → Moore A C → Moore A D
 zipWithᵐ f = apᵐ ∘ mapᵐ f
