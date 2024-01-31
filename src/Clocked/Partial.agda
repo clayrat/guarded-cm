@@ -129,7 +129,7 @@ delay-by-bindᵏ : (f : A → gPart k B) (x : A) (n : ℕ)
 delay-by-bindᵏ f x  zero   = refl
 delay-by-bindᵏ f x (suc n) = ap δᵏ (delay-by-bindᵏ f x n)
 
-Part : 𝒰 → 𝒰
+Part : 𝒰 ℓ → 𝒰 ℓ
 Part A = ∀ k → gPart k A
 
 pureᵖ : A → Part A
