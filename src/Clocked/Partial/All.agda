@@ -31,12 +31,27 @@ all-δ : ∀ {P : A → 𝒰 ℓ′} {p : Part A}
       → Allᵖ P p → Allᵖ P (δᵖ p)
 all-δ a κ = all-δᵏ (a κ)
 
+all-mapᵏ : ∀ {P : A → 𝒰 ℓ′} {Q : B → 𝒰 ℓ″}
+             {p : gPart κ A} {f : A → B}
+         → gAllᵖ κ P p
+         → (∀ {x} → P x → Q (f x))
+         → gAllᵖ κ Q (mapᵏ f p)
+all-mapᵏ (gAll-now ap)    af = gAll-now (af ap)
+all-mapᵏ (gAll-later ap▹) af = gAll-later λ α → all-mapᵏ (ap▹ α) af
+
+all-map : ∀ {P : A → 𝒰 ℓ′} {Q : B → 𝒰 ℓ″}
+            {p : Part A} {f : A → B}
+         → Allᵖ P p
+         → (∀ {x} → P x → Q (f x))
+         → Allᵖ Q (mapᵖ f p)
+all-map ap af κ = all-mapᵏ (ap κ) af
+
 all->>=ᵏ : ∀ {P : A → 𝒰 ℓ′} {Q : B → 𝒰 ℓ″}
             {p : gPart κ A} {f : A → gPart κ B}
          → gAllᵖ κ P p → (∀ {x} → P x → gAllᵖ κ Q (f x))
          → gAllᵖ κ Q (p >>=ᵏ f)
 all->>=ᵏ (gAll-now ap)    af = af ap
-all->>=ᵏ (gAll-later ap▹) af = gAll-later (λ α → all->>=ᵏ (ap▹ α) af)  -- need combinators for (m)apping over indexed+guarded types
+all->>=ᵏ (gAll-later ap▹) af = gAll-later λ α → all->>=ᵏ (ap▹ α) af  -- need combinators for (m)apping over indexed+guarded types
 
 all->>= : ∀ {P : A → 𝒰 ℓ′} {Q : B → 𝒰 ℓ″}
             {p : Part A} {f : A → Part B}
