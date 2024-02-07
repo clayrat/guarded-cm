@@ -89,6 +89,10 @@ _>>=ᵏ_ : gPart k A → (A → gPart k B) → gPart k B
 now x   >>=ᵏ f = f x
 later x >>=ᵏ f = later λ α → x α >>=ᵏ f
 
+-- sugar
+_=<<ᵏ_ : (A → gPart k B) → gPart k A → gPart k B
+f =<<ᵏ p = p >>=ᵏ f
+
 mapᵏ : (A → B) → gPart k A → gPart k B
 mapᵏ f (now a)   = now (f a)
 mapᵏ f (later p) = later λ α → mapᵏ f (p α)
@@ -100,6 +104,11 @@ apᵏ (now f)     (later pa▹) = later λ α → apᵏ (now f) (pa▹ α)
 apᵏ (later pf▹) (now a)     = later λ α → apᵏ (pf▹ α) (now a)
 apᵏ (later pf▹) (later pa▹) = later λ α → apᵏ (pf▹ α) (pa▹ α)
 -- apᵏ pf pa = pf >>=ᵏ λ f → pa >>=ᵏ (now ∘ f)
+
+mapᵏ-id : (p : gPart k A)
+        → mapᵏ id p ＝ p
+mapᵏ-id (now a)   = refl
+mapᵏ-id (later p) = ap later (▹-ext λ α → mapᵏ-id (p α))
 
 delay-by-mapᵏ : {f : A → B}
               → (x : A) (n : ℕ)
@@ -149,6 +158,9 @@ delay-by n a k = delay-byᵏ n a
 
 _>>=ᵖ_ : Part A → (A → Part B) → Part B
 _>>=ᵖ_ p f k = p k >>=ᵏ λ a → f a k
+
+_=<<ᵖ_ : Part A → (A → Part B) → Part B
+_=<<ᵖ_ p f k = (λ a → f a k) =<<ᵏ p k
 
 mapᵖ : (A → B) → Part A → Part B
 mapᵖ f p k = mapᵏ f (p k)
@@ -223,3 +235,4 @@ gPart▹-body f P▹ (later p▹) = later ⍉ (P▹ ⊛ p▹)
 
 gPart▹ : (A → ▹ k B) → gPart k A → ▹ k (gPart k B)
 gPart▹ f = fix (gPart▹-body f)
+
