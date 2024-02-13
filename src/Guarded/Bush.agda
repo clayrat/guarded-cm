@@ -24,6 +24,28 @@ mapᵇ-body m▹ f (bsh a b▹) = bsh (f a) λ α → m▹ α (m▹ α f) (b▹ 
 mapᵇ : (A → B) → Bush A → Bush B
 mapᵇ {A} {B} f = fix mapᵇ-body {A} {B} f
 
+mapᵇ-id : (A : 𝒰 ℓ)
+        → (b : Bush A)
+        → mapᵇ id b ＝ b
+mapᵇ-id = fix λ ih▹ A → λ where
+  b@(bsh a b▹) →
+      mapᵇ id b
+        ＝⟨ ap (λ q → q id b) (fix-path mapᵇ-body) ⟩
+      mapᵇ-body (next (λ {A} {B} → mapᵇ)) id b
+        ＝⟨ ap (bsh a) (▹-ext λ α → ap (λ q → mapᵇ q (b▹ α)) (fun-ext λ b′ → ih▹ α A b′)
+                                 ∙ ih▹ α (Bush A) (b▹ α)) ⟩
+      b
+        ∎
+
+-- constant bush
+
+pureᵇ-body : ▹ (∀ {A : 𝒰 ℓ} → A → Bush A)
+           → ∀ {A : 𝒰 ℓ} → A → Bush A
+pureᵇ-body b▹ a = bsh a λ α → b▹ α (b▹ α a)
+
+pureᵇ : ∀ {A : 𝒰 ℓ} → A → Bush A
+pureᵇ = fix pureᵇ-body
+
 data BT : 𝒰 where
   L : BT
   Sp : BT → BT → BT
