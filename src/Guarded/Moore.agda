@@ -238,7 +238,7 @@ zipWithᵐ-assoc {f} {m1} {m2} {m3} fa =
 -- comonad
 
 extractᵐ : Moore A B → B
-extractᵐ (Mre b _) = b
+extractᵐ = ν
 
 duplicateᵐ-body : ▹ (Moore A B → Moore A (Moore A B))
                 →  Moore A B → Moore A (Moore A B)
