@@ -36,6 +36,11 @@ At-there : {P : A → 𝒰} {n : ℕ} {a : A} {s : Stream A}
          → At P n s → At P (suc n) (consˢ a s)
 At-there at k = gAt-there (next (at k))
 
+At-head : {P : A → 𝒰} {s : Stream A}
+        → At P 0 s → P (headˢ s)
+At-head {P} {s} a with s k0 | a k0
+... | cons h t▹ | gAt-here pa = pa
+
 At-tail : {P : A → 𝒰} {n : ℕ} {s : Stream A}
         → At P (suc n) s → At P n (tailˢ s)
 At-tail {P} {n} {s} a = force go
@@ -44,7 +49,6 @@ At-tail {P} {n} {s} a = force go
   go κ with s κ | recall s κ | a κ
   ... | cons h t▹ | ⟪ e ⟫ | gAt-there a▹ =
     λ α → subst (gAt κ P n) (sym ((force-delay (tail▹ᵏ ∘ s) κ α) ∙ λ i → tail▹ᵏ (e i) α)) (a▹ α)
-
 
 gAt-map : {P : A → 𝒰} {Q : B → 𝒰} {f : A → B}
         → (∀ {x} → P x → Q (f x))
@@ -62,6 +66,22 @@ At-map : {P : A → 𝒰} {Q : B → 𝒰} {f : A → B}
        → (n : ℕ) → (s : Stream A)
        → At P n s → At Q n (mapˢ f s)
 At-map pq n s a k = gAt-map pq n (s k) (a k)
+
+-- inductive existential (eventually)
+
+data Ev (P : A → 𝒰 ℓ′) : Stream A → 𝒰 (level-of-type A ⊔ ℓ′) where
+  Ev-here  : ∀ {s}
+           → P (headˢ s) → Ev P s
+  Ev-there : ∀ {s}
+           → Ev P (tailˢ s)
+           → Ev P s
+
+-- the other direction requires clock irrelevance
+
+At→Ev : {P : A → 𝒰} {n : ℕ} {s : Stream A}
+      → At P n s → Ev P s
+At→Ev {n = zero}  a = Ev-here (At-head a)
+At→Ev {n = suc n} a = Ev-there (At→Ev (At-tail a))
 
 -- universal
 
