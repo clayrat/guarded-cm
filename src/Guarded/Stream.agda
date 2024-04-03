@@ -58,7 +58,7 @@ cons-inj {t▹₁} {t▹₂} e =
   e1 , ▹-ext (decode ⍉ t▹₁ ⊛▹ t▹₂ ⊛▹ e2)
 
 cons-δ : A → Stream A → Stream A
-cons-δ a s = cons a (next s)
+cons-δ a = cons a ∘ next
 
 headˢ : Stream A → A
 headˢ (cons x _) = x
@@ -83,7 +83,7 @@ uncons-eq (cons x xs▹) = refl
 repeatˢ : A → Stream A
 repeatˢ a = fix (cons a)
 
-repeatˢ-eq : (a : A) → repeatˢ a ＝ cons a (next $ repeatˢ a)
+repeatˢ-eq : (a : A) → repeatˢ a ＝ cons-δ a (repeatˢ a)
 repeatˢ-eq a = fix-path (cons a)
 
 -- map
@@ -235,7 +235,7 @@ primesˢ = fix primesˢ-body
 -- paperfolding / dragon curve sequence
 
 toggleˢ-body : ▹ Stream Bool → Stream Bool
-toggleˢ-body = cons true ∘ next ∘ cons false
+toggleˢ-body = cons-δ true ∘ cons false
 
 toggleˢ : Stream Bool
 toggleˢ = fix toggleˢ-body
@@ -246,9 +246,9 @@ paperfoldsˢ = fix (interleaveˢ toggleˢ)
 -- Thue-Morse sequence
 
 hˢ-body : ▹ (Stream Bool → Stream Bool) → Stream Bool → Stream Bool
-hˢ-body h▹ s with (headˢ s)
-... | false = cons false (next (cons true  (h▹ ⊛ tail▹ˢ s)))
-... | true  = cons true  (next (cons false (h▹ ⊛ tail▹ˢ s)))
+hˢ-body h▹ s with headˢ s
+... | false = cons-δ false (cons true  (h▹ ⊛ tail▹ˢ s))
+... | true  = cons-δ true  (cons false (h▹ ⊛ tail▹ˢ s))
 
 hˢ : Stream Bool → Stream Bool
 hˢ = fix hˢ-body
