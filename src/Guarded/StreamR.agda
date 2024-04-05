@@ -212,6 +212,69 @@ zipWithˢ-comm f fc = fix λ ih▹ → λ where
 zipˢ : Stream A → Stream B → Stream (A × B)
 zipˢ = zipWithˢ _,_
 
+-- comonad structure
+
+extractˢ : Stream A → A
+extractˢ = hd
+
+-- aka tails
+duplicateˢ-body : ▹ (Stream A → Stream (Stream A)) → Stream A → Stream (Stream A)
+duplicateˢ-body d▹ s = cons s (d▹ ⊛ s .tl▹)
+
+duplicateˢ : Stream A → Stream (Stream A)
+duplicateˢ = fix duplicateˢ-body
+
+extendˢ-body : (Stream A → B) → ▹ (Stream A → Stream B) → Stream A → Stream B
+extendˢ-body f e▹ s = cons (f s) (e▹ ⊛ s .tl▹)
+
+extendˢ : (Stream A → B) → Stream A → Stream B
+extendˢ f = fix (extendˢ-body f)
+
+extract-duplicate : (s : Stream A) → extractˢ (duplicateˢ s) ＝ s
+extract-duplicate s =
+    extractˢ (duplicateˢ s)
+      ＝⟨ ap (λ q → extractˢ (q s)) (fix-path duplicateˢ-body) ⟩
+    extractˢ (duplicateˢ-body (next duplicateˢ) s)
+      ＝⟨⟩
+    s
+      ∎
+
+map-extract-duplicate : (s : Stream A) → mapˢ extractˢ (duplicateˢ s) ＝ s
+map-extract-duplicate = fix λ ih▹ → λ where
+  s →
+    mapˢ extractˢ (duplicateˢ s)
+      ＝⟨ ap (λ q → mapˢ extractˢ (q s)) (fix-path duplicateˢ-body) ⟩
+    mapˢ extractˢ (duplicateˢ-body (next duplicateˢ) s)
+      ＝⟨ mapˢ-eq extractˢ (duplicateˢ-body (next duplicateˢ) s) ⟩
+    cons (s .hd) (mapˢ extractˢ ⍉ (duplicateˢ ⍉ s .tl▹))
+      ＝⟨ ap (cons (s .hd)) (▹-ext (ih▹ ⊛ s .tl▹)) ⟩
+    cons (s .hd) (s .tl▹)
+      ＝˘⟨ uncons-eq s ⟩
+    s
+      ∎
+
+duplicate-duplicate : (s : Stream A) → duplicateˢ (duplicateˢ s) ＝ mapˢ duplicateˢ (duplicateˢ s)
+duplicate-duplicate = fix λ ih▹ → λ where
+  s →
+    duplicateˢ (duplicateˢ s)
+      ＝⟨ ap (λ q → duplicateˢ (q s)) (fix-path duplicateˢ-body) ⟩
+    duplicateˢ (duplicateˢ-body (next duplicateˢ) s)
+      ＝⟨ ap (λ q → q (duplicateˢ-body (next duplicateˢ) s)) (fix-path duplicateˢ-body) ⟩
+    duplicateˢ-body (next duplicateˢ) (duplicateˢ-body (next duplicateˢ) s)
+      ＝⟨⟩
+    cons (cons s (duplicateˢ ⍉ s .tl▹)) (duplicateˢ ⍉ (duplicateˢ ⍉ s .tl▹))
+      ＝⟨ ap (cons (cons s (duplicateˢ ⍉ s .tl▹))) (▹-ext λ α → ih▹ α (s .tl▹ α) ∙ ap (λ q → mapˢ q (duplicateˢ (s .tl▹ α))) (fix-path duplicateˢ-body)) ⟩
+    cons (cons s (duplicateˢ ⍉ s .tl▹)) (mapˢ (duplicateˢ-body (next duplicateˢ)) ⍉ (duplicateˢ ⍉ s .tl▹))
+      ＝˘⟨ mapˢ-eq (duplicateˢ-body (next duplicateˢ)) (cons s (duplicateˢ ⍉ s .tl▹)) ⟩
+    mapˢ (duplicateˢ-body (next duplicateˢ)) (cons s (duplicateˢ ⍉ s .tl▹))
+      ＝⟨⟩
+    mapˢ (duplicateˢ-body (next duplicateˢ)) (duplicateˢ-body (next duplicateˢ) s)
+      ＝˘⟨ ap (λ q → mapˢ q (duplicateˢ-body (next duplicateˢ) s)) (fix-path duplicateˢ-body) ⟩
+    mapˢ duplicateˢ (duplicateˢ-body (next duplicateˢ) s)
+      ＝˘⟨ ap (λ q → mapˢ duplicateˢ (q s)) (fix-path duplicateˢ-body) ⟩
+    mapˢ duplicateˢ (duplicateˢ s)
+      ∎
+
 -- natural numbers
 
 natsˢ-body : ▹ Stream ℕ → Stream ℕ
