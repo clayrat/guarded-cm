@@ -25,6 +25,8 @@ loeb : {F : Effect} ⦃ t : Map F ⦄
      → F.₀ (▹ F.₀ A → A) → F.₀ A
 loeb fs = fix (loeb-body fs)
 
+-- example from http://blog.sigfpe.com/2006/11/from-l-theorem-to-spreadsheet.html
+
 len▹ : ▹ List (Part ℕ) → Part ℕ
 len▹ xs▹ = later (now ∘ length ⍉ xs▹)
 
@@ -45,7 +47,7 @@ test-exec =
     ＝⟨ fix-path (loeb-body test) ⟩
   len▹ (next (loeb test)) ∷ at0▹ (next (loeb test)) ∷ []
     ＝⟨⟩
-  δᵖ (now (length (loeb test))) ∷ δᵖ (probe (mnth (loeb test) 0)) ∷ []
+  delay-by 1 (length (loeb test)) ∷ δᵖ (probe (mnth (loeb test) 0)) ∷ []
     ＝⟨ ap (λ q → δᵖ (now (length q)) ∷ δᵖ (probe (mnth q 0)) ∷ []) (fix-path (loeb-body test)) ⟩
   delay-by 1 2 ∷ delay-by 2 (length (loeb test)) ∷ []
     ＝⟨ ap (λ q → delay-by 1 2 ∷ delay-by 2 (length q) ∷ []) (fix-path (loeb-body test)) ⟩
