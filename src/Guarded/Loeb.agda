@@ -31,9 +31,13 @@ loeb fs = fix (loeb-body fs)
 len▹ : ▹ List (Part ℕ) → Part ℕ
 len▹ xs▹ = later (now ∘ length ⍉ xs▹)
 
--- hang if out of bounds
+-- hang if undefined
+probe : Maybe (Part A) → Part A
+probe nothing = mapᵖ (λ v → absurd v) never
+probe (just p) = p
+
 at0▹ : ▹ List (Part ℕ) → Part ℕ
-at0▹ xs▹ = later ((λ xs → Data.Maybe.rec (mapᵖ (λ v → absurd v) never) id (mnth xs 0)) ⍉ xs▹)
+at0▹ xs▹ = later ((λ xs → probe (mnth xs 0)) ⍉ xs▹)
 
 test : List (▹ List (Part ℕ) → Part ℕ)
 test = len▹ ∷ at0▹ ∷ []
@@ -44,10 +48,8 @@ test-exec =
     ＝⟨ fix-path (loeb-body test) ⟩
   len▹ (next (loeb test)) ∷ at0▹ (next (loeb test)) ∷ []
     ＝⟨⟩
-  δᵖ (now (length (loeb test))) ∷ δᵖ (Data.Maybe.rec (mapᵖ (λ v → absurd v) never) id (mnth (loeb test) 0)) ∷ []
-    ＝⟨ ap (λ q → δᵖ (now (length q)) ∷ δᵖ (Data.Maybe.rec (mapᵖ (λ v → absurd v) never) id (mnth q 0)) ∷ []) (fix-path (loeb-body test)) ⟩
-  δᵖ (now (length (len▹ (next (loeb test)) ∷ at0▹ (next (loeb test)) ∷ []))) ∷ δᵖ (Data.Maybe.rec (mapᵖ (λ v → absurd v) never) id (mnth (len▹ (next (loeb test)) ∷ at0▹ (next (loeb test)) ∷ []) 0)) ∷ []
-    ＝⟨⟩
+  δᵖ (now (length (loeb test))) ∷ δᵖ (probe (mnth (loeb test) 0)) ∷ []
+    ＝⟨ ap (λ q → δᵖ (now (length q)) ∷ δᵖ (probe (mnth q 0)) ∷ []) (fix-path (loeb-body test)) ⟩
   delay-by 1 2 ∷ delay-by 2 (length (loeb test)) ∷ []
     ＝⟨ ap (λ q → delay-by 1 2 ∷ delay-by 2 (length q) ∷ []) (fix-path (loeb-body test)) ⟩
   delay-by 1 2 ∷ delay-by 2 2 ∷ []
