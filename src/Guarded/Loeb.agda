@@ -7,9 +7,6 @@ open import Data.Nat
 open import Data.Maybe
 open import Data.List
 
-open import Meta.Effect.Map
-open import Meta.Marker
-
 open import LaterG
 open import Guarded.Partial
 
