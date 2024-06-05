@@ -12,6 +12,7 @@ private variable
   B : A → 𝒰 ℓ′
 
 infixl 5 _⍉_
+--infixl 5 _⍉▹_
 infixl 4 _⊛_
 infixl 4 _⊛▹_
 infixr -2 ▹-syntax
@@ -53,9 +54,15 @@ _⊛▹_ : ∀ {A : ▹ 𝒰 ℓ} {B : ▹[ α ] (A α → 𝒰 ℓ′)}
 
 -- map
 _⍉_ : ((a : A) → B a)
-     → (a : ▹ A) → ▹[ α ] B (a α)
+    → (a : ▹ A) → ▹[ α ] B (a α)
 _⍉_ f x α = f (x α)
 
+{-
+_⍉▹_ : ((a : A) → B a)
+      → (a : ▹[ α ] A α)
+      → ▹[ α ] B (a α)
+_⍉▹_ f x α = f (x α)
+-}
 -- definitional properties
 
 ▸-next : ▸ (next A) ＝ ▹ A
@@ -118,6 +125,12 @@ hcomp▹ A φ u u0 = primHComp (λ { i (φ = i1) → u i 1=1 }) (outS u0)
      → ▹[ α ] ＜ (x▹ α) ／ (λ i → A i) ＼ (y▹ α) ＞
 ▹-ap p α i = p i α
 
+{-
+▹-ap-simple : {A : 𝒰 ℓ} {x▹ y▹ : ▹ A}
+     → x▹ ＝ y▹
+     → ▹[ α ] (x▹ α ＝ y▹ α)
+▹-ap-simple = ▹-ap
+-}
 ▹-extP : {P : I → ▹ 𝒰 ℓ} {x▹ : ▹[ α ] P i0 α} {y▹ : ▹[ α ] P i1 α}
      → (▹[ α ] ＜ (x▹ α) ／ (λ i → P i α) ＼ (y▹ α) ＞)
      → ＜ x▹ ／ (λ i → ▹[ α ] P i α) ＼ y▹ ＞
@@ -164,12 +177,12 @@ fix-unique {f▹} e = fix λ ih▹ → e ∙ ap f▹ (▹-ext ih▹) ∙ sym (fi
 ▹is-contr : {A : ▹ 𝒰 ℓ}
   → ▹[ α ] is-contr (A α)
   → is-contr (▹[ α ] (A α))
-▹is-contr p = is-contr-η $ (λ α → is-contr-β (p α) .fst) , λ y i α → is-contr-β (p α) .snd (y α) i
+▹is-contr p = (λ α → (p α) .fst) , λ y i α → (p α) .snd (y α) i
 
 ▹is-prop : {A : ▹ 𝒰 ℓ}
-  → ▹[ α ] is-prop (A α)
-  → is-prop (▹[ α ] (A α))
-▹is-prop p = is-prop-η λ x y i α → is-prop-β (p α) (x α) (y α) i
+         → ▹[ α ] is-prop (A α)
+         → is-prop (▹[ α ] (A α))
+▹is-prop p = λ x y i α → (p α) (x α) (y α) i
 
 ▹is-of-hlevel : {A : ▹ 𝒰 ℓ} {n : HLevel}
   → ▹[ α ] is-of-hlevel n (A α)
@@ -177,9 +190,9 @@ fix-unique {f▹} e = fix λ ih▹ → e ∙ ap f▹ (▹-ext ih▹) ∙ sym (fi
 ▹is-of-hlevel {n = zero}          = ▹is-contr
 ▹is-of-hlevel {n = suc zero}      = ▹is-prop
 ▹is-of-hlevel {n = suc (suc n)} a =
-  is-of-hlevel-η n λ p q →
+  λ p q →
     retract→is-of-hlevel (suc n) ▹-extP ▹-apP (λ _ → refl)
-    (▹is-of-hlevel λ α → is-of-hlevel-β n (a α) (p α) (q α))
+    (▹is-of-hlevel λ α → (a α) (p α) (q α))
 
 ▹is-set-□ : {A : ▹ 𝒰 ℓ}
   → ▹[ α ] is-set-□ (A α)
@@ -190,5 +203,7 @@ fix-unique {f▹} e = fix λ ih▹ → e ∙ ap f▹ (▹-ext ih▹) ∙ sym (fi
 -- prop truncation interaction
 
 ▹trunc : ∀ {B : ▹ 𝒰 ℓ′}
-       → (A → ▹[ α ] B α) → ∥ A ∥₁ → ▹[ α ] ∥ B α ∥₁
-▹trunc f = ∥-∥₁.rec (▹is-prop (λ α → hlevel!)) (λ x α → ∣ f x α ∣₁)
+       → (A → ▹[ α ] B α)
+       → ∥ A ∥₁ → ▹[ α ] ∥ B α ∥₁
+▹trunc f = ∥-∥₁.elim (λ x → ▹is-prop (λ α → hlevel 1))
+                     (λ x α → ∣ f x α ∣₁)

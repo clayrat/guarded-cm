@@ -150,18 +150,20 @@ fix-path f i = f (pfix f i)
    → ▹ k (Σ[ a ꞉ A ] B a)
 Σ▹ (x , y) α = (x α) , (y α)
 
-▹Σ : ▹[ α ∶ k ]     Σ[ a ꞉ A ] B a
+▹Σ : {A : 𝒰 ℓ} {B : A → 𝒰 ℓ′}
+   → ▹[ α ∶ k ]     Σ[ a ꞉ A ] B a
    → Σ[ x ꞉ ▹ k A ] (▹[ α ∶ k ] B (x α))
 ▹Σ f = (λ α → fst (f α)) , λ α → snd (f α)
 
-▹Σ≃Σ▹ : Iso (▹[ α ∶ k ] Σ[ a ꞉ A ] B a) (Σ[ x ꞉ ▹ k A ] (▹[ α ∶ k ] B (x α)))
+▹Σ≃Σ▹ : {A : 𝒰 ℓ} {B : A → 𝒰 ℓ′}
+      → Iso (▹[ α ∶ k ] Σ[ a ꞉ A ] B a) (Σ[ x ꞉ ▹ k A ] (▹[ α ∶ k ] B (x α)))
 ▹Σ≃Σ▹ = ▹Σ , iso Σ▹
                (λ { (x , y) i → x , y } )
                λ x i α → x α .fst , x α .snd
 
 @0 ▹Σ≡Σ▹ : (k : Cl) (A : 𝒰 ℓ) (B : A → 𝒰 ℓ′)
   → (▹[ α ∶ k ] Σ[ a ꞉ A ] B a) ＝ (Σ[ x ꞉ ▹ k A ] (▹[ α ∶ k ] B (x α)))
-▹Σ≡Σ▹ k A B = iso→path ▹Σ≃Σ▹
+▹Σ≡Σ▹ k A B = ≅→= ▹Σ≃Σ▹
 
 @0 dfixΣ : (Σ[ x ꞉ ▹ k A ] (▹[ α ∶ k ] B (x α)) → Σ[ a ꞉ A ] B a)
          →  Σ[ x ꞉ ▹ k A ] (▹[ α ∶ k ] B (x α))
@@ -234,12 +236,12 @@ fix-unique {f▹} e = fix λ ih▹ → e ∙ ap f▹ (▹-ext ih▹) ∙ sym (fi
 ▹is-contr : {A : ▹ k (𝒰 ℓ)}
   → ▹[ α ∶ k ] is-contr (A α)
   → is-contr (▹[ α ∶ k ] (A α))
-▹is-contr p = is-contr-η $ (λ α → is-contr-β (p α) .fst) , λ y i α → is-contr-β (p α) .snd (y α) i
+▹is-contr p = (λ α → (p α) .fst) , λ y i α → (p α) .snd (y α) i
 
 ▹is-prop : {A : ▹ k (𝒰 ℓ)}
   → ▹[ α ∶ k ] is-prop (A α)
   → is-prop (▹[ α ∶ k ] (A α))
-▹is-prop p = is-prop-η λ x y i α → is-prop-β (p α) (x α) (y α) i
+▹is-prop p = λ x y i α → (p α) (x α) (y α) i
 
 ▹is-of-hlevel : {A : ▹ k (𝒰 ℓ)} {n : HLevel}
   → ▹[ α ∶ k ] is-of-hlevel n (A α)
@@ -247,9 +249,9 @@ fix-unique {f▹} e = fix λ ih▹ → e ∙ ap f▹ (▹-ext ih▹) ∙ sym (fi
 ▹is-of-hlevel {n = zero}          = ▹is-contr
 ▹is-of-hlevel {n = suc zero}      = ▹is-prop
 ▹is-of-hlevel {n = suc (suc n)} a =
-  is-of-hlevel-η n λ p q →
+  λ p q →
     retract→is-of-hlevel (suc n) ▹-extP ▹-apP (λ _ → refl)
-    (▹is-of-hlevel λ α → is-of-hlevel-β n (a α) (p α) (q α))
+    (▹is-of-hlevel λ α → (a α) (p α) (q α))
 
 ▹is-set-□ : {A : ▹ k (𝒰 ℓ)}
   → ▹[ α ∶ k ] is-set-□ (A α)
@@ -262,4 +264,5 @@ fix-unique {f▹} e = fix λ ih▹ → e ∙ ap f▹ (▹-ext ih▹) ∙ sym (fi
 ▹trunc : ∀ {B : ▹ k (𝒰 ℓ′)}
        → (A → ▹[ α ∶ k ] B α)
        → ∥ A ∥₁ → ▹[ α ∶ k ] ∥ B α ∥₁
-▹trunc f = ∥-∥₁.rec (▹is-prop (λ α → hlevel!)) (λ x α → ∣ f x α ∣₁)
+▹trunc f = ∥-∥₁.elim (λ x → ▹is-prop (λ α → hlevel 1))
+                     (λ x α → ∣ f x α ∣₁)
