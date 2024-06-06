@@ -1,6 +1,6 @@
 .PHONY: test Everything.agda clean
 
-OTHEROPTS = --auto-inline -Werror
+OTHEROPTS = -Werror
 
 RTSARGS = +RTS -M6G -A128M -RTS ${OTHEROPTS}
 
