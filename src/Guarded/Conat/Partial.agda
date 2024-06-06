@@ -13,7 +13,7 @@ fromℕ-inj  zero    zero   prf = now refl
 fromℕ-inj  zero   (suc y) prf = absurd (cosu≠coze (sym prf))
 fromℕ-inj (suc x)  zero   prf = absurd (cosu≠coze prf)
 fromℕ-inj (suc x) (suc y) prf =
-  later (▹map (mapᵖ (ap suc) ∘ fromℕ-inj x y) (▹-ap $ cosu-inj prf))
+  later ((mapᵖ (ap suc) ∘ fromℕ-inj x y) ⍉ (▹-ap $ cosu-inj prf))
 
 -- subtraction
 
@@ -32,17 +32,19 @@ _∸ᶜ_ = fix ∸ᶜ-body
 ∸ᶜ-zeror  coze     = refl
 ∸ᶜ-zeror (cosu x▹) = refl
 
-∸ᶜ-infty : infty ∸ᶜ infty ＝ never
+∸ᶜ-infty : infty ∸ᶜ infty ＝ never*
 ∸ᶜ-infty = fix λ prf▹ →
   later (dfix ∸ᶜ-body ⊛ (dfix cosu) ⊛ (dfix cosu))
-    ＝⟨ ap (λ q → later (dfix ∸ᶜ-body ⊛ (dfix cosu) ⊛ q)) (pfix cosu) ⟩
+    ~⟨ ap (λ q → later (dfix ∸ᶜ-body ⊛ (dfix cosu) ⊛ q)) (pfix cosu) ⟩
   later (dfix ∸ᶜ-body ⊛ dfix cosu ⊛ (next infty))
-    ＝⟨ ap (λ q → later (dfix ∸ᶜ-body ⊛ q ⊛ (next infty))) (pfix cosu) ⟩
+    ~⟨ ap (λ q → later (dfix ∸ᶜ-body ⊛ q ⊛ (next infty))) (pfix cosu) ⟩
   later (dfix ∸ᶜ-body ⊛ (next infty) ⊛ next infty)
-    ＝⟨  ap (λ q → later (q ⊛ (next infty) ⊛ next infty)) (pfix ∸ᶜ-body)  ⟩
+    ~⟨ ap (λ q → later (q ⊛ (next infty) ⊛ next infty)) (pfix ∸ᶜ-body) ⟩
   later ((next _∸ᶜ_) ⊛ next infty ⊛ next infty)
-    ＝⟨ ap later (▹-ext prf▹) ⟩
-  later (next never)
-    ＝⟨ sym $ fix-path later ⟩
-  never
+    ~⟨⟩
+  later (next (infty ∸ᶜ infty))
+    ~⟨ ap later (▹-ext prf▹) ⟩
+  later (next never*)
+    ~⟨ fix-path later ⁻¹ ⟩
+  never*
     ∎

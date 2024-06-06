@@ -120,6 +120,9 @@ now≠later = lower ∘ Part-code.encode
 never : Part ⊥
 never = fix later
 
+never* : Part A
+never* = fix later
+
 δᵖ : Part A → Part A
 δᵖ = later ∘ next
 

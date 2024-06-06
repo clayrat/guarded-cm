@@ -8,7 +8,6 @@ open import Data.Bool
 open import Data.Nat
 open import Data.Sum
 open import Data.Maybe
-open import Structures.IdentitySystem
 
 open import LaterG
 
@@ -167,7 +166,7 @@ is-finite-pᶜ : ℕ∞ → 𝒰
 is-finite-pᶜ = ∥_∥₁ ∘ is-finiteᶜ
 
 is-finite-down-pᶜ′ : (x▹ : ▹ ℕ∞) → is-finite-pᶜ (cosu x▹) → ▸ (is-finite-pᶜ ⍉ x▹)
-is-finite-down-pᶜ′ x▹ p = ▹trunc id (map (is-finite-downᶜ′ x▹) p)
+is-finite-down-pᶜ′ x▹ p = ▹trunc₁ id (map (is-finite-downᶜ′ x▹) p)
 
 is-finite-down-pᶜ : (x : ℕ∞) → is-finite-pᶜ (incᶜ x) → ▹ (is-finite-pᶜ x)
 is-finite-down-pᶜ x = is-finite-down-pᶜ′ (next x)
