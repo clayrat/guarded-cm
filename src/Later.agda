@@ -34,31 +34,9 @@ private variable
 
 syntax ▹-syntax k (λ α → e) = ▹[ α ∶ k ] e
 
-postulate
-  tick-irr : {k : Cl} (x : ▹ k A) → ▹[ α ∶ k ] ▹[ β ∶ k ] x α ＝ x β
-
-  dfix : (▹ k A → A) → ▹ k A
-  pfix : (f : ▹ k A → A) → dfix f ＝ λ _ → f (dfix f)
-
-  force       : {A : Cl → 𝒰 ℓ}        → (∀ k → ▹ k (A k)) → ∀ k → A k
-  force-delay : {A : Cl → 𝒰 ℓ}        → (f : ∀ k → ▹ k (A k)) → ∀ k → ▹[ α ∶ k ] force f k ＝ f k α
-  delay-force : {A : Cl → 𝒰 ℓ}        → (f : ∀ k → A k)       → ∀ k → force (λ k′ α → f k′) k ＝ f k
-  force^      : {A : ∀ k → ▹ k (𝒰 ℓ)} → (∀ k → ▸ k (A k))     → ∀ k → force A k
--- No more postulates after this line.
-
-transport▹ : (A : I → ▹ k (𝒰 ℓ)) → ▸ k (A i0) → ▸ k (A i1)
-transport▹ {k = k} A = transp (λ i → ▸ k (A i)) i0
-
-hcomp▹ : (A : ▹ k (𝒰 ℓ)) (φ : I) (u : I → Partial φ (▸ k A))
-       → (u0 : ▸ k A [ φ ↦ u i0 ]) → ▸ k A
-hcomp▹ A φ u u0 a = primHComp (λ { i (φ = i1) → u i 1=1 a }) (outS u0 a)
-
 -- aka pure
 next : A → ▹ k A
 next x α = x
-
-▸-next : ▸ k (next A) ＝ ▹ k A
-▸-next = refl
 
 _⊛_ : ▹ k ((a : A) → B a)
   → (a : ▹ k A) → ▹[ α ∶ k ] B (a α)
@@ -69,6 +47,28 @@ _⊛▹_ : ∀ {A : ▹ k (𝒰 ℓ)} {B : ▹[ α ∶ k ] (A α → 𝒰 ℓ′
      → (a : ▹[ α ∶ k ] A α)
      → ▹[ α ∶ k ] B α (a α)
 (f ⊛▹ x) α = f α (x α)
+
+postulate
+  tick-irr : {k : Cl} (x : ▹ k A) → ▹[ α ∶ k ] ▹[ β ∶ k ] x α ＝ x β
+
+  dfix : (▹ k A → A) → ▹ k A
+  pfix : (f : ▹ k A → A) → dfix f ＝ next (f (dfix f))
+
+  force       : {A : Cl → 𝒰 ℓ}        → (∀ k → ▹ k (A k)) → ∀ k → A k
+  force-delay : {A : Cl → 𝒰 ℓ}        → (f : ∀ k → ▹ k (A k)) → ∀ k → ▹[ α ∶ k ] force f k ＝ f k α
+  delay-force : {A : Cl → 𝒰 ℓ}        → (f : ∀ k → A k)       → ∀ k → force (λ k′ α → f k′) k ＝ f k
+  force^      : {A : ∀ k → ▹ k (𝒰 ℓ)} → (∀ k → ▸ k (A k))     → ∀ k → force A k
+-- No more postulates after this line.
+
+▸-next : ▸ k (next A) ＝ ▹ k A
+▸-next = refl
+
+transport▹ : (A : I → ▹ k (𝒰 ℓ)) → ▸ k (A i0) → ▸ k (A i1)
+transport▹ {k = k} A = transp (λ i → ▸ k (A i)) i0
+
+hcomp▹ : (A : ▹ k (𝒰 ℓ)) (φ : I) (u : I → Partial φ (▸ k A))
+       → (u0 : ▸ k A [ φ ↦ u i0 ]) → ▸ k A
+hcomp▹ A φ u u0 a = primHComp (λ { i (φ = i1) → u i 1=1 a }) (outS u0 a)
 
 -- map
 _⍉_ : ((a : A) → B a)
@@ -122,6 +122,10 @@ ap-inter f▹ x = refl
      → ＜ x▹ ／ (λ i → ▹ k (A i)) ＼ y▹ ＞
      → ▹[ α ∶ k ] ＜ (x▹ α) ／ (λ i → A i) ＼ (y▹ α) ＞
 ▹-ap p α i = p i α
+
+▹-iso : {A : I → 𝒰 ℓ} {x▹ : ▹ k (A i0)} {y▹ : ▹ k (A i1)}
+      → ＜ x▹ ／ (λ i → ▹ k (A i)) ＼ y▹ ＞ ≅ (▹[ α ∶ k ] ＜ (x▹ α) ／ (λ i → A i) ＼ (y▹ α) ＞)
+▹-iso = ▹-ap , iso ▹-ext (λ e▹ → refl) λ e → refl
 
 ▹-extP : {A : I → ▹ k (𝒰 ℓ)} {x▹ : ▹[ α ∶ k ] A i0 α} {y▹ : ▹[ α ∶ k ] A i1 α}
      → (▹[ α ∶ k ] ＜ (x▹ α) ／ (λ i → A i α) ＼ (y▹ α) ＞)

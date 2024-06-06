@@ -22,7 +22,7 @@ postulate
   Tick : LockU
 
 ▹_ : 𝒰 ℓ → 𝒰 ℓ
-▹_ A = (@tick α : Tick) -> A
+▹_ A = (@tick α : Tick) → A
 
 ▸_ : ▹ 𝒰 ℓ → 𝒰 ℓ
 ▸ A▹ = (@tick α : Tick) → A▹ α
@@ -125,12 +125,17 @@ hcomp▹ A φ u u0 = primHComp (λ { i (φ = i1) → u i 1=1 }) (outS u0)
      → ▹[ α ] ＜ (x▹ α) ／ (λ i → A i) ＼ (y▹ α) ＞
 ▹-ap p α i = p i α
 
+▹-iso : {A : I → 𝒰 ℓ} {x▹ : ▹ A i0} {y▹ : ▹ A i1}
+      → ＜ x▹ ／ (λ i → ▹ A i) ＼ y▹ ＞ ≅ (▹[ α ] ＜ (x▹ α) ／ (λ i → A i) ＼ (y▹ α) ＞)
+▹-iso = ▹-ap , iso ▹-ext (λ e▹ → refl) λ e → refl
+
 {-
 ▹-ap-simple : {A : 𝒰 ℓ} {x▹ y▹ : ▹ A}
      → x▹ ＝ y▹
      → ▹[ α ] (x▹ α ＝ y▹ α)
 ▹-ap-simple = ▹-ap
 -}
+
 ▹-extP : {P : I → ▹ 𝒰 ℓ} {x▹ : ▹[ α ] P i0 α} {y▹ : ▹[ α ] P i1 α}
      → (▹[ α ] ＜ (x▹ α) ／ (λ i → P i α) ＼ (y▹ α) ＞)
      → ＜ x▹ ／ (λ i → ▹[ α ] P i α) ＼ y▹ ＞
