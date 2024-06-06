@@ -136,10 +136,10 @@ mapˢ-repeat a f = fix λ prf▹ →
   repeatˢ (f a)
     ∎
 
--- duplicate vs every-other
+-- stutter vs every-other
 
-dup : Stream A → Stream A
-dup = fix λ d▹ s → cons (headˢ s) (next (cons (headˢ s) (d▹ ⊛ tail▹ˢ s)))
+stutter : Stream A → Stream A
+stutter = fix λ d▹ s → cons (headˢ s) (next (cons (headˢ s) (d▹ ⊛ tail▹ˢ s)))
 
 -- impossible
 
@@ -270,7 +270,7 @@ duplicate-duplicate = fix λ ih▹ → λ where
 -- natural numbers
 
 natsˢ-body : ▹ Stream ℕ → Stream ℕ
-natsˢ-body = cons 0 ∘ (mapˢ suc ⍉_)
+natsˢ-body n▹ = cons 0 (mapˢ suc ⍉ n▹)
 
 natsˢ : Stream ℕ
 natsˢ = fix natsˢ-body
@@ -281,7 +281,7 @@ natsˢ-tail = ap tail▹ˢ (fix-path natsˢ-body)
 -- Fibonacci numbers
 
 fibˢ-body : ▹ Stream ℕ → Stream ℕ
-fibˢ-body = cons 0 ∘ ((λ s → cons 1 $ (zipWithˢ _+_ s) ⍉ (tail▹ˢ s)) ⍉_)
+fibˢ-body f▹ = cons 0 ((λ s → cons 1 $ (zipWithˢ _+_ s) ⍉ (tail▹ˢ s)) ⍉ f▹)
 
 fibˢ : Stream ℕ
 fibˢ = fix fibˢ-body
@@ -290,7 +290,7 @@ fibˢ = fix fibˢ-body
 
 -- TODO fuse
 primesˢ-body : ▹ Stream ℕ → Stream ℕ
-primesˢ-body = cons 2 ∘ ((mapˢ suc ∘ scanl1ˢ _·_) ⍉_)
+primesˢ-body p▹ = cons 2 ((mapˢ suc ∘ scanl1ˢ _·_) ⍉ p▹)
 
 primesˢ : Stream ℕ
 primesˢ = fix primesˢ-body
@@ -326,4 +326,3 @@ pascal-nextˢ xs = fix λ p▹ → cons 1 ((zipWithˢ _+_) ⍉ (tail▹ˢ xs) �
 
 pascalˢ : Stream (Stream ℕ)
 pascalˢ = fix $ cons (repeatˢ 1) ∘ ((mapˢ pascal-nextˢ) ⍉_)
-

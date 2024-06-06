@@ -36,7 +36,7 @@ Rou⇉ {A} = transport (fix-path (RouF A))
 
 ⇉Rou : RouF A (next (Rou A))
      → Rou A
-⇉Rou {A} = transport (sym $ fix-path (RouF A))
+⇉Rou {A} = transport ((fix-path (RouF A)) ⁻¹)
 
 {-
 Rou-next : 𝒰 → ▹ 𝒰 → 𝒰
@@ -88,4 +88,3 @@ ex {A} = fix λ ex▹ →
 
 breadthfirst : Tree A → Colist A
 breadthfirst t = ex $ br t overR
-

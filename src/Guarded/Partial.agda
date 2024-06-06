@@ -7,8 +7,7 @@ open import Data.Empty
 open import Data.Bool
 open import Data.Nat
 open import Data.Maybe
-open import Data.Sum
-open import Structures.IdentitySystem.Base
+open import Data.Sum hiding (code-is-of-hlevel)
 
 open import LaterG
 
@@ -71,7 +70,7 @@ module Part-code where
        let ihP : ＜ (Code-refl ⍉ p▹) ／ (λ i → ▹[ α ] Code (p▹ α) (decode (p▹ α) (q▹ α) (Code-ll⇉ c α) i)) ＼ (Code-ll⇉ c) ＞
            ihP = ▹-extP λ α → ih▹ α (p▹ α) (q▹ α) (Code-ll⇉ c α)
          in
-        to-pathP⁻ (Code-refl-l-eq ∙ transport-flip {A = λ i → Code-ll-eq {a▹ = p▹} (~ i)} (from-pathP⁻ ihP ∙ go))
+        to-pathᴾ⁻ (Code-refl-l-eq ∙ transport-flip {A = λ i → Code-ll-eq {a▹ = p▹} (~ i)} (from-pathᴾ⁻ ihP ∙ go))
      where
      go : {p▹ q▹ : ▹ Part A} {c : Code (later p▹) (later q▹)} →
           transport (λ i → ▹[ α ] Code (p▹ α) (decode (p▹ α) (q▹ α) (Code-ll⇉ c α) (~ i))) (Code-ll⇉ c)
@@ -90,22 +89,20 @@ module Part-code where
 
   code-is-of-hlevel : (p q : Part A) → (n : HLevel) → is-of-hlevel (2 + n) A → is-of-hlevel (1 + n) (Code p q)
   code-is-of-hlevel = fix λ ih▹ → λ where
-    (now x)    (now y)    n al → path-is-of-hlevel′ (1 + n) al x y
+    (now x)    (now y)    n al → path-is-of-hlevel (1 + n) al x y
     (now x)    (later q▹) n al → Lift-is-of-hlevel (suc n) (hlevel (suc n))
     (later p▹) (now y)    n al → Lift-is-of-hlevel (suc n) (hlevel (suc n))
     (later p▹) (later q▹) n al →
       ▹is-of-hlevel λ α → transport (λ i → is-of-hlevel (suc n) (pfix Code-body (~ i) α (p▹ α) (q▹ α)))
                                     (ih▹ α (p▹ α) (q▹ α) n al)
 
-opaque
-  unfolding is-of-hlevel
-  Part-is-of-hlevel : (n : HLevel)
-                    → is-of-hlevel (2 + n) A
-                    → is-of-hlevel (2 + n) (Part A)
-  Part-is-of-hlevel n A-hl _ _ =
-    is-of-hlevel-≃ (1 + n)
-                   (identity-system-gives-path Part-code.identity-system ₑ⁻¹)
-                   (Part-code.code-is-of-hlevel _ _ n A-hl)
+Part-is-of-hlevel : (n : HLevel)
+                  → is-of-hlevel (2 + n) A
+                  → is-of-hlevel (2 + n) (Part A)
+Part-is-of-hlevel n A-hl _ _ =
+  ≃→is-of-hlevel (1 + n)
+                 (identity-system-gives-path Part-code.identity-system ⁻¹)
+                 (Part-code.code-is-of-hlevel _ _ n A-hl)
 
 now-inj : ∀ {a b : A}
         → now a ＝ now b → a ＝ b
@@ -218,7 +215,7 @@ bind-map = fix λ ih▹ → λ where
 mapᵖ-bind : {f : A → B} {g : B → Part C}
           → (p : Part A)
           → mapᵖ f p >>=ᵖ g ＝ p >>=ᵖ (g ∘ f)
-mapᵖ-bind {f} {g} p = ap (_>>=ᵖ g) (sym $ bind-map p) ∙ bind-assoc p
+mapᵖ-bind {f} {g} p = ap (_>>=ᵖ g) (bind-map p) ⁻¹ ∙ bind-assoc p
 
 apᵖ-nowf : (f : A → B) (p : Part A)
          → apᵖ (now f) p ＝ mapᵖ f p
@@ -239,6 +236,36 @@ delay-by-apᵖ f (suc nf) x (suc nx) = ap later (▹-ext λ α → delay-by-ap�
 
 map²ᵖ : (A → B → C) → Part A → Part B → Part C
 map²ᵖ f = apᵖ ∘ mapᵖ f
+
+-- via fix
+
+map′ᵖ-body : (A → B)
+           → ▹ (Part A → Part B)
+           →    Part A → Part B
+map′ᵖ-body f m▹ (now a)   = now (f a)
+map′ᵖ-body f m▹ (later p) = later (m▹ ⊛ p)
+
+map′ᵖ : (A → B) → Part A → Part B
+map′ᵖ f = fix (map′ᵖ-body f)
+
+ap′ᵖ-body : ▹ (Part (A → B) → Part A → Part B)
+          →    Part (A → B) → Part A → Part B
+ap′ᵖ-body a▹ (now f)    (now x)    = now (f x)
+ap′ᵖ-body a▹ (now f)    (later x▹) = later (a▹ ⊛ next (now f) ⊛ x▹)
+ap′ᵖ-body a▹ (later f▹) (now x)    = later (a▹ ⊛ f▹ ⊛ next (now x))
+ap′ᵖ-body a▹ (later f▹) (later x▹) = later (a▹ ⊛ f▹ ⊛ x▹)
+
+ap′ᵖ : Part (A → B) → Part A → Part B
+ap′ᵖ = fix ap′ᵖ-body
+
+flatten′ᵖ-body : ▹ (Part (Part A) → Part A) → Part (Part A) → Part A
+flatten′ᵖ-body f▹ (now p)    = p
+flatten′ᵖ-body f▹ (later p▹) = later (f▹ ⊛ p▹)
+
+flatten′ᵖ : Part (Part A) → Part A
+flatten′ᵖ = fix flatten′ᵖ-body
+
+-- unfold
 
 unfoldᵖ-body : (B → A ⊎ B) → ▹ (B → Part A) → B → Part A
 unfoldᵖ-body f u▹ b with (f b)

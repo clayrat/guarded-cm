@@ -15,7 +15,7 @@ D : 𝒰
 D = fix D-body
 
 ⇉D : Part (▹ (D → D)) → D
-⇉D = transport (sym $ fix-path D-body)
+⇉D = transport ((fix-path D-body) ⁻¹)
 
 D⇉ : D → Part (▹ (D → D))
 D⇉ = transport (fix-path D-body)
@@ -24,7 +24,7 @@ D⇉ = transport (fix-path D-body)
 δ d = ⇉D (d >>=ᵖ D⇉)
 
 App : D → D → D
-App d1 d2 = δ (D⇉ d1 >>=ᵖ λ f▹ → later (▹map now (f▹ ⊛ next d2)))
+App d1 d2 = δ (D⇉ d1 >>=ᵖ λ f▹ → later (now ⍉ (f▹ ⊛ next d2)))
 
 Lam : (D → D) → D
 Lam = ⇉D ∘ now ∘ next

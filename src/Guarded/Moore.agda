@@ -183,8 +183,8 @@ apᵐ-inter {x} = fix λ ih▹ → λ where
      ap (apᵐ mf) (fix-path (pureᵐ-body x))
    ∙ ap (λ q → q mf (pureᵐ-body x (next (pureᵐ x)))) (fix-path apᵐ-body)
    ∙ ap (Mre (bf x)) (fun-ext (λ a → ▹-ext (ih▹ ⊛ trf a)))
-   ∙ ap (λ q → q (pureᵐ-body (_$ x) (next (pureᵐ (_$ x)))) mf) (sym $ fix-path apᵐ-body)
-   ∙ ap (λ q → apᵐ q mf) (sym $ fix-path (pureᵐ-body (_$ x)))
+   ∙ ap (λ q → q (pureᵐ-body (_$ x) (next (pureᵐ (_$ x)))) mf) ((fix-path apᵐ-body) ⁻¹)
+   ∙ ap (λ q → apᵐ q mf) ((fix-path (pureᵐ-body (_$ x))) ⁻¹)
 
 -- zipWith
 
@@ -197,41 +197,41 @@ zipWithᵐ-assoc : {f : B → B → B}
                → zipWithᵐ f (zipWithᵐ f m1 m2) m3 ＝ zipWithᵐ f m1 (zipWithᵐ f m2 m3)
 zipWithᵐ-assoc {f} {m1} {m2} {m3} fa =
   zipWithᵐ f (zipWithᵐ f m1 m2) m3
-    ＝⟨⟩
+    ~⟨⟩
   apᵐ (mapᵐ f (apᵐ (mapᵐ f m1) m2)) m3
-    ＝⟨ ap (λ q → apᵐ q m3) (sym (apᵐ-map (apᵐ (mapᵐ f m1) m2))) ⟩
+    ~⟨ ap (λ q → apᵐ q m3) (sym (apᵐ-map (apᵐ (mapᵐ f m1) m2))) ⟩
   apᵐ (apᵐ (pureᵐ f) (apᵐ (mapᵐ f m1) m2)) m3
-    ＝⟨ ap (λ q → apᵐ q m3) (sym (apᵐ-comp (mapᵐ f m1) (pureᵐ f) m2)) ⟩
+    ~⟨ ap (λ q → apᵐ q m3) (sym (apᵐ-comp (mapᵐ f m1) (pureᵐ f) m2)) ⟩
   apᵐ (apᵐ (apᵐ (apᵐ (pureᵐ (λ g → g ∘_)) (pureᵐ f)) (mapᵐ f m1)) m2) m3
-    ＝⟨ ap (λ q → apᵐ (apᵐ (apᵐ q (mapᵐ f m1)) m2) m3) apᵐ-homo ⟩
+    ~⟨ ap (λ q → apᵐ (apᵐ (apᵐ q (mapᵐ f m1)) m2) m3) apᵐ-homo ⟩
   apᵐ (apᵐ (apᵐ (pureᵐ (λ g → f ∘ g)) (mapᵐ f m1)) m2) m3
-    ＝⟨ ap (λ q → apᵐ (apᵐ q m2) m3) (apᵐ-map (mapᵐ f m1)) ⟩
+    ~⟨ ap (λ q → apᵐ (apᵐ q m2) m3) (apᵐ-map (mapᵐ f m1)) ⟩
   apᵐ (apᵐ (mapᵐ (λ g → f ∘ g) (mapᵐ f m1)) m2) m3
-    ＝⟨ ap (λ q → apᵐ (apᵐ q m2) m3) (mapᵐ-comp m1) ⟩
+    ~⟨ ap (λ q → apᵐ (apᵐ q m2) m3) (mapᵐ-comp m1) ⟩
   apᵐ (apᵐ (mapᵐ (λ x y z → f (f x y) z) m1) m2) m3
-    ＝⟨ ap (λ q → apᵐ (apᵐ (mapᵐ q m1) m2) m3) (fun-ext λ x → fun-ext λ y → fun-ext λ z → fa x y z) ⟩
+    ~⟨ ap (λ q → apᵐ (apᵐ (mapᵐ q m1) m2) m3) (fun-ext λ x → fun-ext λ y → fun-ext λ z → fa x y z) ⟩
   apᵐ (apᵐ (mapᵐ (λ x y z → f x (f y z)) m1) m2) m3
-    ＝⟨ ap (λ q → apᵐ (apᵐ q m2) m3) (sym (mapᵐ-comp m1)) ⟩
+    ~⟨ ap (λ q → apᵐ (apᵐ q m2) m3) (sym (mapᵐ-comp m1)) ⟩
   apᵐ (apᵐ (mapᵐ (_$ f) (mapᵐ (λ x g y z → f x (g y z)) m1)) m2) m3
-    ＝⟨ ap (λ q → apᵐ (apᵐ q m2) m3) (sym (apᵐ-map (mapᵐ (λ x g y z → f x (g y z)) m1))) ⟩
+    ~⟨ ap (λ q → apᵐ (apᵐ q m2) m3) (sym (apᵐ-map (mapᵐ (λ x g y z → f x (g y z)) m1))) ⟩
   apᵐ (apᵐ (apᵐ (pureᵐ (_$ f)) (mapᵐ (λ x g y z → f x (g y z)) m1)) m2) m3
-    ＝⟨ ap (λ q → apᵐ (apᵐ q m2) m3) (sym (apᵐ-inter (mapᵐ (λ x g y z → f x (g y z)) m1))) ⟩
+    ~⟨ ap (λ q → apᵐ (apᵐ q m2) m3) (sym (apᵐ-inter (mapᵐ (λ x g y z → f x (g y z)) m1))) ⟩
   apᵐ (apᵐ (apᵐ (mapᵐ (λ x g y z → f x (g y z)) m1) (pureᵐ f)) m2) m3
-    ＝⟨ ap (λ q → apᵐ (apᵐ (apᵐ q (pureᵐ f)) m2) m3) (sym (mapᵐ-comp m1)) ⟩
+    ~⟨ ap (λ q → apᵐ (apᵐ (apᵐ q (pureᵐ f)) m2) m3) (sym (mapᵐ-comp m1)) ⟩
   apᵐ (apᵐ (apᵐ (mapᵐ (λ g h → g ∘ h) (mapᵐ (λ x g y → f x (g y)) m1)) (pureᵐ f)) m2) m3
-    ＝⟨ ap (λ q → apᵐ (apᵐ (apᵐ q (pureᵐ f)) m2) m3) (sym (apᵐ-map (mapᵐ (λ x g y → f x (g y)) m1))) ⟩
+    ~⟨ ap (λ q → apᵐ (apᵐ (apᵐ q (pureᵐ f)) m2) m3) (sym (apᵐ-map (mapᵐ (λ x g y → f x (g y)) m1))) ⟩
   apᵐ (apᵐ (apᵐ (apᵐ (pureᵐ (λ g → _∘_ g)) (mapᵐ (λ x g y → f x (g y)) m1)) (pureᵐ f)) m2) m3
-    ＝⟨ ap (λ q → apᵐ q m3) (apᵐ-comp (pureᵐ f) (mapᵐ (λ x g y → f x (g y)) m1) m2) ⟩
+    ~⟨ ap (λ q → apᵐ q m3) (apᵐ-comp (pureᵐ f) (mapᵐ (λ x g y → f x (g y)) m1) m2) ⟩
   apᵐ (apᵐ (mapᵐ (λ x g y → f x (g y)) m1) (apᵐ (pureᵐ f) m2)) m3
-    ＝⟨ ap (λ q → apᵐ (apᵐ (mapᵐ (λ x g y → f x (g y)) m1) q) m3) (apᵐ-map m2) ⟩
+    ~⟨ ap (λ q → apᵐ (apᵐ (mapᵐ (λ x g y → f x (g y)) m1) q) m3) (apᵐ-map m2) ⟩
   apᵐ (apᵐ (mapᵐ (λ x g y → f x (g y)) m1) (mapᵐ f m2)) m3
-    ＝⟨ ap (λ q → apᵐ (apᵐ q (mapᵐ f m2)) m3) (sym (mapᵐ-comp m1)) ⟩
+    ~⟨ ap (λ q → apᵐ (apᵐ q (mapᵐ f m2)) m3) (sym (mapᵐ-comp m1)) ⟩
   apᵐ (apᵐ (mapᵐ (λ g h → g ∘ h) (mapᵐ f m1)) (mapᵐ f m2)) m3
-    ＝⟨ ap (λ q → apᵐ (apᵐ q (mapᵐ f m2)) m3) (sym (apᵐ-map (mapᵐ f m1))) ⟩
+    ~⟨ ap (λ q → apᵐ (apᵐ q (mapᵐ f m2)) m3) (sym (apᵐ-map (mapᵐ f m1))) ⟩
   apᵐ (apᵐ (apᵐ (pureᵐ (λ g → g ∘_ )) (mapᵐ f m1)) (mapᵐ f m2)) m3
-    ＝⟨ apᵐ-comp (mapᵐ f m2) (mapᵐ f m1) m3 ⟩
+    ~⟨ apᵐ-comp (mapᵐ f m2) (mapᵐ f m1) m3 ⟩
   apᵐ (mapᵐ f m1) (apᵐ (mapᵐ f m2) m3)
-    ＝⟨⟩
+    ~⟨⟩
   zipWithᵐ f m1 (zipWithᵐ f m2 m3)
     ∎
 
