@@ -200,7 +200,9 @@ fix-unique {f▹} e = fix λ ih▹ → e ∙ ap f▹ (▹-ext ih▹) ∙ sym (fi
     (▹is-of-hlevel λ α → (a α) (p α) (q α))
 
 instance
-  H-Level▹ : {n : ℕ} {A : ▹[ α ] Type ℓ} → ⦃ {@tick α : Tick} → H-Level n (A α) ⦄ → H-Level n (▹[ α ] (A α))
+  H-Level▹ : {n : ℕ} {A : ▹[ α ] Type ℓ}
+           → ⦃ {@tick α : Tick} → H-Level n (A α) ⦄
+           → H-Level n (▹[ α ] (A α))
   H-Level▹ {n} .H-Level.has-of-hlevel = ▹is-of-hlevel λ _ → hlevel n
 
 ▹is-set-□ : {A : ▹ 𝒰 ℓ}
@@ -209,9 +211,14 @@ instance
 ▹is-set-□ hyp p q r s i j α = hyp α
   (λ i → p i α) (λ i → q i α) (λ j → r j α) (λ j → s j α) i j
 
--- prop truncation interaction
+-- prop/set-truncation interaction
 
-▹trunc : ∀ {B : ▹ 𝒰 ℓ′}
+▹trunc₁ : ∀ {B : ▹ 𝒰 ℓ′}
        → (A → ▹[ α ] B α)
        → ∥ A ∥₁ → ▹[ α ] ∥ B α ∥₁
-▹trunc f = elim! (λ x α → ∣ f x α ∣₁)
+▹trunc₁ f = elim! λ x α → ∣ f x α ∣₁
+
+▹trunc₂ : ∀ {B : ▹ 𝒰 ℓ′}
+       → (A → ▹[ α ] B α)
+       → ∥ A ∥₂ → ▹[ α ] ∥ B α ∥₂
+▹trunc₂ f = elim! λ x α → ∣ f x α ∣₂
