@@ -6,6 +6,7 @@ open import Data.Empty
 open import Data.Nat
 open import Data.Nat.Two
 open import Data.Nat.Order.Base
+open import Data.Nat.Order.Inductive.Base using (_≤ᵇ_)
 open import Data.Bool
 
 open import Later
@@ -34,17 +35,17 @@ module gComp-code where
   Code = fix Code-body
 
   Code-bb-eq : {kx ky : A → ▹ k (gComp k A)} {x▹ y▹ : ▹ k (gComp k A)}
-             → Code (bindᵏ kx x▹) (bindᵏ ky y▹) ＝ (▸ k (▹map Code x▹ ⊛ y▹)) × (∀ a → ▸ k (▹map Code (kx a) ⊛ ky a))
+             → Code (bindᵏ kx x▹) (bindᵏ ky y▹) ＝ (▸ k (Code ⍉ x▹ ⊛ y▹)) × (∀ a → ▸ k (Code ⍉ (kx a) ⊛ ky a))
   Code-bb-eq {k} {kx} {ky} {x▹} {y▹} i = (▹[ α ∶ k ] pfix Code-body i α (x▹ α) (y▹ α))
                                    × (∀ a → ▹[ α ∶ k ] pfix Code-body i α (kx a α) (ky a α))
 
   Code-bb⇉ : {kx ky : A → ▹ k (gComp k A)} {x▹ y▹ : ▹ k (gComp k A)}
            → Code (bindᵏ kx x▹) (bindᵏ ky y▹)
-           → (▸ k (▹map Code x▹ ⊛ y▹)) × (∀ a → ▸ k (▹map Code (kx a) ⊛ ky a))
+           → (▸ k (Code ⍉ x▹ ⊛ y▹)) × (∀ a → ▸ k (Code ⍉ (kx a) ⊛ ky a))
   Code-bb⇉ = transport Code-bb-eq
 
   ⇉Code-bb : {kx ky : A → ▹ k (gComp k A)} {x▹ y▹ : ▹ k (gComp k A)}
-           → (▸ k (▹map Code x▹ ⊛ y▹)) × (∀ a → ▸ k (▹map Code (kx a) ⊛ ky a))
+           → (▸ k (Code ⍉ x▹ ⊛ y▹)) × (∀ a → ▸ k (Code ⍉ (kx a) ⊛ ky a))
            → Code (bindᵏ kx x▹) (bindᵏ ky y▹)
   ⇉Code-bb = transport (sym Code-bb-eq)
 
