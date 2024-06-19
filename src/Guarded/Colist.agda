@@ -54,7 +54,7 @@ module Colist-code where
   Code-refl = fix Code-refl-body
 
   encode : {c1 c2 : Colist A} → c1 ＝ c2 → Code c1 c2
-  encode {c1} {c2} e = subst (Code c1) e (Code-refl c1)
+  encode {c1} e = subst (Code c1) e (Code-refl c1)
 
   decode : (m n : Colist A) → Code m n → m ＝ n
   decode  cnil          cnil          c = refl

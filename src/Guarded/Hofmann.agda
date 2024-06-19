@@ -12,10 +12,11 @@ open import Guarded.Colist
 private variable
   A B : 𝒰
 
+-- it is crucial for the algorithm that the tree is non-empty
 -- can be extended to Tree∞
 
 data Tree (A : 𝒰) : 𝒰 where
-  Leaf :           A           → Tree A
+  Leaf :          A          → Tree A
   Br   : Tree A → A → Tree A → Tree A
 
 -- Rou
@@ -98,11 +99,12 @@ recR b nf r with Rou⇉ r
 ... | overRF   = b
 ... | nextRF f = nf f
 
-recR-overR : (b : B) → (f : ((▹ Rou A → ▹ Colist A) → Colist A) → B)
+recR-overR : {b : B} {f : ((▹ Rou A → ▹ Colist A) → Colist A) → B}
            → recR b f overR ＝ b
-recR-overR b f = refl
+recR-overR = refl
 
-recR-nextR : (b : B) → (f : ((▹ Rou A → ▹ Colist A) → Colist A) → B)
+recR-nextR : (b : B)
+           → (f : ((▹ Rou A → ▹ Colist A) → Colist A) → B)
            → (k : (▹ Rou A → ▹ Colist A) → Colist A)
            → recR b f (nextR k) ＝ f k
 recR-nextR {A} b f k = ap f (nextRF-inj _ k (transport⁻-transport ((fix-path (RouF A)) ⁻¹) (nextRF k)))
@@ -137,6 +139,8 @@ record List1 (A : 𝒰) : 𝒰 where
     hd1 : A
     tl1 : List A
 
+open List1
+
 toList : List1 A → List A
 toList (h ∷₁ t) = h ∷ t
 
@@ -156,6 +160,16 @@ catl₁ (h ∷₁ t) c▹ = ccons h (catList t ⍉ c▹)
 catl₁-next : (l1 : List1 A) → (c : Colist A)
            → catl₁ l1 (next c) ＝ catList (toList l1) c
 catl₁-next (h ∷₁ t) c = refl
+
+-- TODO adhoc
+catList-catl₁-aux : (l : List A) → (l1 : List1 A) → (c▹ : ▹ Colist A)
+                  → ▹[ α ] (catList l (catl₁ l1 c▹) ＝ catList (l ++ toList l1) (c▹ α))
+catList-catl₁-aux []      l1 c▹ α = ap (ccons (l1 .hd1)) (▹-ext λ β → ap (catList (l1 .tl1)) (tick-irr c▹ α β ⁻¹))
+catList-catl₁-aux (h ∷ t) l1 c▹ α = ap (ccons h) (▹-ext λ α₁ → catList-catl₁-aux t l1 c▹ α)
+
+catList-catl₁ : (l1 l2 : List1 A) → (c▹ : ▹ Colist A)
+              → catList (toList l1) (catl₁ l2 c▹) ＝ catl₁ (l1 ++₁ l2) c▹
+catList-catl₁ (h1 ∷₁ t1) l2 c▹ = ap (ccons h1) (▹-ext (catList-catl₁-aux t1 l2 c▹))
 
 -- BFS spec
 
@@ -197,7 +211,7 @@ bfs-spec = concat₁ ∘ niv
   ex (γ (l ∷ ls) overR)
     ~⟨ ap (λ q → q (nextR (λ k▹ → catl₁ l (unfold (λ r▹ → k▹ (γ ls ⍉ r▹)) overR)))) (fix-path ex-body) ⟩
   recR cnil ((λ f → f (ex ⍉_))) (nextR (λ k▹ → catl₁ l (unfold (λ r▹ → k▹ (γ ls ⍉ r▹)) overR)))
-    ~⟨ recR-nextR cnil ((λ f → f (ex ⍉_))) (λ k▹ → catl₁ l (unfold (λ r▹ → k▹ (γ ls ⍉ r▹)) overR)) ⟩
+    ~⟨ recR-nextR cnil (λ f → f (ex ⍉_)) (λ k▹ → catl₁ l (unfold (λ r▹ → k▹ (γ ls ⍉ r▹)) overR)) ⟩
   catl₁ l (next (ex (γ ls overR)))
     ~⟨ ap (catl₁ l) (▹-ext (next (γ-ex ls))) ⟩
   catl₁ l (next (fromList (concat₁ ls)))
@@ -206,3 +220,56 @@ bfs-spec = concat₁ ∘ niv
     ~⟨ (catFromList (toList l) (concat₁ ls)) ⟨
   fromList (concat₁ (l ∷ ls))
     ∎
+
+γ-comp : (ls ls1 : List (List1 A)) → γ ls ∘ γ ls1 ＝ γ (zip2 ls ls1)
+γ-comp []       ls1        = refl
+γ-comp (l ∷ ls) []         = refl
+γ-comp (l ∷ ls) (l1 ∷ ls1) = fun-ext λ c →
+  γ (l ∷ ls) (γ (l1 ∷ ls1) c)
+    ~⟨⟩
+  γ (l ∷ ls) (nextR (λ k▹ → catl₁ l1 (unfold (λ r▹ → k▹ (γ ls1 ⍉ r▹)) c)))
+    ~⟨⟩
+  nextR (λ k▹ → catl₁ l (unfold (λ r▹ → k▹ (γ ls ⍉ r▹)) (nextR (λ k▹ → catl₁ l1 (unfold (λ r▹ → k▹ (γ ls1 ⍉ r▹)) c)))))
+    ~⟨⟩
+  nextR (λ k▹ → catl₁ l (recR (k▹ (next (γ ls overR))) (λ f → next (f (λ r▹ → k▹ (γ ls ⍉ r▹)))) (nextR (λ k▹ → catl₁ l1 (unfold (λ r▹ → k▹ (γ ls1 ⍉ r▹)) c)))))
+    ~⟨ ap nextR (fun-ext λ k▹ → ap (catl₁ l) (recR-nextR (k▹ (next (γ ls overR))) (λ f → next (f (λ r▹ → k▹ (γ ls ⍉ r▹)))) (λ k▹ → catl₁ l1 (unfold (λ r▹ → k▹ (γ ls1 ⍉ r▹)) c)))) ⟩
+  nextR (λ k▹ → catl₁ l (next (catl₁ l1 (unfold (λ r▹ → k▹ (γ ls ⍉ (γ ls1 ⍉ r▹))) c))))
+    ~⟨ ap nextR (fun-ext λ k▹ → catl₁-next l _ ∙ catList-catl₁ l l1 (unfold (λ r▹ → k▹ (γ ls ⍉ (γ ls1 ⍉ r▹))) c)) ⟩
+  nextR (λ k▹ → catl₁ (l ++₁ l1) (unfold (λ r▹ → k▹ (γ ls ⍉ (γ ls1 ⍉ r▹))) c))
+    ~⟨ ap nextR (fun-ext λ k▹ → ap (λ q → catl₁ (l ++₁ l1) (unfold q c)) (fun-ext λ r▹ → ap k▹ (▹-ext λ α → happly (γ-comp ls ls1) (r▹ α)))) ⟩
+  nextR (λ k▹ → catl₁ (l ++₁ l1) (unfold (λ r▹ → k▹ (γ (zip2 ls ls1) ⍉ r▹)) c))
+    ~⟨⟩
+  γ ((l ++₁ l1) ∷ zip2 ls ls1) c
+    ~⟨⟩
+  γ (zip2 (l ∷ ls) (l1 ∷ ls1)) c
+    ∎
+
+γ-niv : (t : Tree A) → (c : Rou A) → br t c ＝ γ (niv t) c
+γ-niv (Leaf x)   c = refl
+γ-niv (Br l x r) c =
+  br (Br l x r) c
+    ~⟨⟩
+  nextR (λ k▹ → ccons x (unfold (λ r▹ → k▹ ((br l ∘ br r) ⍉ r▹)) c))
+    ~⟨ ap nextR (fun-ext λ k▹ →
+         ap (λ q → ccons x (unfold q c))
+            (fun-ext λ r▹ → ap k▹ (▹-ext λ α →
+                happly (  fun-ext (λ z → ap (br l) (γ-niv r z) ∙ γ-niv l (γ (niv r) z))
+                        ∙ γ-comp (niv l) (niv r))
+                       (r▹ α)))) ⟩
+  nextR (λ k▹ → ccons x (unfold (λ r▹ → k▹ (γ (zip2 (niv l) (niv r)) ⍉ r▹)) c))
+    ~⟨⟩
+  γ ((x ∷₁ []) ∷ zip2 (niv l) (niv r)) c
+    ~⟨⟩
+  γ (niv (Br l x r)) c
+    ∎
+
+bfs-correct : (t : Tree A) → breadthfirst t ＝ fromList (bfs-spec t)
+bfs-correct t =
+  breadthfirst t             ~⟨⟩
+  ex (br t overR)            ~⟨ ap ex (γ-niv t overR) ⟩
+  ex (γ (niv t) overR)       ~⟨ γ-ex (niv t) ⟩
+  fromList (concat₁ (niv t)) ~⟨⟩
+  fromList (bfs-spec t)      ∎
+
+bfs-terminates : (t : Tree A) → is-finiteˡ (breadthfirst t)
+bfs-terminates t = bfs-spec t , (bfs-correct t ⁻¹)
