@@ -82,7 +82,7 @@ singletonˡ a = prepend a cnil
 -- repeat
 
 repeatˡ : A → Colist A
-repeatˡ a = fix (ccons a)
+repeatˡ = fix ∘ ccons
 
 -- uncons
 
@@ -101,6 +101,11 @@ fromList (x ∷ l) = prepend x (fromList l)
 catList : List A → Colist A → Colist A
 catList []      c = c
 catList (x ∷ l) c = prepend x (catList l c)
+
+catFromList : (as bs : List A)
+            → fromList (as ++ bs) ＝ catList as (fromList bs)
+catFromList []       bs = refl
+catFromList (a ∷ as) bs = ap (prepend a) (catFromList as bs)
 
 -- append
 
@@ -181,7 +186,7 @@ is-finite-pˡ : Colist A → 𝒰 (level-of-type A)
 is-finite-pˡ = ∥_∥₁ ∘ is-finiteˡ
 
 is-finite-uncons-p : (x : A) (c▹ : ▹ Colist A) → is-finite-pˡ (ccons x c▹) → ▸ (is-finite-pˡ ⍉ c▹)
-is-finite-uncons-p x c▹ p = ▹trunc id (map (is-finite-uncons x c▹) p)
+is-finite-uncons-p x c▹ p = ▹trunc₁ id (map (is-finite-uncons x c▹) p)
 
 is-finite-down-pˡ : (x : A) (c : Colist A) → is-finite-pˡ (prepend x c) → ▹ (is-finite-pˡ c)
 is-finite-down-pˡ x c = is-finite-uncons-p x (next c)
