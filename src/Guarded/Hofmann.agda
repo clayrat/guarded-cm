@@ -66,11 +66,11 @@ Rou-path {A} = fix-path (RouF A)
 
 Rou⇉ : Rou A
      → RouF A (next (Rou A))
-Rou⇉ {A} = transport Rou-path
+Rou⇉ = transport Rou-path
 
 ⇉Rou : RouF A (next (Rou A))
      → Rou A
-⇉Rou {A} = transport (Rou-path ⁻¹)
+⇉Rou = transport (Rou-path ⁻¹)
 
 -- constructors & pattern matching
 
@@ -94,7 +94,7 @@ matchR-nextR : {b : B}
              → {f : ((▹ Rou A → ▹ Colist A) → Colist A) → B}
              → {k : (▹ Rou A → ▹ Colist A) → Colist A}
              → matchR b f (nextR k) ＝ f k
-matchR-nextR {A} {f} {k} = ap f (nextRF-inj (transport⁻-transport (Rou-path ⁻¹) (nextRF k)))
+matchR-nextR {f} {k} = ap f (nextRF-inj (transport⁻-transport (Rou-path ⁻¹) (nextRF k)))
 
 -- the algorithm
 
@@ -140,7 +140,7 @@ _++₁_ : List1 A → List1 A → List1 A
 ++₁-assoc {xs = x ∷₁ xs} {ys} {zs} = ap (x ∷₁_) (++-assoc xs (toList ys) (toList zs))
 
 concat₁ : List (List1 A) → List A
-concat₁ = List.rec [] λ l → (toList l) ++_
+concat₁ = List.rec [] λ l → toList l ++_
 
 catl₁ : List1 A → ▹ Colist A → Colist A
 catl₁ (h ∷₁ t) c▹ = ccons h (catList t ⍉ c▹)
@@ -192,7 +192,7 @@ bfs-spec = concat₁ ∘ niv
 
 γ : List (List1 A) → Rou A → Rou A
 γ []       r = r
-γ (l ∷ ls) r = nextR (λ k▹ → catl₁ l (unfold (λ r▹ → k▹ (γ ls ⍉ r▹)) r))
+γ (l ∷ ls) r = nextR λ k▹ → catl₁ l (unfold (λ r▹ → k▹ (γ ls ⍉ r▹)) r)
 
 -- lemmas
 
