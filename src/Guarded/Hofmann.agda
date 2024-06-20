@@ -10,13 +10,14 @@ open import LaterG
 open import Guarded.Colist
 
 private variable
-  A B : 𝒰
+  ℓ   : Level
+  A B : 𝒰 ℓ
 
 -- It is crucial for the algorithm that the tree is non-empty on each level.
 
 -- The algorithm can also be extended to Tree∞.
 
-data Tree (A : 𝒰) : 𝒰 where
+data Tree (A : 𝒰 ℓ) : 𝒰 ℓ where
   Leaf :          A          → Tree A
   Br   : Tree A → A → Tree A → Tree A
 
@@ -28,35 +29,36 @@ data Rou (A : 𝒰) : 𝒰 where
   nextR : ((▹ Rou A → ▹ Colist A) → Colist A) → Rou A
 -}
 
-data RouF (A : 𝒰) (R▹ : ▹ 𝒰) : 𝒰 where
+data RouF (A : 𝒰 ℓ) (R▹ : ▹ 𝒰 ℓ) : 𝒰 ℓ where
   overRF : RouF A R▹
   nextRF : ((▸ R▹ → ▹ Colist A) → Colist A) → RouF A R▹
 
 module RouF-code where
-  Code : {A : 𝒰} {R▹ : ▹ 𝒰} → RouF A R▹ → RouF A R▹ → 𝒰
-  Code           overRF      overRF     = ⊤
-  Code           overRF     (nextRF _)  = ⊥
-  Code          (nextRF _)   overRF     = ⊥
+  Code : {A : 𝒰 ℓ} {R▹ : ▹ 𝒰 ℓ} → RouF A R▹ → RouF A R▹ → 𝒰 ℓ
+  Code           overRF      overRF     = Lift _ ⊤
+  Code           overRF     (nextRF _)  = Lift _ ⊥
+  Code          (nextRF _)   overRF     = Lift _ ⊥
   Code {A} {R▹} (nextRF k₁) (nextRF k₂) = (f : ▸ R▹ → ▹ Colist A) → k₁ f ＝ k₂ f
 
-  Code-refl : {A : 𝒰} {R▹ : ▹ 𝒰} → (r : RouF A R▹) → Code r r
-  Code-refl  overRF    = tt
+  Code-refl : {A : 𝒰 ℓ} {R▹ : ▹ 𝒰 ℓ}
+            → (r : RouF A R▹) → Code r r
+  Code-refl  overRF    = lift tt
   Code-refl (nextRF k) = λ f → refl
 
-  encode : {A : 𝒰} {R▹ : ▹ 𝒰} {r1 r2 : RouF A R▹} → r1 ＝ r2 → Code r1 r2
+  encode : {A : 𝒰 ℓ} {R▹ : ▹ 𝒰 ℓ} {r1 r2 : RouF A R▹} → r1 ＝ r2 → Code r1 r2
   encode {r1} e = subst (Code r1) e (Code-refl r1)
 
-  decode : {A : 𝒰} {R▹ : ▹ 𝒰} (r1 r2 : RouF A R▹) → Code r1 r2 → r1 ＝ r2
+  decode : {A : 𝒰 ℓ} {R▹ : ▹ 𝒰 ℓ} (r1 r2 : RouF A R▹) → Code r1 r2 → r1 ＝ r2
   decode  overRF      overRF     _ = refl
   decode (nextRF k₁) (nextRF k₂) c = ap nextRF (fun-ext c)
 
-nextRF-inj : {A : 𝒰} {R▹ : ▹ 𝒰}
+nextRF-inj : {A : 𝒰 ℓ} {R▹ : ▹ 𝒰 ℓ}
            → {k1 k2 : (▸ R▹ → ▹ Colist A) → Colist A}
            → nextRF k1 ＝ nextRF k2
            → k1 ＝ k2
 nextRF-inj = fun-ext ∘ RouF-code.encode
 
-Rou : 𝒰 → 𝒰
+Rou : 𝒰 ℓ → 𝒰 ℓ
 Rou A = fix (RouF A)
 
 Rou-path : Rou A ＝ RouF A (next (Rou A))
@@ -116,7 +118,7 @@ breadthfirst t = ex $ br t overR
 
 -- non-empty lists (TODO move?)
 
-record List1 (A : 𝒰) : 𝒰 where
+record List1 (A : 𝒰 ℓ) : 𝒰 ℓ where
   constructor _∷₁_
   field
     hd1 : A
@@ -208,7 +210,7 @@ bfs-spec = concat₁ ∘ niv
   catl₁ l (next (fromList (concat₁ ls)))
     ~⟨ catl₁-next l ⟩
   catList (toList l) (fromList (concat₁ ls))
-    ~⟨ (catFromList (toList l) (concat₁ ls)) ⟨
+    ~⟨ catFromList (toList l) (concat₁ ls) ⟨
   fromList (concat₁ (l ∷ ls))
     ∎
 
@@ -224,7 +226,7 @@ bfs-spec = concat₁ ∘ niv
                                 (nextR (λ k▹ → catl₁ l1 (unfold (λ r▹ → k▹ (γ ls1 ⍉ r▹)) c)))))
     ~⟨⟩
   nextR (λ k▹ → catl₁ l (matchR (k▹ (next (γ ls overR))) (λ f → next (f (λ r▹ → k▹ (γ ls ⍉ r▹))))
-                                    (nextR (λ k▹ → catl₁ l1 (unfold (λ r▹ → k▹ (γ ls1 ⍉ r▹)) c)))))
+                                (nextR (λ k▹ → catl₁ l1 (unfold (λ r▹ → k▹ (γ ls1 ⍉ r▹)) c)))))
     ~⟨ ap nextR (fun-ext λ k▹ → ap (catl₁ l) matchR-nextR) ⟩
   nextR (λ k▹ → catl₁ l (next (catl₁ l1 (unfold (λ r▹ → k▹ (γ ls ⍉ (γ ls1 ⍉ r▹))) c))))
     ~⟨ ap nextR (fun-ext λ k▹ → catl₁-next l ∙ catList-catl₁ l l1) ⟩
