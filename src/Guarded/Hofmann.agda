@@ -1,4 +1,4 @@
-{-# OPTIONS --guarded --lossy-unification #-}
+{-# OPTIONS --guarded #-}
 module Guarded.Hofmann where
 
 open import Prelude
@@ -61,16 +61,17 @@ nextRF-inj = fun-ext ∘ RouF-code.encode
 Rou : 𝒰 ℓ → 𝒰 ℓ
 Rou A = fix (RouF A)
 
-Rou-path : Rou A ＝ RouF A (next (Rou A))
-Rou-path {A} = fix-path (RouF A)
+opaque
+  Rou-path : Rou A ＝ RouF A (next (Rou A))
+  Rou-path {A} = fix-path (RouF A)
 
-Rou⇉ : Rou A
-     → RouF A (next (Rou A))
-Rou⇉ = transport Rou-path
+  Rou⇉ : Rou A
+       → RouF A (next (Rou A))
+  Rou⇉ = transport Rou-path
 
-⇉Rou : RouF A (next (Rou A))
-     → Rou A
-⇉Rou = transport (Rou-path ⁻¹)
+  ⇉Rou : RouF A (next (Rou A))
+       → Rou A
+  ⇉Rou = transport (Rou-path ⁻¹)
 
 -- constructors & pattern matching
 
@@ -86,15 +87,16 @@ matchR b nf r with Rou⇉ r
 ... | overRF   = b
 ... | nextRF f = nf f
 
-matchR-overR : {b : B} {f : ((▹ Rou A → ▹ Colist A) → Colist A) → B}
-             → matchR b f overR ＝ b
-matchR-overR = refl
+opaque
+  unfolding ⇉Rou Rou⇉
+  matchR-overR : {b : B} {f : ((▹ Rou A → ▹ Colist A) → Colist A) → B}
+               → matchR b f overR ＝ b
+  matchR-overR = refl
 
-matchR-nextR : {b : B}
-             → {f : ((▹ Rou A → ▹ Colist A) → Colist A) → B}
-             → {k : (▹ Rou A → ▹ Colist A) → Colist A}
-             → matchR b f (nextR k) ＝ f k
-matchR-nextR {f} {k} = ap f (nextRF-inj (transport⁻-transport (Rou-path ⁻¹) (nextRF k)))
+  matchR-nextR : {b : B} {f : ((▹ Rou A → ▹ Colist A) → Colist A) → B}
+                 {k : (▹ Rou A → ▹ Colist A) → Colist A}
+               → matchR b f (nextR k) ＝ f k
+  matchR-nextR {f} {k} = ap f (nextRF-inj (transport⁻-transport (Rou-path ⁻¹) (nextRF k)))
 
 -- the algorithm
 
@@ -197,14 +199,22 @@ bfs-spec = concat₁ ∘ niv
 -- lemmas
 
 γ-ex : (ls : List (List1 A)) → ex (γ ls overR) ＝ fromList (concat₁ ls)
-γ-ex []       = refl
+γ-ex []       =
+  ex overR
+    ~⟨ ap (_$ overR) (fix-path ex-body) ⟩
+  matchR cnil (λ f → f (ex ⍉_)) overR
+    ~⟨ matchR-overR ⟩
+  cnil
+    ∎
 γ-ex (l ∷ ls) =
   ex (γ (l ∷ ls) overR)
-    ~⟨ ap (λ q → q (nextR (λ k▹ → catl₁ l (unfold (λ r▹ → k▹ (γ ls ⍉ r▹)) overR))))
+    ~⟨ ap (_$ nextR (λ k▹ → catl₁ l (unfold (λ r▹ → k▹ (γ ls ⍉ r▹)) overR)))
           (fix-path ex-body) ⟩
   matchR cnil ((λ f → f (ex ⍉_)))
          (nextR (λ k▹ → catl₁ l (unfold (λ r▹ → k▹ (γ ls ⍉ r▹)) overR)))
     ~⟨ matchR-nextR ⟩
+  catl₁ l (matchR (next (ex (γ ls overR))) (λ f → next (f (λ r▹ → ex ⍉ (γ ls ⍉ r▹)))) overR)
+    ~⟨ ap (catl₁ l) matchR-overR ⟩
   catl₁ l (next (ex (γ ls overR)))
     ~⟨ ap (catl₁ l) (▹-ext (next (γ-ex ls))) ⟩
   catl₁ l (next (fromList (concat₁ ls)))
