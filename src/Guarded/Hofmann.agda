@@ -12,8 +12,9 @@ open import Guarded.Colist
 private variable
   A B : 𝒰
 
--- it is crucial for the algorithm that the tree is non-empty
--- can be extended to Tree∞
+-- It is crucial for the algorithm that the tree is non-empty on each level.
+
+-- The algorithm can also be extended to Tree∞.
 
 data Tree (A : 𝒰) : 𝒰 where
   Leaf :          A          → Tree A
@@ -50,42 +51,26 @@ module RouF-code where
   decode (nextRF k₁) (nextRF k₂) c = ap nextRF (fun-ext c)
 
 nextRF-inj : {A : 𝒰} {R▹ : ▹ 𝒰}
-           → (k1 k2 : (▸ R▹ → ▹ Colist A) → Colist A)
+           → {k1 k2 : (▸ R▹ → ▹ Colist A) → Colist A}
            → nextRF k1 ＝ nextRF k2
            → k1 ＝ k2
-nextRF-inj k1 k2 = fun-ext ∘ RouF-code.encode
+nextRF-inj = fun-ext ∘ RouF-code.encode
 
 Rou : 𝒰 → 𝒰
 Rou A = fix (RouF A)
 
+Rou-path : Rou A ＝ RouF A (next (Rou A))
+Rou-path {A} = fix-path (RouF A)
+
 Rou⇉ : Rou A
      → RouF A (next (Rou A))
-Rou⇉ {A} = transport (fix-path (RouF A))
+Rou⇉ {A} = transport Rou-path
 
 ⇉Rou : RouF A (next (Rou A))
      → Rou A
-⇉Rou {A} = transport ((fix-path (RouF A)) ⁻¹)
+⇉Rou {A} = transport (Rou-path ⁻¹)
 
-{-
-Rou-next : 𝒰 → ▹ 𝒰 → 𝒰
-Rou-next A rou▹ = (▸ rou▹ → ▹ Colist A) → Colist A
-
-Rou-body : 𝒰 → ▹ 𝒰 → 𝒰
-Rou-body A rou▹ = ⊤ ⊎ (Rou-next A rou▹)
-
-Rou : 𝒰 → 𝒰
-Rou A = fix (Rou-body A)
-
-nextR⇉ : Rou-next A (dfix (Rou-body A))
-       → (▹ Rou A → ▹ Colist A) → Colist A
-nextR⇉ {A} = subst (Rou-next A) (pfix (Rou-body A))
-
-⇉nextR : ((▹ Rou A → ▹ Colist A) → Colist A)
-       → Rou-next A (dfix (Rou-body A))
-⇉nextR {A} = subst (Rou-next A) (sym $ pfix (Rou-body A))
--}
-
--- constructors & recursor
+-- constructors & pattern matching
 
 overR : Rou A
 overR = overRF
@@ -93,35 +78,33 @@ overR = overRF
 nextR : ((▹ Rou A → ▹ Colist A) → Colist A) → Rou A
 nextR = ⇉Rou ∘ nextRF
 
-recR : B → (((▹ Rou A → ▹ Colist A) → Colist A) → B)
-    → Rou A → B
-recR b nf r with Rou⇉ r
+matchR : B → (((▹ Rou A → ▹ Colist A) → Colist A) → B)
+       → Rou A → B
+matchR b nf r with Rou⇉ r
 ... | overRF   = b
 ... | nextRF f = nf f
 
-recR-overR : {b : B} {f : ((▹ Rou A → ▹ Colist A) → Colist A) → B}
-           → recR b f overR ＝ b
-recR-overR = refl
+matchR-overR : {b : B} {f : ((▹ Rou A → ▹ Colist A) → Colist A) → B}
+             → matchR b f overR ＝ b
+matchR-overR = refl
 
-recR-nextR : (b : B)
-           → (f : ((▹ Rou A → ▹ Colist A) → Colist A) → B)
-           → (k : (▹ Rou A → ▹ Colist A) → Colist A)
-           → recR b f (nextR k) ＝ f k
-recR-nextR {A} b f k = ap f (nextRF-inj _ k (transport⁻-transport ((fix-path (RouF A)) ⁻¹) (nextRF k)))
+matchR-nextR : (b : B)
+             → (f : ((▹ Rou A → ▹ Colist A) → Colist A) → B)
+             → (k : (▹ Rou A → ▹ Colist A) → Colist A)
+             → matchR b f (nextR k) ＝ f k
+matchR-nextR {A} b f k = ap f (nextRF-inj (transport⁻-transport (Rou-path ⁻¹) (nextRF k)))
 
 -- the algorithm
 
 unfold : (▹ Rou A → ▹ Colist A) → Rou A → ▹ Colist A
-unfold kf =
-  recR (kf (next overR))
-       (λ f → next (f kf))
+unfold kf = matchR (kf (next overR)) λ f → next (f kf)
 
 br : Tree A → Rou A → Rou A
-br (Leaf a)   c = nextR (λ kf → ccons a (unfold kf c))
-br (Br l a r) c = nextR (λ kf → ccons a (unfold (kf ∘ ((br l ∘ br r) ⍉_)) c))
+br (Leaf a)   c = nextR λ kf → ccons a (unfold kf c)
+br (Br l a r) c = nextR λ kf → ccons a (unfold (kf ∘ ((br l ∘ br r) ⍉_)) c)
 
 ex-body : ▹ (Rou A → Colist A) → Rou A → Colist A
-ex-body ex▹ = recR cnil (λ f → f (ex▹ ⊛_))
+ex-body ex▹ = matchR cnil λ f → f (ex▹ ⊛_)
 
 ex : Rou A → Colist A
 ex = fix ex-body
@@ -157,9 +140,9 @@ concat₁ = List.rec [] λ l → (toList l) ++_
 catl₁ : List1 A → ▹ Colist A → Colist A
 catl₁ (h ∷₁ t) c▹ = ccons h (catList t ⍉ c▹)
 
-catl₁-next : (l1 : List1 A) → (c : Colist A)
+catl₁-next : {c : Colist A} → (l1 : List1 A)
            → catl₁ l1 (next c) ＝ catList (toList l1) c
-catl₁-next (h ∷₁ t) c = refl
+catl₁-next (h ∷₁ t) = refl
 
 -- TODO adhoc
 catList-catl₁-aux : (l : List A) → (l1 : List1 A) → (c▹ : ▹ Colist A)
@@ -210,12 +193,12 @@ bfs-spec = concat₁ ∘ niv
 γ-ex (l ∷ ls) =
   ex (γ (l ∷ ls) overR)
     ~⟨ ap (λ q → q (nextR (λ k▹ → catl₁ l (unfold (λ r▹ → k▹ (γ ls ⍉ r▹)) overR)))) (fix-path ex-body) ⟩
-  recR cnil ((λ f → f (ex ⍉_))) (nextR (λ k▹ → catl₁ l (unfold (λ r▹ → k▹ (γ ls ⍉ r▹)) overR)))
-    ~⟨ recR-nextR cnil (λ f → f (ex ⍉_)) (λ k▹ → catl₁ l (unfold (λ r▹ → k▹ (γ ls ⍉ r▹)) overR)) ⟩
+  matchR cnil ((λ f → f (ex ⍉_))) (nextR (λ k▹ → catl₁ l (unfold (λ r▹ → k▹ (γ ls ⍉ r▹)) overR)))
+    ~⟨ matchR-nextR cnil (λ f → f (ex ⍉_)) (λ k▹ → catl₁ l (unfold (λ r▹ → k▹ (γ ls ⍉ r▹)) overR)) ⟩
   catl₁ l (next (ex (γ ls overR)))
     ~⟨ ap (catl₁ l) (▹-ext (next (γ-ex ls))) ⟩
   catl₁ l (next (fromList (concat₁ ls)))
-    ~⟨ catl₁-next l (fromList (concat₁ ls)) ⟩
+    ~⟨ catl₁-next l ⟩
   catList (toList l) (fromList (concat₁ ls))
     ~⟨ (catFromList (toList l) (concat₁ ls)) ⟨
   fromList (concat₁ (l ∷ ls))
@@ -231,10 +214,10 @@ bfs-spec = concat₁ ∘ niv
     ~⟨⟩
   nextR (λ k▹ → catl₁ l (unfold (λ r▹ → k▹ (γ ls ⍉ r▹)) (nextR (λ k▹ → catl₁ l1 (unfold (λ r▹ → k▹ (γ ls1 ⍉ r▹)) c)))))
     ~⟨⟩
-  nextR (λ k▹ → catl₁ l (recR (k▹ (next (γ ls overR))) (λ f → next (f (λ r▹ → k▹ (γ ls ⍉ r▹)))) (nextR (λ k▹ → catl₁ l1 (unfold (λ r▹ → k▹ (γ ls1 ⍉ r▹)) c)))))
-    ~⟨ ap nextR (fun-ext λ k▹ → ap (catl₁ l) (recR-nextR (k▹ (next (γ ls overR))) (λ f → next (f (λ r▹ → k▹ (γ ls ⍉ r▹)))) (λ k▹ → catl₁ l1 (unfold (λ r▹ → k▹ (γ ls1 ⍉ r▹)) c)))) ⟩
+  nextR (λ k▹ → catl₁ l (matchR (k▹ (next (γ ls overR))) (λ f → next (f (λ r▹ → k▹ (γ ls ⍉ r▹)))) (nextR (λ k▹ → catl₁ l1 (unfold (λ r▹ → k▹ (γ ls1 ⍉ r▹)) c)))))
+    ~⟨ ap nextR (fun-ext λ k▹ → ap (catl₁ l) (matchR-nextR (k▹ (next (γ ls overR))) (λ f → next (f (λ r▹ → k▹ (γ ls ⍉ r▹)))) (λ k▹ → catl₁ l1 (unfold (λ r▹ → k▹ (γ ls1 ⍉ r▹)) c)))) ⟩
   nextR (λ k▹ → catl₁ l (next (catl₁ l1 (unfold (λ r▹ → k▹ (γ ls ⍉ (γ ls1 ⍉ r▹))) c))))
-    ~⟨ ap nextR (fun-ext λ k▹ → catl₁-next l _ ∙ catList-catl₁ l l1 (unfold (λ r▹ → k▹ (γ ls ⍉ (γ ls1 ⍉ r▹))) c)) ⟩
+    ~⟨ ap nextR (fun-ext λ k▹ → catl₁-next l ∙ catList-catl₁ l l1 (unfold (λ r▹ → k▹ (γ ls ⍉ (γ ls1 ⍉ r▹))) c)) ⟩
   nextR (λ k▹ → catl₁ (l ++₁ l1) (unfold (λ r▹ → k▹ (γ ls ⍉ (γ ls1 ⍉ r▹))) c))
     ~⟨ ap nextR (fun-ext λ k▹ → ap (λ q → catl₁ (l ++₁ l1) (unfold q c)) (fun-ext λ r▹ → ap k▹ (▹-ext λ α → happly (γ-comp ls ls1) (r▹ α)))) ⟩
   nextR (λ k▹ → catl₁ (l ++₁ l1) (unfold (λ r▹ → k▹ (γ (zip2 ls ls1) ⍉ r▹)) c))
