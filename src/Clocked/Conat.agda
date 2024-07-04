@@ -4,10 +4,9 @@ module Clocked.Conat where
 open import Prelude
 open import Data.Empty
 open import Data.Unit
-open import Data.Bool hiding (Code ; decode)
-open import Data.Maybe hiding (Code)
-open import Data.Nat hiding (Code ; decode)
-open import Structures.IdentitySystem
+open import Data.Bool
+open import Data.Maybe
+open import Data.Nat
 
 open import Later
 
@@ -138,13 +137,13 @@ suᶜ-inj c1 c2 e = sym (pred-suc {c = c1}) ∙ ap pred0ᶜ e ∙ pred-suc {c = 
 pred-inf : pred0ᶜ inftyᶜ ＝ inftyᶜ
 pred-inf = fun-ext λ k →
   pred0ᶜ inftyᶜ k
-    ＝⟨⟩
+    ~⟨⟩
   force (λ k′ → pred0ᵏ inftyᵏ) k
-    ＝⟨ ap (λ q → force q k) (fun-ext (λ k′ → pred-infᵏ)) ⟩
+    ~⟨ ap (λ q → force q k) (fun-ext (λ k′ → pred-infᵏ)) ⟩
   force (λ k′ → next inftyᵏ) k
-    ＝⟨⟩
+    ~⟨⟩
   force (λ k′ α → inftyᵏ) k
-    ＝⟨ delay-force (λ k′ → inftyᵏ) k ⟩
+    ~⟨ delay-force (λ k′ → inftyᵏ) k ⟩
   inftyᶜ k
     ∎
 
@@ -176,7 +175,7 @@ is-finiteᵏ c = Σ[ n ꞉ ℕ ] (fromℕᵏ n ＝ c)
 finite-sizeᵏ : {x : ℕ∞ᵏ k} → is-finiteᵏ x → ℕ
 finite-sizeᵏ (n , _) = n
 
-is-finite-downᵏ′ : (x▹ : ▹ k (ℕ∞ᵏ k)) → is-finiteᵏ (cosu x▹) → ▸ k (▹map is-finiteᵏ x▹)
+is-finite-downᵏ′ : (x▹ : ▹ k (ℕ∞ᵏ k)) → is-finiteᵏ (cosu x▹) → ▸ k (is-finiteᵏ ⍉ x▹)
 is-finite-downᵏ′ x▹ (zero  , e) = λ _ → absurd (cosu≠coze (sym e))
 is-finite-downᵏ′ x▹ (suc n , e) = λ α → n , ▹-ap (cosu-inj e) α
 

@@ -7,7 +7,7 @@ open import Data.Unit
 open import Data.Bool
 open import Data.Sum
 open import Data.Maybe
-open import Structures.IdentitySystem
+--open import Structures.IdentitySystem
 
 open import Later
 open import Clocked.Conat
@@ -374,15 +374,15 @@ _+ᵏ_ = fix +ᵏ-body
   (cosu x▹)  coze      → refl
   (cosu x▹) (cosu y▹)  →
     (cosu x▹ +ᵏ cosu y▹)
-      ＝⟨⟩
+      ~⟨⟩
     cosu (next (cosu (dfix +ᵏ-body ⊛ x▹ ⊛ y▹)))
-      ＝⟨ ap (λ q → cosu (next (cosu (q ⊛ x▹ ⊛ y▹)))) (pfix +ᵏ-body) ⟩
+      ~⟨ ap (λ q → cosu (next (cosu (q ⊛ x▹ ⊛ y▹)))) (pfix +ᵏ-body) ⟩
     cosu (next (cosu ((next _+ᵏ_) ⊛ x▹ ⊛ y▹)))
-      ＝⟨ ap cosu (▹-ext (next (ap cosu (▹-ext λ α → prf▹ α (x▹ α) (y▹ α))))) ⟩
+      ~⟨ ap cosu (▹-ext (next (ap cosu (▹-ext λ α → prf▹ α (x▹ α) (y▹ α))))) ⟩
     cosu (next (cosu ((next _+ᵏ_) ⊛ y▹ ⊛ x▹)))
-      ＝⟨ ap (λ q → cosu (next (cosu (q ⊛ y▹ ⊛ x▹)))) (sym $ pfix +ᵏ-body) ⟩
+      ~⟨ ap (λ q → cosu (next (cosu (q ⊛ y▹ ⊛ x▹)))) (sym $ pfix +ᵏ-body) ⟩
     cosu (next (cosu (dfix +ᵏ-body ⊛ y▹ ⊛ x▹)))
-      ＝⟨⟩
+      ~⟨⟩
     (cosu y▹ +ᵏ cosu x▹)
       ∎
 
@@ -391,15 +391,15 @@ _+ᵏ_ = fix +ᵏ-body
   coze      → refl
   (cosu x▹) →
      inftyᵏ +ᵏ cosu x▹
-       ＝⟨ ap (_+ᵏ cosu x▹) (fix-path cosu) ⟩
+       ~⟨ ap (_+ᵏ cosu x▹) (fix-path cosu) ⟩
      cosu (next (cosu ((dfix +ᵏ-body) ⊛ (next inftyᵏ) ⊛ x▹)))
-       ＝⟨ ap (λ q → cosu (next (cosu (q ⊛ (next inftyᵏ) ⊛ x▹)))) (pfix +ᵏ-body) ⟩
+       ~⟨ ap (λ q → cosu (next (cosu (q ⊛ (next inftyᵏ) ⊛ x▹)))) (pfix +ᵏ-body) ⟩
      cosu (next (cosu ((next _+ᵏ_) ⊛ next inftyᵏ ⊛ x▹)))
-       ＝⟨ ap cosu (▹-ext (λ _ → ap cosu (▹-ext (prf▹ ⊛ x▹)))) ⟩
+       ~⟨ ap cosu (▹-ext (λ _ → ap cosu (▹-ext (prf▹ ⊛ x▹)))) ⟩
      cosu (next (cosu (next (fix cosu))))
-       ＝⟨ ap cosu (▹-ext (λ _ → sym $ fix-path cosu)) ⟩
+       ~⟨ ap cosu (▹-ext (λ _ → sym $ fix-path cosu)) ⟩
      cosu (next inftyᵏ)
-       ＝⟨ sym $ fix-path cosu ⟩
+       ~⟨ sym $ fix-path cosu ⟩
      inftyᵏ
        ∎
 
@@ -424,9 +424,9 @@ _+:ᵏ_ x = fix (+:ᵏ-body x)
 +:ᵏ-zerol {k} = fix {k = k} λ prf▹ → λ where
   coze     → refl
   (cosu x) → cosu (dfix (+:ᵏ-body coze) ⊛ x)
-               ＝⟨ ap (λ q → cosu (q ⊛ x)) (pfix (+:ᵏ-body coze) ) ⟩
-             cosu (▹map (coze +:ᵏ_) x)
-               ＝⟨ ap cosu (▹-ext (prf▹ ⊛ x)) ⟩
+               ~⟨ ap (λ q → cosu (q ⊛ x)) (pfix (+:ᵏ-body coze) ) ⟩
+             cosu (coze +:ᵏ_ ⍉ x)
+               ~⟨ ap cosu (▹-ext (prf▹ ⊛ x)) ⟩
              cosu x
                ∎
 
@@ -437,7 +437,7 @@ _+:ᵏ_ x = fix (+:ᵏ-body x)
 -- +ᵏ-sucl doesn't seem to be provable easily
 
 +:ᵏ-sucr : (x : ℕ∞ᵏ k) → (y▹ : ▹ k (ℕ∞ᵏ k))
-        → x +:ᵏ (cosu y▹) ＝ cosu (▹map (x +:ᵏ_) y▹)
+        → x +:ᵏ (cosu y▹) ＝ cosu (x +:ᵏ_ ⍉ y▹)
 +:ᵏ-sucr x y▹ = ap (_$ (cosu y▹)) (fix-path (+:ᵏ-body x))
 
 -- TODO https://proofassistants.stackexchange.com/questions/1545/how-to-prove-that-addition-is-commutative-for-conatural-numbers-in-coq

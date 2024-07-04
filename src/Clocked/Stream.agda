@@ -143,28 +143,28 @@ mapᵏ-fusion f g =
   fix λ prf▹ → λ where
     (cons a as▹) →
       mapᵏ g (mapᵏ f (cons a as▹))
-        ＝⟨ ap (mapᵏ g) (mapᵏ-eq f a as▹) ⟩
+        ~⟨ ap (mapᵏ g) (mapᵏ-eq f a as▹) ⟩
       mapᵏ g (cons (f a) ((mapᵏ f) ⍉ as▹))
-        ＝⟨ mapᵏ-eq g (f a) ((mapᵏ f) ⍉ as▹) ⟩
+        ~⟨ mapᵏ-eq g (f a) ((mapᵏ f) ⍉ as▹) ⟩
       cons (g (f a)) ((mapᵏ g) ⍉ ((mapᵏ f) ⍉ as▹))
-        ＝⟨ ap (cons (g (f a))) (▹-ext (prf▹ ⊛ as▹)) ⟩
+        ~⟨ ap (cons (g (f a))) (▹-ext (prf▹ ⊛ as▹)) ⟩
       cons (g (f a)) ((mapᵏ (g ∘ f)) ⍉ as▹)
-        ＝⟨ sym (mapᵏ-eq (g ∘ f) a as▹) ⟩
+        ~⟨ mapᵏ-eq (g ∘ f) a as▹ ⟨
       mapᵏ (g ∘ f) (cons a as▹)
         ∎
 
 mapᵏ-repeat : (a : A) → (f : A → B) → mapᵏ {k = k} f (repeatᵏ a) ＝ repeatᵏ (f a)
 mapᵏ-repeat a f = fix λ prf▹ →
   mapᵏ f (repeatᵏ a)
-    ＝⟨ ap (mapᵏ f) (repeatᵏ-eq a)  ⟩
+    ~⟨ ap (mapᵏ f) (repeatᵏ-eq a)  ⟩
   mapᵏ f (cons a (λ α → repeatᵏ a))
-    ＝⟨ mapᵏ-eq f a (λ x → cons a (dfix (cons a))) ⟩
+    ~⟨ mapᵏ-eq f a (λ x → cons a (dfix (cons a))) ⟩
   cons (f a) (λ α → mapᵏ f (repeatᵏ a))
-    ＝⟨ ap (cons (f a)) (▹-ext prf▹) ⟩
+    ~⟨ ap (cons (f a)) (▹-ext prf▹) ⟩
   cons (f a) (λ α → repeatᵏ (f a))
-    ＝⟨ ap (cons (f a)) (▹-ext λ α → sym (pfix-ext (cons (f a)) α)) ⟩
+    ~⟨ ap (cons (f a)) (▹-ext λ α → sym (pfix-ext (cons (f a)) α)) ⟩
   cons (f a) (dfix (cons (f a)))
-    ＝⟨⟩
+    ~⟨⟩
   repeatᵏ (f a)
     ∎
 
@@ -218,13 +218,13 @@ tail-iterate : (f : A → A) → (x : A)
 tail-iterate f x =
   fun-ext λ k →
     tailˢ (iterateˢ f x) k
-      ＝⟨⟩
+      ~⟨⟩
     force (λ k′ → tail▹ᵏ {k = k′} (iterateᵏ (next f) x)) k
-      ＝⟨ ap (λ q → force q k) (fun-ext (λ k₁ → tail-iterateᵏ (next f) x)) ⟩
+      ~⟨ ap (λ q → force q k) (fun-ext (λ k₁ → tail-iterateᵏ (next f) x)) ⟩
     force (λ k′ → next (iterateᵏ {k = k′} (next f) (f x))) k
-      ＝⟨ delay-force (λ k′ → iterateᵏ {k = k′} (next f) (f x)) k ⟩
+      ~⟨ delay-force (λ k′ → iterateᵏ {k = k′} (next f) (f x)) k ⟩
     iterateᵏ {k = k} (next f) (f x)
-      ＝⟨⟩
+      ~⟨⟩
     iterateˢ f (f x) k
       ∎
 
@@ -248,15 +248,15 @@ tail-interleaveˢ : (s1 s2 : Stream A)
 tail-interleaveˢ s1 s2 =
   fun-ext λ k →
     tailˢ (interleaveˢ s1 s2) k
-      ＝⟨⟩
+      ~⟨⟩
     force (λ k₁ → tail▹ᵏ (interleaveᵏ (s1 k₁) (next (s2 k₁)))) k
-      ＝⟨ ap (λ q → force q k) (fun-ext (λ k₁ → tail-interleaveᵏ (s1 k₁) (next (s2 k₁)))) ⟩
+      ~⟨ ap (λ q → force q k) (fun-ext (λ k₁ → tail-interleaveᵏ (s1 k₁) (next (s2 k₁)))) ⟩
     force (λ k₁ → next (interleaveᵏ (s2 k₁) (tail▹ᵏ (s1 k₁)))) k
-      ＝⟨ delay-force (λ k₁ → interleaveᵏ (s2 k₁) (tail▹ᵏ (s1 k₁))) k ⟩
+      ~⟨ delay-force (λ k₁ → interleaveᵏ (s2 k₁) (tail▹ᵏ (s1 k₁))) k ⟩
     interleaveᵏ (s2 k) (tail▹ᵏ (s1 k))
-      ＝⟨ ap (interleaveᵏ (s2 k)) (▹-ext (λ α → sym $ force-delay (λ k₁ → tail▹ᵏ (s1 k₁)) k α)) ⟩
+      ~⟨ ap (interleaveᵏ (s2 k)) (▹-ext (λ α → sym $ force-delay (λ k₁ → tail▹ᵏ (s1 k₁)) k α)) ⟩
     interleaveᵏ (s2 k) (next (tailˢ s1 k))
-      ＝⟨⟩
+      ~⟨⟩
     interleaveˢ s2 (tailˢ s1) k
       ∎
 
@@ -328,19 +328,19 @@ eoᵏ-iterate : (f : A → A) → (x : A)
 eoᵏ-iterate {k} f =
   fix {k = k} λ prf▹ x →
     eoᵏ {k = k} (iterateˢ f x)
-      ＝⟨⟩
+      ~⟨⟩
     cons x (dfix eoᵏ-body ⊛ next (tailˢ (tailˢ (iterateˢ f x))))
-      ＝⟨ ap (λ q → cons x (q ⊛ next (tailˢ (tailˢ (iterateˢ f x))))) (pfix eoᵏ-body) ⟩
+      ~⟨ ap (λ q → cons x (q ⊛ next (tailˢ (tailˢ (iterateˢ f x))))) (pfix eoᵏ-body) ⟩
     cons x (next (eoᵏ (tailˢ (tailˢ (iterateˢ f x)))))
-      ＝⟨ ap (λ q → cons x (next (eoᵏ (tailˢ q)))) (tail-iterate f x) ⟩
+      ~⟨ ap (λ q → cons x (next (eoᵏ (tailˢ q)))) (tail-iterate f x) ⟩
     cons x (next (eoᵏ (tailˢ (iterateˢ f (f x)))))
-      ＝⟨ ap (λ q → cons x (next (eoᵏ q))) (tail-iterate f (f x)) ⟩
+      ~⟨ ap (λ q → cons x (next (eoᵏ q))) (tail-iterate f (f x)) ⟩
     cons x (next (eoᵏ (iterateˢ f (f (f x)))))
-      ＝⟨ ap (cons x) (▹-ext (prf▹ ⊛ (next (f (f x))))) ⟩
+      ~⟨ ap (cons x) (▹-ext (prf▹ ⊛ (next (f (f x))))) ⟩
     cons x (next (iterateᵏ (next (f ∘ f)) (f (f x))))
-      ＝⟨ ap (λ q → cons x (q ⊛ next (f (f x)))) (sym $ pfix (iterateᵏ-body (next (f ∘ f)))) ⟩
+      ~⟨ ap (λ q → cons x (q ⊛ next (f (f x)))) (sym $ pfix (iterateᵏ-body (next (f ∘ f)))) ⟩
     cons x (dfix (iterateᵏ-body (next (f ∘ f))) ⊛ (next (f (f x))))
-      ＝⟨⟩
+      ~⟨⟩
     iterateᵏ (next (f ∘ f)) x
       ∎
 
@@ -364,13 +364,13 @@ tail-eoˢ : (s : Stream A)
          → tailˢ (eo s) ＝ eo (tailˢ (tailˢ s))
 tail-eoˢ s = fun-ext λ k →
   tailˢ (eo s) k
-    ＝⟨⟩
+    ~⟨⟩
   force (λ k₁ → tail▹ᵏ (eoᵏ {k = k₁} s)) k
-    ＝⟨ ap (λ q → force q k) (fun-ext (λ k₁ → tail-eoᵏ s)) ⟩
+    ~⟨ ap (λ q → force q k) (fun-ext (λ k₁ → tail-eoᵏ s)) ⟩
   force (λ k₁ → next (eoᵏ {k = k₁} (tailˢ (tailˢ s)))) k
-    ＝⟨ delay-force (λ k₁ → eoᵏ {k = k₁} (tailˢ (tailˢ s))) k  ⟩
+    ~⟨ delay-force (λ k₁ → eoᵏ {k = k₁} (tailˢ (tailˢ s))) k  ⟩
   eoᵏ {k = k} (tailˢ (tailˢ s))
-    ＝⟨⟩
+    ~⟨⟩
   eo (tailˢ (tailˢ s)) k
     ∎
 
@@ -413,13 +413,13 @@ nats k = natsᵏ
 nats-tail : tailˢ nats ＝ mapˢ suc nats
 nats-tail = fun-ext λ k →
   tailˢ nats k
-    ＝⟨⟩
+    ~⟨⟩
   force (λ k′ → tail▹ᵏ natsᵏ) k
-    ＝⟨ ap (λ q → force q k) (fun-ext (λ k′ → natsᵏ-tail)) ⟩
+    ~⟨ ap (λ q → force q k) (fun-ext (λ k′ → natsᵏ-tail)) ⟩
   force (λ k′ α → mapᵏ {k = k′} suc natsᵏ) k
-    ＝⟨ delay-force (λ k′ → mapᵏ suc natsᵏ) k ⟩
+    ~⟨ delay-force (λ k′ → mapᵏ suc natsᵏ) k ⟩
   mapᵏ suc natsᵏ
-    ＝⟨⟩
+    ~⟨⟩
   mapˢ suc nats k
     ∎
 
