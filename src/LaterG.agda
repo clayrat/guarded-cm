@@ -127,7 +127,10 @@ hcomp▹ A φ u u0 = primHComp (λ { i (φ = i1) → u i 1=1 }) (outS u0)
 
 ▹-iso : {A : I → 𝒰 ℓ} {x▹ : ▹ A i0} {y▹ : ▹ A i1}
       → ＜ x▹ ／ (λ i → ▹ A i) ＼ y▹ ＞ ≅ (▹[ α ] ＜ (x▹ α) ／ (λ i → A i) ＼ (y▹ α) ＞)
-▹-iso = ▹-ap , iso ▹-ext (λ e▹ → refl) λ e → refl
+▹-iso .Iso.to                       = ▹-ap
+▹-iso .Iso.from                     = ▹-ext
+▹-iso .Iso.inverses .Inverses.inv-o = refl
+▹-iso .Iso.inverses .Inverses.inv-i = refl
 
 {-
 ▹-ap-simple : {A : 𝒰 ℓ} {x▹ y▹ : ▹ A}
@@ -196,7 +199,8 @@ fix-unique {f▹} e = fix λ ih▹ → e ∙ ap f▹ (▹-ext ih▹) ∙ sym (fi
 ▹is-of-hlevel {n = suc zero}      = ▹is-prop
 ▹is-of-hlevel {n = suc (suc n)} a =
   λ p q →
-    retract→is-of-hlevel (suc n) ▹-extP ▹-apP (λ _ → refl)
+    retract→is-of-hlevel (suc n)
+    (▹-extP , make-section ▹-apP refl)
     (▹is-of-hlevel λ α → (a α) (p α) (q α))
 
 instance

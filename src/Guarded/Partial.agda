@@ -3,9 +3,10 @@ module Guarded.Partial where
 
 open import Prelude
 open import Foundations.Transport
-open import Data.Empty
 open import Data.Bool
 open import Data.Nat
+open import Order.Constructions.Nat
+open import Order.Constructions.Minmax
 open import Data.Maybe
 open import Data.Sum hiding (code-is-of-hlevel)
 
@@ -230,12 +231,19 @@ apᵖ-nowx : (f : Part (A → B)) (x : A)
 apᵖ-nowx (now f)    x = refl
 apᵖ-nowx (later f▹) x = ap later (▹-ext λ α → apᵖ-nowx (f▹ α) x)
 
+open decminmax ℕ-dec-total
+open decminmaxprops ℕ-dec-total ℕ-dec-total
+
 delay-by-apᵖ : (f : A → B) (nf : ℕ) (x : A) (nx : ℕ)
              → apᵖ (delay-by nf f) (delay-by nx x) ＝ delay-by (max nf nx) (f x)
 delay-by-apᵖ f  zero    x  zero    = refl
-delay-by-apᵖ f  zero    x (suc nx) = ap later (▹-ext λ α → apᵖ-nowf f (delay-by nx x) ∙ delay-by-mapᵖ x nx)
-delay-by-apᵖ f (suc nf) x  zero    = ap later (▹-ext λ α → apᵖ-nowx (delay-by nf f) x ∙ delay-by-mapᵖ f nf)
-delay-by-apᵖ f (suc nf) x (suc nx) = ap later (▹-ext λ α → delay-by-apᵖ f nf x nx)
+delay-by-apᵖ f  zero    x (suc nx) =
+  ap later (▹-ext λ α → apᵖ-nowf f (delay-by nx x) ∙ delay-by-mapᵖ x nx)
+delay-by-apᵖ f (suc nf) x  zero    =
+  ap later (▹-ext λ α → apᵖ-nowx (delay-by nf f) x ∙ delay-by-mapᵖ f nf)
+delay-by-apᵖ f (suc nf) x (suc nx) =
+    ap later (▹-ext λ α → delay-by-apᵖ f nf x nx)
+  ∙ ap (λ q → delay-by q (f x)) (max-ap Suc nf nx)
 
 map²ᵖ : (A → B → C) → Part A → Part B → Part C
 map²ᵖ f = apᵖ ∘ mapᵖ f

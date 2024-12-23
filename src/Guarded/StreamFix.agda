@@ -14,17 +14,29 @@ private variable
 
 -- guarded streams via fixpoint in the universe
 
-Stream-body : 𝒰 → ▹ 𝒰 → 𝒰
-Stream-body A S▹ = A × ▸ S▹
+StreamF : 𝒰 → ▹ 𝒰 → 𝒰
+StreamF A S▹ = A × ▸ S▹
 
 Stream : 𝒰 → 𝒰
-Stream A = fix (Stream-body A)
+Stream A = fix (StreamF A)
+
+opaque
+  Stream-path : Stream A ＝ StreamF A (next (Stream A))
+  Stream-path {A} = fix-path (StreamF A)
+
+  Stream⇉ : Stream A
+           → StreamF A (next (Stream A))
+  Stream⇉ = transport Stream-path
+
+  ⇉Stream : StreamF A (next (Stream A))
+           → Stream A
+  ⇉Stream = transport (Stream-path ⁻¹)
 
 consˢ : A → ▹ Stream A → Stream A
-consˢ {A} x xs▹ = x , subst ▸_ ((pfix (Stream-body A)) ⁻¹) xs▹
+consˢ x xs▹ = ⇉Stream (x , xs▹)
 
 unconsˢ : Stream A → A × ▹ Stream A
-unconsˢ {A} (x , xs▹) = x , subst ▸_ (pfix (Stream-body A)) xs▹
+unconsˢ = Stream⇉
 
 headˢ : Stream A → A
 headˢ = fst ∘ unconsˢ
@@ -32,15 +44,17 @@ headˢ = fst ∘ unconsˢ
 tail▹ˢ : Stream A → ▹ Stream A
 tail▹ˢ = snd ∘ unconsˢ
 
-uncons-eq : (s : Stream A) → s ＝ consˢ (headˢ s) (tail▹ˢ s)
-uncons-eq {A} (a , as▹) =
-  ap (λ q → (a , q)) (transport⁻-transport (λ i → ▸ pfix (Stream-body A) i) as▹) ⁻¹
+opaque
+  unfolding Stream⇉ ⇉Stream
+  
+  uncons-eq : (s : Stream A) → s ＝ consˢ (headˢ s) (tail▹ˢ s)
+  uncons-eq {A} s = transport⁻-transport Stream-path s ⁻¹
 
-head-cons : (a : A) → (as▹ : ▹ Stream A) → headˢ (consˢ a as▹) ＝ a
-head-cons a as▹ = refl
+  head-cons : (a : A) (as▹ : ▹ Stream A) → headˢ (consˢ a as▹) ＝ a
+  head-cons {A} a as▹ = transport⁻-transport refl a 
 
-tail-cons : (a : A) → (as▹ : ▹ Stream A) → tail▹ˢ (consˢ a as▹) ＝ as▹
-tail-cons {A} a as▹ = transport⁻-transport (λ i → ▸ pfix (Stream-body A) (~ i)) as▹
+  tail-cons : (a : A) (as▹ : ▹ Stream A) → tail▹ˢ (consˢ a as▹) ＝ as▹
+  tail-cons {A} a as▹ = transport⁻-transport (λ i → ▸ pfix (StreamF A) (~ i)) as▹
 
 -- repeat
 
@@ -59,20 +73,23 @@ mapˢ : (A → B) → Stream A → Stream B
 mapˢ f = fix (mapˢ-body f)
 
 mapˢ-eq : (f : A → B) → (a : A) → (as▹ : ▹ Stream A)
-        → mapˢ f (consˢ a as▹) ＝ consˢ (f a) (λ α → mapˢ f (as▹ α))
+        → mapˢ f (consˢ a as▹) ＝ consˢ (f a) ((mapˢ f) ⍉ as▹)
 mapˢ-eq {A} f a as▹ =
-  ap (consˢ (f a)) (▹-ext λ α →
-    ap (dfix (mapˢ-body f) α) (▹-ap (tail-cons a as▹) α)
-    ∙ happly (pfix-ext (mapˢ-body f) α) (as▹ α))
+    happly (fix-path (mapˢ-body f)) (consˢ a as▹)
+  ∙ ap² consˢ
+      (ap f (head-cons a as▹))
+      (ap (mapˢ f ⍉_) (tail-cons a as▹))
 
 mapˢ-head : (f : A → B) → (s : Stream A)
           → headˢ (mapˢ f s) ＝ f (headˢ s)
-mapˢ-head f s = refl
+mapˢ-head f s =
+    ap headˢ (happly (fix-path (mapˢ-body f)) s) 
+  ∙ head-cons (f (headˢ s)) ((mapˢ f) ⍉ (tail▹ˢ s))
 
 mapˢ-tail : (f : A → B) → (s : Stream A)
           → tail▹ˢ (mapˢ f s) ＝ (mapˢ f) ⍉ (tail▹ˢ s)
 mapˢ-tail f s =
-  ap (λ q → tail▹ˢ (mapˢ f q)) (uncons-eq s)
+    ap (λ q → tail▹ˢ (mapˢ f q)) (uncons-eq s)
   ∙ ap tail▹ˢ (mapˢ-eq f (headˢ s) (tail▹ˢ s))
   ∙ tail-cons (f (headˢ s)) ((mapˢ f) ⍉ (tail▹ˢ s))
 
@@ -81,32 +98,32 @@ mapˢ-fusion : (f : A → B) → (g : B → C) → (s : Stream A)
 mapˢ-fusion f g =
   fix λ prf▹ s → let (a , as▹) = unconsˢ s in
     mapˢ g (mapˢ f s)
-      ＝⟨ ap (mapˢ g ∘ mapˢ f) (uncons-eq s) ⟩
+      =⟨ ap (mapˢ g ∘ mapˢ f) (uncons-eq s) ⟩
     mapˢ g (mapˢ f (consˢ a as▹))
-      ＝⟨ ap (mapˢ g) (mapˢ-eq f a as▹) ⟩
+      =⟨ ap (mapˢ g) (mapˢ-eq f a as▹) ⟩
     mapˢ g (consˢ (f a) ((mapˢ f) ⍉ as▹))
-      ＝⟨ mapˢ-eq g (f a) ((mapˢ f) ⍉ as▹) ⟩
+      =⟨ mapˢ-eq g (f a) ((mapˢ f) ⍉ as▹) ⟩
     consˢ (g (f a)) ((mapˢ g) ⍉ ((mapˢ f) ⍉ as▹))
-      ＝⟨ ap (consˢ (g (f a))) (▹-ext (prf▹ ⊛ as▹)) ⟩
+      =⟨ ap (consˢ (g (f a))) (▹-ext (prf▹ ⊛ as▹)) ⟩
     consˢ (g (f a)) ((mapˢ (g ∘ f)) ⍉ as▹)
-      ＝⟨ sym (mapˢ-eq (g ∘ f) a as▹) ⟩
+      =⟨ sym (mapˢ-eq (g ∘ f) a as▹) ⟩
     mapˢ (g ∘ f) (consˢ a as▹)
-      ＝⟨ ap (mapˢ (g ∘ f)) (sym (uncons-eq s)) ⟩
+      =⟨ ap (mapˢ (g ∘ f)) (sym (uncons-eq s)) ⟩
     mapˢ (g ∘ f) s
       ∎
 
 mapˢ-repeat : (a : A) → (f : A → B) → mapˢ f (repeatˢ a) ＝ repeatˢ (f a)
 mapˢ-repeat a f = fix λ prf▹ →
   mapˢ f (repeatˢ a)
-    ＝⟨ ap (mapˢ f) (repeatˢ-eq a)  ⟩
+    =⟨ ap (mapˢ f) (repeatˢ-eq a)  ⟩
   mapˢ f (consˢ a (λ α → repeatˢ a))
-    ＝⟨ mapˢ-eq f a (λ x → consˢ a (dfix (consˢ a))) ⟩
+    =⟨ mapˢ-eq f a (λ x → consˢ a (dfix (consˢ a))) ⟩
   consˢ (f a) (λ α → mapˢ f (repeatˢ a))
-    ＝⟨ ap (consˢ (f a)) (▹-ext prf▹) ⟩
+    =⟨ ap (consˢ (f a)) (▹-ext prf▹) ⟩
   consˢ (f a) (λ α → repeatˢ (f a))
-    ＝⟨ ap (consˢ (f a)) (▹-ext λ α → sym (pfix-ext (consˢ (f a)) α)) ⟩
+    =⟨ ap (consˢ (f a)) (▹-ext λ α → sym (pfix-ext (consˢ (f a)) α)) ⟩
   consˢ (f a) (λ α → dfix (consˢ (f a)) α)
-    ＝⟨⟩
+    =⟨⟩
   repeatˢ (f a)
     ∎
 
@@ -120,14 +137,14 @@ Allˢ P = fix (Allˢ-body P)
 
 Allˢ-cons : ∀ {a as▹} {P : A → 𝒰} → P a → ▹[ α ] (Allˢ P (as▹ α)) → Allˢ P (consˢ a as▹)
 Allˢ-cons {a} {as▹} {P} pa ps▹ =
-    pa
+    subst P (head-cons a as▹ ⁻¹) pa
   , (subst (λ q → ▸ (dfix (Allˢ-body P) ⊛ q)) ((tail-cons a as▹) ⁻¹) $
      subst (λ q → ▸ (q ⊛ as▹)) ((pfix (Allˢ-body P)) ⁻¹) $
      ps▹)
 
 Allˢ-match : ∀ {a as▹} {P : A → 𝒰} → Allˢ P (consˢ a as▹) → P a × (▹[ α ] (Allˢ P (as▹ α)))
 Allˢ-match {a} {as▹} {P} (pa , ps▸) =
-    pa
+    subst P (head-cons a as▹) pa
   , (subst (λ q → ▸ (q ⊛ as▹)) (pfix (Allˢ-body P)) $
      subst (λ q → ▸ (dfix (Allˢ-body P) ⊛ q)) (tail-cons a as▹) $
      ps▸)
@@ -137,11 +154,11 @@ Allˢ-map : {P Q : A → 𝒰} {f : A → A}
          → (s : Stream A) → Allˢ P s → Allˢ Q (mapˢ f s)
 Allˢ-map {P} {Q} {f} pq =
   fix λ prf▹ s ps →
-    let pa , pas▹ = Allˢ-match (subst (Allˢ P) (uncons-eq s) ps) in
+    let pa , pas▹ = Allˢ-match {P = P} (subst (Allˢ P) (uncons-eq s) ps) in
     subst (Allˢ Q ∘ mapˢ f) ((uncons-eq s) ⁻¹) $
     subst (Allˢ Q) ((mapˢ-eq f (headˢ s) (tail▹ˢ s)) ⁻¹) $
-    Allˢ-cons (pq pa) ((λ α → prf▹ α (tail▹ˢ s α) (pas▹ α)))
-
+    Allˢ-cons {P = Q} (pq pa) ((λ α → prf▹ α (tail▹ˢ s α) (pas▹ α)))
+  
 -- folding
 
 foldrˢ-body : (A → ▹ B → B) → ▹ (Stream A → B) → Stream A → B
@@ -203,24 +220,24 @@ extendˢ f = fix (extendˢ-body f)
 
 extract-duplicate : (s : Stream A) → extractˢ (duplicateˢ s) ＝ s
 extract-duplicate s =
-    extractˢ (duplicateˢ s)
-      ＝⟨ ap (λ q → extractˢ (q s)) (fix-path duplicateˢ-body) ⟩
-    extractˢ (duplicateˢ-body (next duplicateˢ) s)
-      ＝⟨⟩
-    s
-      ∎
+  extractˢ (duplicateˢ s)
+    =⟨ ap (λ q → extractˢ (q s)) (fix-path duplicateˢ-body) ⟩
+  extractˢ (duplicateˢ-body (next duplicateˢ) s)
+    =⟨ head-cons s (duplicateˢ ⍉ tail▹ˢ s) ⟩
+  s
+    ∎
 
 map-extract-duplicate : (s : Stream A) → mapˢ extractˢ (duplicateˢ s) ＝ s
 map-extract-duplicate = fix λ ih▹ → λ where
   s →
     mapˢ extractˢ (duplicateˢ s)
-      ＝⟨ ap (λ q → mapˢ extractˢ (q s)) (fix-path duplicateˢ-body) ⟩
+      =⟨ ap (λ q → mapˢ extractˢ (q s)) (fix-path duplicateˢ-body) ⟩
     mapˢ extractˢ (duplicateˢ-body (next duplicateˢ) s)
-      ＝⟨ mapˢ-eq extractˢ s (duplicateˢ ⍉ tail▹ˢ s) ⟩
+      =⟨ mapˢ-eq extractˢ s (duplicateˢ ⍉ tail▹ˢ s) ⟩
     consˢ (headˢ s) (mapˢ extractˢ ⍉ (duplicateˢ ⍉ tail▹ˢ s))
-      ＝⟨ ap (consˢ (headˢ s)) (▹-ext (ih▹ ⊛ tail▹ˢ s)) ⟩
+      =⟨ ap (consˢ (headˢ s)) (▹-ext (ih▹ ⊛ tail▹ˢ s)) ⟩
     consˢ (headˢ s) (tail▹ˢ s)
-      ＝˘⟨ uncons-eq s ⟩
+      =⟨ uncons-eq s ⟨
     s
       ∎
 
@@ -228,23 +245,23 @@ duplicate-duplicate : (s : Stream A) → duplicateˢ (duplicateˢ s) ＝ mapˢ d
 duplicate-duplicate = fix λ ih▹ → λ where
   s →
     duplicateˢ (duplicateˢ s)
-      ＝⟨ ap (λ q → duplicateˢ (q s)) (fix-path duplicateˢ-body) ⟩
+      =⟨ ap (λ q → duplicateˢ (q s)) (fix-path duplicateˢ-body) ⟩
     duplicateˢ (duplicateˢ-body (next duplicateˢ) s)
-      ＝⟨ ap (λ q → q (duplicateˢ-body (next duplicateˢ) s)) (fix-path duplicateˢ-body) ⟩
+      =⟨ ap (λ q → q (duplicateˢ-body (next duplicateˢ) s)) (fix-path duplicateˢ-body) ⟩
     duplicateˢ-body (next duplicateˢ) (duplicateˢ-body (next duplicateˢ) s)
-      ＝⟨⟩
+      =⟨⟩
     consˢ (consˢ s (duplicateˢ ⍉ tail▹ˢ s)) (duplicateˢ ⍉ ⌜ tail▹ˢ (consˢ s (duplicateˢ ⍉ tail▹ˢ s)) ⌝)
-      ＝⟨ ap! (tail-cons s (duplicateˢ ⍉ tail▹ˢ s)) ⟩
+      =⟨ ap! (tail-cons s (duplicateˢ ⍉ tail▹ˢ s)) ⟩
     consˢ (consˢ s (duplicateˢ ⍉ tail▹ˢ s)) (duplicateˢ ⍉ (duplicateˢ ⍉ tail▹ˢ s))
-      ＝⟨ ap (consˢ (consˢ s (duplicateˢ ⍉ tail▹ˢ s))) (▹-ext λ α → ih▹ α (tail▹ˢ s α) ∙ ap (λ q → mapˢ q (duplicateˢ (tail▹ˢ s α))) (fix-path duplicateˢ-body)) ⟩
+      =⟨ ap (consˢ (consˢ s (duplicateˢ ⍉ tail▹ˢ s))) (▹-ext λ α → ih▹ α (tail▹ˢ s α) ∙ ap (λ q → mapˢ q (duplicateˢ (tail▹ˢ s α))) (fix-path duplicateˢ-body)) ⟩
     consˢ (consˢ s (duplicateˢ ⍉ tail▹ˢ s)) (mapˢ (duplicateˢ-body (next duplicateˢ)) ⍉ (duplicateˢ ⍉ tail▹ˢ s))
-      ＝˘⟨ mapˢ-eq (duplicateˢ-body (next duplicateˢ)) s (duplicateˢ ⍉ tail▹ˢ s) ⟩
+      =⟨ mapˢ-eq (duplicateˢ-body (next duplicateˢ)) s (duplicateˢ ⍉ tail▹ˢ s) ⟨
     mapˢ (duplicateˢ-body (next duplicateˢ)) (consˢ s (duplicateˢ ⍉ tail▹ˢ s))
-      ＝⟨⟩
+      =⟨⟩
     mapˢ (duplicateˢ-body (next duplicateˢ)) (duplicateˢ-body (next duplicateˢ) s)
-      ＝˘⟨ ap (λ q → mapˢ q (duplicateˢ-body (next duplicateˢ) s)) (fix-path duplicateˢ-body) ⟩
+      =⟨ ap (λ q → mapˢ q (duplicateˢ-body (next duplicateˢ) s)) (fix-path duplicateˢ-body) ⟨
     mapˢ duplicateˢ (duplicateˢ-body (next duplicateˢ) s)
-      ＝˘⟨ ap (λ q → mapˢ duplicateˢ (q s)) (fix-path duplicateˢ-body) ⟩
+      =⟨ ap (λ q → mapˢ duplicateˢ (q s)) (fix-path duplicateˢ-body) ⟨
     mapˢ duplicateˢ (duplicateˢ s)
       ∎
 

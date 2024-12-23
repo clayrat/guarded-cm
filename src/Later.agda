@@ -125,7 +125,10 @@ ap-inter f▹ x = refl
 
 ▹-iso : {A : I → 𝒰 ℓ} {x▹ : ▹ k (A i0)} {y▹ : ▹ k (A i1)}
       → ＜ x▹ ／ (λ i → ▹ k (A i)) ＼ y▹ ＞ ≅ (▹[ α ∶ k ] ＜ (x▹ α) ／ (λ i → A i) ＼ (y▹ α) ＞)
-▹-iso = ▹-ap , iso ▹-ext (λ e▹ → refl) λ e → refl
+▹-iso .Iso.to                       = ▹-ap
+▹-iso .Iso.from                     = ▹-ext
+▹-iso .Iso.inverses .Inverses.inv-o = refl
+▹-iso .Iso.inverses .Inverses.inv-i = refl
 
 ▹-extP : {A : I → ▹ k (𝒰 ℓ)} {x▹ : ▹[ α ∶ k ] A i0 α} {y▹ : ▹[ α ∶ k ] A i1 α}
      → (▹[ α ∶ k ] ＜ (x▹ α) ／ (λ i → A i α) ＼ (y▹ α) ＞)
@@ -160,10 +163,11 @@ fix-path f i = f (pfix f i)
 ▹Σ f = (λ α → fst (f α)) , λ α → snd (f α)
 
 ▹Σ≃Σ▹ : {A : 𝒰 ℓ} {B : A → 𝒰 ℓ′}
-      → Iso (▹[ α ∶ k ] Σ[ a ꞉ A ] B a) (Σ[ x ꞉ ▹ k A ] (▹[ α ∶ k ] B (x α)))
-▹Σ≃Σ▹ = ▹Σ , iso Σ▹
-               (λ { (x , y) i → x , y } )
-               λ x i α → x α .fst , x α .snd
+      → (▹[ α ∶ k ] Σ[ a ꞉ A ] B a) ≅ (Σ[ x ꞉ ▹ k A ] (▹[ α ∶ k ] B (x α)))
+▹Σ≃Σ▹ .Iso.to                       = ▹Σ
+▹Σ≃Σ▹ .Iso.from                     = Σ▹
+▹Σ≃Σ▹ .Iso.inverses .Inverses.inv-o = fun-ext λ { (x , y) i → x , y }
+▹Σ≃Σ▹ .Iso.inverses .Inverses.inv-i = fun-ext λ x i α → x α .fst , x α .snd
 
 @0 ▹Σ≡Σ▹ : (k : Cl) (A : 𝒰 ℓ) (B : A → 𝒰 ℓ′)
   → (▹[ α ∶ k ] Σ[ a ꞉ A ] B a) ＝ (Σ[ x ꞉ ▹ k A ] (▹[ α ∶ k ] B (x α)))
@@ -254,7 +258,8 @@ fix-unique {f▹} e = fix λ ih▹ → e ∙ ap f▹ (▹-ext ih▹) ∙ sym (fi
 ▹is-of-hlevel {n = suc zero}      = ▹is-prop
 ▹is-of-hlevel {n = suc (suc n)} a =
   λ p q →
-    retract→is-of-hlevel (suc n) ▹-extP ▹-apP (λ _ → refl)
+    retract→is-of-hlevel (suc n)
+    (▹-extP , make-section ▹-apP refl)
     (▹is-of-hlevel λ α → (a α) (p α) (q α))
 
 instance
