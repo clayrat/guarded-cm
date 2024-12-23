@@ -46,15 +46,15 @@ tail▹ᵇ = snd ∘ unconsᵇ
 
 opaque
   unfolding Bush⇉ ⇉Bush
-  
+
   uncons-eq : (b : Bush A) → b ＝ consᵇ (headᵇ b) (tail▹ᵇ b)
   uncons-eq {A} s = transport⁻-transport Bush-path s ⁻¹
 
   head-cons : (a : A) (as▹ : ▹ Bush (Bush A)) → headᵇ (consᵇ a as▹) ＝ a
-  head-cons {A} a as▹ = transport⁻-transport refl a 
+  head-cons {A} a as▹ = transport⁻-transport refl a
 
   tail-cons : (a : A) (as▹ : ▹ Bush (Bush A)) → tail▹ᵇ (consᵇ a as▹) ＝ as▹
-  tail-cons {A} a as▹ = 
+  tail-cons {A} a as▹ =
     transport⁻-transport
       (λ i → ▹[ α ] (pfix BushF (~ i) α (pfix BushF (~ i) α A)))
       as▹
@@ -63,7 +63,7 @@ opaque
 
 pureᵇ-body : ▹ ({A : 𝒰 ℓ} → A → Bush A)
            →    {A : 𝒰 ℓ} → A → Bush A
-pureᵇ-body p▹ a = consᵇ a λ α → p▹ α (p▹ α a) 
+pureᵇ-body p▹ a = consᵇ a λ α → p▹ α (p▹ α a)
 
 pureᵇ : {A : 𝒰 ℓ} → A → Bush A
 pureᵇ = fix pureᵇ-body
@@ -104,19 +104,26 @@ mapᵇ-comp {ℓ} = fix λ ih▹ A B C f g b →
       mapᵇ g (mapᵇ-body (next λ {A} {B} → mapᵇ) f b)
         =⟨ ap (λ q → q g (mapᵇ-body (next λ {A} {B} → mapᵇ) f b)) (fix-path mapᵇ-body) ⟩
       mapᵇ-body (next λ {A} {B} → mapᵇ) g (mapᵇ-body (next (λ {A} {B} → mapᵇ)) f b)
-        =⟨ {!!} ⟩
+        =⟨⟩
+      consᵇ (g (headᵇ (consᵇ (f (headᵇ b)) (λ α → mapᵇ (mapᵇ f) (tail▹ᵇ b α)))))
+            (λ α → mapᵇ (mapᵇ g) (tail▹ᵇ (consᵇ (f (headᵇ b)) (λ α → mapᵇ (mapᵇ f) (tail▹ᵇ b α))) α))
+        =⟨ ap (λ q → consᵇ (g q) (λ α → mapᵇ (mapᵇ g) (tail▹ᵇ (consᵇ (f (headᵇ b)) (λ α → mapᵇ (mapᵇ f) (tail▹ᵇ b α))) α)))
+             (head-cons (f (headᵇ b)) (λ α → mapᵇ (mapᵇ f) (tail▹ᵇ b α))) ⟩
+      consᵇ (g (f (headᵇ b)))
+            (λ α → mapᵇ (mapᵇ g) (tail▹ᵇ (consᵇ (f (headᵇ b)) (λ α → mapᵇ (mapᵇ f) (tail▹ᵇ b α))) α))
+        =⟨ ap (consᵇ (g (f (headᵇ b))))
+              (▹-ext λ α → ap (mapᵇ (mapᵇ g)) (▹-ap (tail-cons (f (headᵇ b)) λ α′ → mapᵇ (mapᵇ f) (tail▹ᵇ b α′)) α)
+                         ∙ ih▹ α (Bush A) (Bush B) (Bush C)
+                                                  ((λ {A B : 𝒰 ℓ} → mapᵇ {ℓ} {A} {B}) f)
+                                                  ((λ {A B : 𝒰 ℓ} → mapᵇ {ℓ} {A} {B}) g)
+                                                  (tail▹ᵇ b α)
+                         ∙ ap (λ q → mapᵇ q (tail▹ᵇ b α)) (fun-ext (ih▹ α A B C f g))) ⟩
+      consᵇ (g (f (headᵇ b))) (λ α → mapᵇ (mapᵇ (g ∘ f)) (tail▹ᵇ b α))
+        =⟨⟩
       mapᵇ-body (next λ {A} {B} → mapᵇ) (g ∘ f) b
         =⟨ ap (λ q → q (g ∘ f) b) (fix-path mapᵇ-body) ⟨
       mapᵇ (g ∘ f) b
         ∎
-
-{-
-        =⟨ ap (bsh (g (f a))) (▹-ext λ α → ih▹ α (Bush A) (Bush B) (Bush C)
-                                                  ((λ {A B : 𝒰 ℓ} → mapᵇ {ℓ} {A} {B}) f)
-                                                  ((λ {A B : 𝒰 ℓ} → mapᵇ {ℓ} {A} {B}) g)
-                                                  (b▹ α)
-                                         ∙ ap (λ q → mapᵇ q (b▹ α)) (fun-ext λ b′ → ih▹ α A B C f g b′)) ⟩
--}
 
 data BT : 𝒰 where
   L  : BT
@@ -129,8 +136,8 @@ lamBT-body l▹ {A} f = consᵇ (f L) λ α → l▹ α λ t → l▹ α λ u �
 lamBT : (BT → A) → Bush A
 lamBT {A} = fix lamBT-body {A}
 
-appBT-body : ▹ (∀ {A : 𝒰 ℓ} → Bush A → BT → Part A)
-           →      {A : 𝒰 ℓ} → Bush A → BT → Part A
+appBT-body : ▹ ({A : 𝒰 ℓ} → Bush A → BT → Part A)
+           →    {A : 𝒰 ℓ} → Bush A → BT → Part A
 appBT-body _  b  L       = now (headᵇ b)
 appBT-body a▹ b (Sp l r) = later λ α → a▹ α (tail▹ᵇ b α) l >>=ᵖ λ b → a▹ α b r
 

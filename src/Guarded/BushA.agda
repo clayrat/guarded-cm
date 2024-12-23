@@ -8,20 +8,32 @@ open import Guarded.Partial
 
 private variable
   ℓ : Level    -- TODO generalize levels?
-  Aⁿ Aˡ B : 𝒰 ℓ
+  Aⁿ Aˡ B C : 𝒰 ℓ
 
 -- guarded (top-down?) binary tree automaton (with data in nodes and leaves)
 -- based on http://www.cs.nott.ac.uk/~psztxa/publ/tlca01a.pdf
 
+-- TODO param names/order
 data Bush (Aⁿ Aˡ B : 𝒰 ℓ) : 𝒰 ℓ where
   bsh : (Aˡ → B) → (Aⁿ → ▹ Bush Aⁿ Aˡ (Bush Aⁿ Aˡ B)) → Bush Aⁿ Aˡ B
+
+-- constant bush
+
+pureᵇ-body : ▹ ({B : 𝒰 ℓ} → B → Bush Aⁿ Aˡ B)
+           →    {B : 𝒰 ℓ} → B → Bush Aⁿ Aˡ B
+pureᵇ-body p▹ b = bsh (λ _ → b) λ _ α → p▹ α (p▹ α b)
+
+pureᵇ : B → Bush Aⁿ Aˡ B
+pureᵇ = fix pureᵇ-body
+
+-- map
 
 mapᵇ-body : ▹ ({B C : 𝒰 ℓ} → (B → C) → Bush Aⁿ Aˡ B → Bush Aⁿ Aˡ C)
           →    {B C : 𝒰 ℓ} → (B → C) → Bush Aⁿ Aˡ B → Bush Aⁿ Aˡ C
 mapᵇ-body m▹ f (bsh fb b▹) = bsh (f ∘ fb) λ a α → m▹ α (m▹ α f) (b▹ a α)
 
-mapᵇ : {B C : 𝒰 ℓ} → (B → C) → Bush Aⁿ Aˡ B → Bush Aⁿ Aˡ C
-mapᵇ {B} {C} f = fix mapᵇ-body {B} {C} f
+mapᵇ : (B → C) → Bush Aⁿ Aˡ B → Bush Aⁿ Aˡ C
+mapᵇ f = fix mapᵇ-body f
 
 mapᵇ-id : (B : 𝒰 ℓ)
         → (b : Bush Aⁿ Aˡ B)
@@ -51,8 +63,7 @@ mapᵇ-comp {ℓ} {Aⁿ} {Aˡ} =
         mapᵇ-body (next λ {B} {C} → mapᵇ) g (mapᵇ-body (next (λ {B} {C} → mapᵇ)) f b)
           =⟨ ap (bsh (g ∘ f ∘ fx)) (fun-ext λ a → ▹-ext λ α →
                                       ih▹ α (Bush Aⁿ Aˡ B) (Bush Aⁿ Aˡ C) (Bush Aⁿ Aˡ D)
-                                            ((λ {B C : 𝒰 ℓ} → mapᵇ {ℓ} {B} {C}) f)
-                                            ((λ {B C : 𝒰 ℓ} → mapᵇ {ℓ} {B} {C}) g)
+                                            (mapᵇ f) (mapᵇ g)
                                             (b▹ a α)
                                     ∙ ap (λ q → mapᵇ q (b▹ a α)) (fun-ext λ b′ → ih▹ α B C D f g b′)) ⟩
         mapᵇ-body (next λ {B} {C} → mapᵇ) (g ∘ f) b
@@ -60,14 +71,7 @@ mapᵇ-comp {ℓ} {Aⁿ} {Aˡ} =
         mapᵇ (g ∘ f) b
           ∎
 
--- constant bush
-
-pureᵇ-body : ▹ ({B : 𝒰 ℓ} → B → Bush Aⁿ Aˡ B)
-           →    {B : 𝒰 ℓ} → B → Bush Aⁿ Aˡ B
-pureᵇ-body p▹ b = bsh (λ _ → b) λ _ α → p▹ α (p▹ α b)
-
-pureᵇ : ∀ {B : 𝒰 ℓ} → B → Bush Aⁿ Aˡ B
-pureᵇ = fix pureᵇ-body
+-- binary tree
 
 data BT (Aⁿ Aˡ : 𝒰 ℓ) : 𝒰 ℓ where
   L  : Aˡ → BT Aⁿ Aˡ
@@ -75,10 +79,10 @@ data BT (Aⁿ Aˡ : 𝒰 ℓ) : 𝒰 ℓ where
 
 lamBT-body : ▹ ({B : 𝒰 ℓ} → (BT Aⁿ Aˡ → B) → Bush Aⁿ Aˡ B)
            →    {B : 𝒰 ℓ} → (BT Aⁿ Aˡ → B) → Bush Aⁿ Aˡ B
-lamBT-body l▹ {B} f = bsh (f ∘ L) λ a α → l▹ α λ t → l▹ α λ u → f (Sp t a u)
+lamBT-body l▹ f = bsh (f ∘ L) λ a α → l▹ α λ t → l▹ α λ u → f (Sp t a u)
 
 lamBT : (BT Aⁿ Aˡ → B) → Bush Aⁿ Aˡ B
-lamBT {B} = fix lamBT-body {B}
+lamBT = fix lamBT-body
 
 appBT-body : ▹ ({B : 𝒰 ℓ} → Bush Aⁿ Aˡ B → BT Aⁿ Aˡ → Part B)
            →    {B : 𝒰 ℓ} → Bush Aⁿ Aˡ B → BT Aⁿ Aˡ → Part B
@@ -86,7 +90,7 @@ appBT-body a▹ (bsh fb _ ) (L b)      = now (fb b)
 appBT-body a▹ (bsh _  f▹) (Sp l a r) = later λ α → a▹ α (f▹ a α) l >>=ᵖ λ x → a▹ α x r
 
 appBT : Bush Aⁿ Aˡ B → BT Aⁿ Aˡ → Part B
-appBT {B} = fix appBT-body {B}
+appBT = fix appBT-body
 
 -- example: evaluating a numerical expression
 
