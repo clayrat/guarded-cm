@@ -20,9 +20,6 @@ Bush : 𝒰 ℓ → 𝒰 ℓ
 Bush = fix BushF
 
 opaque
-  Bush-path′ : Bush {ℓ} ＝ BushF (next Bush)
-  Bush-path′ = fix-path BushF
-
   Bush-path : Bush A ＝ BushF (next Bush) A
   Bush-path {A} = happly (fix-path BushF) A
 
@@ -134,7 +131,7 @@ lamBT-body : ▹ ({A : 𝒰 ℓ} → (BT → A) → Bush A)
 lamBT-body l▹ {A} f = consᵇ (f L) λ α → l▹ α λ t → l▹ α λ u → f (Sp t u)
 
 lamBT : (BT → A) → Bush A
-lamBT {A} = fix lamBT-body {A}
+lamBT = fix lamBT-body
 
 appBT-body : ▹ ({A : 𝒰 ℓ} → Bush A → BT → Part A)
            →    {A : 𝒰 ℓ} → Bush A → BT → Part A
@@ -142,4 +139,4 @@ appBT-body _  b  L       = now (headᵇ b)
 appBT-body a▹ b (Sp l r) = later λ α → a▹ α (tail▹ᵇ b α) l >>=ᵖ λ b → a▹ α b r
 
 appBT : Bush A → BT → Part A
-appBT {A} = fix appBT-body {A}
+appBT = fix appBT-body
