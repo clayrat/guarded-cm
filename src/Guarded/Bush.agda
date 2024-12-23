@@ -16,6 +16,18 @@ private variable
 data Bush (A : 𝒰 ℓ) : 𝒰 ℓ where
   bsh : A → ▹ Bush (Bush A) → Bush A
 
+-- constant bush
+
+-- TODO need an implicit version of ⊛
+pureᵇ-body : ▹ ({A : 𝒰 ℓ} → A → Bush A)
+           →    {A : 𝒰 ℓ} → A → Bush A
+pureᵇ-body b▹ a = bsh a λ α → b▹ α (b▹ α a)
+
+pureᵇ : ∀ {A : 𝒰 ℓ} → A → Bush A
+pureᵇ = fix pureᵇ-body
+
+-- map
+
 mapᵇ-body : ▹ ({A B : 𝒰 ℓ} → (A → B) → Bush A → Bush B)
           →    {A B : 𝒰 ℓ} → (A → B) → Bush A → Bush B
 mapᵇ-body m▹ f (bsh a b▹) = bsh (f a) λ α → m▹ α (m▹ α f) (b▹ α)
@@ -55,15 +67,6 @@ mapᵇ-comp {ℓ} = fix λ ih▹ A B C f g → λ where
         =⟨ ap (λ q → q (g ∘ f) b) (fix-path mapᵇ-body) ⟨
       mapᵇ (g ∘ f) b
         ∎
-
--- constant bush
-
-pureᵇ-body : ▹ ({A : 𝒰 ℓ} → A → Bush A)
-           →    {A : 𝒰 ℓ} → A → Bush A
-pureᵇ-body b▹ a = bsh a λ α → b▹ α (b▹ α a)
-
-pureᵇ : ∀ {A : 𝒰 ℓ} → A → Bush A
-pureᵇ = fix pureᵇ-body
 
 data BT : 𝒰 where
   L  : BT
