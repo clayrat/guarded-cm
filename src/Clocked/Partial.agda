@@ -2,11 +2,13 @@
 module Clocked.Partial where
 
 open import Prelude
-open import Data.Empty
 open import Data.Bool
 open import Data.Maybe
 open import Data.Sum
 open import Data.Nat
+open import Order.Complemented
+open import Order.Constructions.Minmax
+open import Order.Constructions.Nat
 open import Later
 
 private variable
@@ -126,12 +128,17 @@ apᵏ-nowx : (f : gPart k (A → B)) (x : A)
 apᵏ-nowx (now f)    x = refl
 apᵏ-nowx (later f▹) x = ap later (▹-ext λ α → apᵏ-nowx (f▹ α) x)
 
+open decminmax ℕ-dec-total
+open decminmaxprops ℕ-dec-total ℕ-dec-total
+
 delay-by-apᵏ : (f : A → B) (nf : ℕ) (x : A) (nx : ℕ)
              → apᵏ {k = k} (delay-byᵏ nf f) (delay-byᵏ nx x) ＝ delay-byᵏ (max nf nx) (f x)
 delay-by-apᵏ f  zero    x  zero    = refl
 delay-by-apᵏ f  zero    x (suc nx) = ap later (▹-ext λ α → apᵏ-nowf f (delay-byᵏ nx x) ∙ delay-by-mapᵏ x nx)
 delay-by-apᵏ f (suc nf) x  zero    = ap later (▹-ext λ α → apᵏ-nowx (delay-byᵏ nf f) x ∙ delay-by-mapᵏ f nf)
-delay-by-apᵏ f (suc nf) x (suc nx) = ap later (▹-ext λ α → delay-by-apᵏ f nf x nx)
+delay-by-apᵏ f (suc nf) x (suc nx) =
+    ap later (▹-ext λ α → delay-by-apᵏ f nf x nx)
+  ∙ ap (λ q → delay-byᵏ q (f x)) (max-ap Suc nf nx)
 
 delay-by-bindᵏ : (f : A → gPart k B) (x : A) (n : ℕ)
                → (delay-byᵏ n x) >>=ᵏ f ＝ spinᵏ n (f x)

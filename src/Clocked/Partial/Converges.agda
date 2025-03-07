@@ -2,8 +2,12 @@
 module Clocked.Partial.Converges where
 
 open import Prelude
+open import Meta.Effect
 open import Data.Empty
 open import Data.Nat
+
+open import Order.Constructions.Minmax
+open import Order.Constructions.Nat
 
 open import Later
 open import Clocked.Partial
@@ -45,7 +49,7 @@ spin⇓ (suc n) = δ⇓ ∘ spin⇓ n
 unδ⇓ : {p : Part A} {x : A}
    → δᵖ p ⇓ᵖ x → p ⇓ᵖ x
 unδ⇓ = map λ where
-               (zero  , e) → absurd (now≠later (sym $ happly e k0))
+               (zero  , e) → absurd (now≠later ((happly e k0) ⁻¹) )
                (suc n , e) → n , fun-ext (force (λ k₁ → ▹-ap (later-inj (happly e k₁))))
 
 map⇓ : {p : Part A} {a : A}
@@ -55,16 +59,20 @@ map⇓ : {p : Part A} {a : A}
 map⇓ {a} f =
   map λ where (n , e) → n , ap (mapᵖ f) e ∙ delay-by-mapᵖ a n
 
+open decminmax ℕ-dec-total
+
 ap⇓ : {p : Part A} {g : A → B} {a : A}
     → (f : Part (A → B))
     → f ⇓ᵖ g
     → p ⇓ᵖ a
     → (apᵖ f p) ⇓ᵖ g a
 ap⇓ {g} {a} f fg pa =
-  ∥-∥₁.rec! (λ where
-    (n , eᶠ) → map (λ where
-      (m , e) → max n m , ap² apᵖ eᶠ e
-                        ∙ delay-by-apᵖ g n a m) pa) fg
+  rec! (λ n eᶠ →
+    map (λ where
+              (m , e) →
+                 max n m ,   ap² apᵖ eᶠ e
+                           ∙ delay-by-apᵖ g n a m)
+         pa) fg
 
 map²⇓ : {p : Part A} {a : A} {q : Part B} {b : B}
       → (f : A → B → C)
@@ -79,13 +87,14 @@ bind⇓ : {p : Part A} {a : A} {b : B}
       → f a ⇓ᵖ b
       → (p >>=ᵖ f) ⇓ᵖ b
 bind⇓ {a} {b} f pa fab =
-  ∥-∥₁.rec! (λ where
-    (n , e) → map (λ where
-      (m , eᶠ) → (n + m , ap (_>>=ᵖ f) e
+  rec! (λ n e →
+    map (λ where
+             (m , eᶠ) →
+               (n + m ,   ap (_>>=ᵖ f) e
                         ∙ delay-by-bindᵖ f a n
                         ∙ ap (spin n) eᶠ
                         ∙ fun-ext (λ k → sym (iter-add n m δᵏ (now b)))))
-                 fab) pa
+         fab) pa
 
 -- weak bisimilarity (both converge to same value modulo the number of steps)
 
