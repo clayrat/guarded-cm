@@ -2,10 +2,12 @@
 module Clocked.Partial where
 
 open import Prelude
+
 open import Data.Bool
 open import Data.Maybe
 open import Data.Sum
 open import Data.Nat
+
 open import Order.Complemented
 open import Order.Constructions.Minmax
 open import Order.Constructions.Nat
@@ -223,6 +225,13 @@ raceᵏ = fix raceᵏ-body
 
 map²ᵏ : (A → B → C) → gPart k A → gPart k B → gPart k C
 map²ᵏ f = apᵏ ∘ mapᵏ f
+
+delay-by-map²ᵏ : (f : A → B → C) (nx : ℕ) (x : A) (ny : ℕ) (y : B)
+               → map²ᵏ {k = k} f (delay-byᵏ nx x) (delay-byᵏ ny y) ＝ delay-byᵏ (max nx ny) (f x y)
+delay-by-map²ᵏ f nx x ny y =
+    ap (λ q → apᵏ q (delay-byᵏ ny y))
+       (delay-by-mapᵏ x nx)
+  ∙ delay-by-apᵏ (f x) nx y ny
 
 bothᵏ : gPart k A → gPart k B → gPart k (A × B)
 bothᵏ = map²ᵏ (_,_)

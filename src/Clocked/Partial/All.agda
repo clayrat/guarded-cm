@@ -23,6 +23,10 @@ data gAllᵖ (κ : Cl) (P : A → 𝒰 ℓ′) : gPart κ A → 𝒰 (level-of-t
 Allᵖ : (A → 𝒰 ℓ′) → Part A → 𝒰 (level-of-type A ⊔ ℓ′)
 Allᵖ P p = ∀ κ → gAllᵖ κ P (p κ)
 
+all-pure : ∀ {P : A → 𝒰 ℓ′} {a : A}
+        → P a → Allᵖ P (pureᵖ a)
+all-pure pa κ = gAll-now pa            
+
 all-δᵏ : ∀ {P : A → 𝒰 ℓ′} {p : gPart κ A}
        → gAllᵖ κ P p → gAllᵖ κ P (δᵏ p)
 all-δᵏ = gAll-later ∘ next
